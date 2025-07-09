@@ -66,13 +66,7 @@ export default function Navbar() {
             </li>
           ))}
           <li>
-            <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-              className="bg-white text-[#B71C1C] px-4 py-1 rounded hover:bg-[#B71C1C] hover:text-white transition-colors duration-200"
-            >
-              Login
-            </Link>
+            <UserInfo />
           </li>
         </ul>
       )}

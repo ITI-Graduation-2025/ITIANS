@@ -67,7 +67,7 @@ export const authOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 1 ** 24 * 60 * 60, // 1 day
+    maxAge: 1 * 24 * 60 * 60, // 1 day
   },
   jwt: {
     // jwt encodein and decodeing config
