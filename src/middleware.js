@@ -7,7 +7,7 @@ export default withAuth(
   async function middleware(request) {
     const pathname = request.nextUrl.pathname;
     const isAuth = await getToken({ req: request });
-    const protectedRoutes = ["/dashboard", "/mentor"];
+    const protectedRoutes = ["/dashboard", "/mentor", "/profile"];
     const isAuthRoute = pathname.startsWith("/login");
     const isProtectedRoute = protectedRoutes.some(
       (route) => pathname.startsWith(route) || pathname === "/",
@@ -36,5 +36,12 @@ export default withAuth(
 // دي الراوت اللي الميدل وير بيتعامل معاها بالفعل
 //  ليه path عشان لو في نيستد راوت
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register", "/mentor", "/"],
+  matcher: [
+    "/dashboard/:path*",
+    "/login",
+    "/register",
+    "/mentor",
+    "/",
+    "/profile",
+  ],
 };
