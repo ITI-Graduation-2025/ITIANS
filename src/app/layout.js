@@ -1,5 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
+import NextProvider from "@/components/providers/nextProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,8 +23,12 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased debug-screens`}
+        cz-shortcut-listen="true"
+        data-gr-ext-installed=""
+        data-new-gr-c-s-check-loaded="14.1243.0"
       >
-        {children}
+        <Toaster />
+        <NextProvider>{children}</NextProvider>
       </body>
     </html>
   );

@@ -1,35 +1,30 @@
-// import { GalleryVerticalEnd } from "lucide-react"
+import RegisterForm from "@/components/form/register";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 
-import { LoginForm } from "@/components/login-form";
-import { GalleryVerticalEnd } from "lucide-react";
-// import Image from "next/image";
-
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
-    // <div className="grid min-h-svh lg:grid-cols-2">
-    //   <div className="flex flex-col gap-4 p-6 md:p-10">
-    //     <div className="flex justify-center gap-2 md:justify-start">
-    //       <a href="#" className="flex items-center gap-2 font-medium">
-    //         <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-    //           <GalleryVerticalEnd className="size-4" />
-    //         </div>
-    //         Acme Inc.
-    //       </a>
-    //     </div>
-    //     <div className="flex flex-1 items-center justify-center">
-    //       <div className="w-full max-w-xs">
-    //         <LoginForm />
-    //       </div>
-    //     </div>
-    //   </div>
-    //   <div className="bg-muted relative hidden lg:block">
-    //     <img
-    //       src="https://picsum.photos/200/300"
-    //       alt="Image"
-    //       className="absolute inset-0 h-full w-full  object-cover dark:brightness-[0.2] dark:grayscale"
-    //     />
-    //   </div>
-    // </div>
-    <h1>Register</h1>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl shadow-lg">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            Create an Account
+          </CardTitle>
+          <p className="text-gray-600">Enter your information to get started</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <RegisterForm />
+          <div className="text-center text-sm text-gray-600">
+            Already have an account?{" "}
+            <a
+              href="/login"
+              className="text-primary hover:text-primary/80 font-medium"
+            >
+              Sign in
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

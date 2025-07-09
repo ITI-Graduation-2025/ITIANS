@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
 import LoginForm from "@/components/login-form";
+import UserInfo from "../pages/userInfo";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,12 +42,7 @@ export default function Navbar() {
 
         {/* Login Button (Right) */}
         <div className="hidden md:block">
-          <Link
-            href="/login"
-            className="bg-white text-[#B71C1C] px-3 py-1 rounded hover:bg-[#c71c1cb7] hover:text-white transition-colors duration-200"
-          >
-            Login
-          </Link>
+          <UserInfo />
         </div>
 
         {/* Mobile Menu Toggle */}
