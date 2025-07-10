@@ -17,7 +17,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="bg-[#B71C1C]/70 backdrop-blur-lg text-white shadow-md sticky top-0 z-50">
+    <nav className="bg-[#B71C1C]/80 backdrop-blur-lg text-white font-bold shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo and Title */}
         <div className="flex items-center gap-2">

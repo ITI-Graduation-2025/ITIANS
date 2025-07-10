@@ -127,7 +127,7 @@ export default function JobsSection() {
                 <p className="text-black text-lg mb-6">{job.description}</p>
 
                 <Link
-                  href={`/jobs/${job.id}`}
+                  href={`/jobs`}
                   className="text-[#B71C1C] text-base md:text-lg font-semibold hover:underline mt-auto"
                 >
                   Learn More &gt;
