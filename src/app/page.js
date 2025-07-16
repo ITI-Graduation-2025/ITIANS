@@ -12,14 +12,22 @@ export default function Home() {
   return (
     <>
       <LandingSection />
-      <JobSlider />
-      <TopRatedMentors />
+      <section id="jobs">
+        <JobSlider />
+      </section>
+      <section id="mentors">
+        <TopRatedMentors />
+      </section>
       <TracksMarquee />
-      <AboutUsSection />
+      <section id="about">
+        <AboutUsSection />
+      </section>
       <QuoteSection />
       <CompaniesTicker />
       <OurImpactSection />
-      <ContactUs />
+      <section id="contact">
+        <ContactUs />
+      </section>
     </>
   );
 }
