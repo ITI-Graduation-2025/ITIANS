@@ -17,6 +17,7 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebase";
 import { toast } from "sonner";
+import { setUser } from "@/services/firebase";
 
 export default function RegisterForm() {
   const {
@@ -82,12 +83,14 @@ export default function RegisterForm() {
       await updateProfile(user, { displayName: data.name });
 
       // Store user data in Firestore
-      await setDoc(doc(db, "users", user.uid), {
+
+      await setUser(user.uid, {
         name: data.name,
         email: data.email,
         role: data.role,
         nationalId: data.nationalId,
-        createdAt: new Date(),
+        verificationStatus: "Pending",
+        createdAt: new Date().toISOString(),
       });
 
       toast.success("Account created successfully");
