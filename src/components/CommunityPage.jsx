@@ -1,42 +1,13 @@
 "use client"
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Head from 'next/head';
-import { HiOutlineBell, HiOutlinePaperClip, HiOutlineChatBubbleLeftRight, HiOutlineHandThumbUp, HiOutlineArrowPath, HiOutlineEllipsisHorizontal, HiOutlineCheckCircle, HiOutlineMagnifyingGlass } from 'react-icons/hi2';
+import { HiOutlineBell, HiOutlinePaperClip, HiOutlineChatBubbleLeftRight, HiOutlineHandThumbUp, HiOutlineArrowPath, HiOutlineEllipsisHorizontal, HiOutlineCheckCircle, HiOutlineMagnifyingGlass, HiOutlinePencil, HiOutlineTrash, HiOutlineX } from 'react-icons/hi2';
+import { createPost, getAllPosts, updatePost, deletePost, subscribeToPosts } from '@/services/firebase';
 
 export default function CommunityPage() {
-  const colors = {
-    primary: 'bg-red-900',
-    primaryDark: 'bg-red-700',
-    primaryLight: 'bg-red-100',
-    secondary: 'bg-red-100',
-    accent: 'bg-red-700',
-    text: 'text-[#212529]',
-    lightText: 'text-[#6c757d]',
-    white: 'bg-white',
-  };
-
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      author: 'Wafaa Samir',
-      role: 'Web Developer - ITI Grad',
-      content: 'Just completed a React project for a client. Learned so much about state management with Redux Toolkit! #ITI #Freelancing',
-      timestamp: '2 hours ago',
-      likes: 14,
-      comments: 3,
-      isLiked: false
-    },
-    {
-      id: 2,
-      author: 'Jihan Mohammed',
-      role: 'UI/UX Designer - ITI Grad',
-      content: 'Sharing my latest Figma design for a mobile app. Would love feedback from fellow ITI designers!',
-      timestamp: '5 hours ago',
-      likes: 23,
-      comments: 7,
-      isLiked: true
-    }
-  ]);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [freelancers] = useState([
     { name: 'Ahmed Mohamed', role: 'Web Developer' },
@@ -51,12 +22,42 @@ export default function CommunityPage() {
   const [openComments, setOpenComments] = useState(null);
   const [commentInputs, setCommentInputs] = useState({});
   const [postAttachment, setPostAttachment] = useState(null);
+  
+  // Edit state
+  const [editingPost, setEditingPost] = useState(null);
+  const [editContent, setEditContent] = useState('');
 
   const currentUser = {
     name: 'Wafaa Samir', 
     role: 'Web Developer - ITI Grad',
-    avatar: 'WS'
+    avatar: 'WS',
+    uid: 'current-user-id' // This should come from your auth system
   };
+
+  // Load posts from Firebase
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        setLoading(true);
+        const postsData = await getAllPosts();
+        setPosts(postsData);
+      } catch (err) {
+        setError('Failed to load posts');
+        console.error('Error loading posts:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPosts();
+
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToPosts((updatedPosts) => {
+      setPosts(updatedPosts);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const filteredPosts = useMemo(() => {
     if (!search.trim()) return posts;
@@ -74,94 +75,188 @@ export default function CommunityPage() {
     );
   }, [search, freelancers]);
 
-  const handleAddPost = (e) => {
+  const handleAddPost = async (e) => {
     e.preventDefault();
     if (!postContent.trim() && !postAttachment) return;
-    const newPost = {
-      id: Date.now(),
-      author: currentUser.name,
-      role: currentUser.role,
-      content: postContent,
-      timestamp: 'Just now',
-      likes: 0,
-      comments: [],
-      isLiked: false,
-      attachment: postAttachment ? {
-        name: postAttachment.name,
-        type: postAttachment.type,
-        url: URL.createObjectURL(postAttachment)
-      } : null
-    };
-    setPosts([newPost, ...posts]);
-    setPostContent('');
-    setPostAttachment(null);
+    
+    try {
+      const newPostData = {
+        author: currentUser.name,
+        role: currentUser.role,
+        content: postContent,
+        likes: 0,
+        comments: [],
+        isLiked: false,
+        attachment: postAttachment ? {
+          name: postAttachment.name,
+          type: postAttachment.type,
+          url: URL.createObjectURL(postAttachment)
+        } : null,
+        authorId: currentUser.uid
+      };
+
+      await createPost(newPostData);
+      setPostContent('');
+      setPostAttachment(null);
+    } catch (err) {
+      console.error('Error creating post:', err);
+      setError('Failed to create post');
+    }
   };
 
-  const handleLikePost = (postId) => {
-    setPosts(posts => posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-          isLiked: !post.isLiked
-        };
-      }
-      return post;
-    }));
+  const handleLikePost = async (postId) => {
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      const updatedLikes = post.isLiked ? post.likes - 1 : post.likes + 1;
+      const updatedIsLiked = !post.isLiked;
+
+      await updatePost(postId, {
+        likes: updatedLikes,
+        isLiked: updatedIsLiked
+      });
+    } catch (err) {
+      console.error('Error updating like:', err);
+      setError('Failed to update like');
+    }
   };
 
-  const handleRepost = (post) => {
-    const newPost = {
-      id: Date.now(),
-      author: currentUser.name,
-      role: currentUser.role,
-      content: post.content,
-      timestamp: 'Just now',
-      likes: 0,
-      comments: [],
-      isLiked: false,
-      attachment: post.attachment || null,
-      repostOf: {
-        author: post.author,
-        role: post.role,
+  const handleRepost = async (post) => {
+    try {
+      const newPostData = {
+        author: currentUser.name,
+        role: currentUser.role,
         content: post.content,
-        timestamp: post.timestamp,
-        attachment: post.attachment || null
-      }
-    };
-    setPosts([newPost, ...posts]);
+        likes: 0,
+        comments: [],
+        isLiked: false,
+        attachment: post.attachment || null,
+        repostOf: {
+          author: post.author,
+          role: post.role,
+          content: post.content,
+          timestamp: post.createdAt,
+          attachment: post.attachment || null
+        },
+        authorId: currentUser.uid
+      };
+
+      await createPost(newPostData);
+    } catch (err) {
+      console.error('Error reposting:', err);
+      setError('Failed to repost');
+    }
   };
 
-  const handleAddComment = (postId, comment) => {
+  const handleAddComment = async (postId, comment) => {
     if (!comment.trim()) return;
-    setPosts(posts => posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: Array.isArray(post.comments)
-            ? [...post.comments, comment]
-            : [comment]
-        };
-      }
-      return post;
-    }));
-    setCommentInputs(inputs => ({ ...inputs, [postId]: '' }));
+    
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      const updatedComments = Array.isArray(post.comments)
+        ? [...post.comments, comment]
+        : [comment];
+
+      await updatePost(postId, {
+        comments: updatedComments
+      });
+      
+      setCommentInputs(inputs => ({ ...inputs, [postId]: '' }));
+    } catch (err) {
+      console.error('Error adding comment:', err);
+      setError('Failed to add comment');
+    }
   };
+
+  const handleEditPost = async (postId) => {
+    if (!editContent.trim()) return;
+    
+    try {
+      await updatePost(postId, {
+        content: editContent
+      });
+      setEditingPost(null);
+      setEditContent('');
+    } catch (err) {
+      console.error('Error updating post:', err);
+      setError('Failed to update post');
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+    
+    try {
+      await deletePost(postId);
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      setError('Failed to delete post');
+    }
+  };
+
+  const startEditing = (post) => {
+    setEditingPost(post.id);
+    setEditContent(post.content);
+  };
+
+  const cancelEditing = () => {
+    setEditingPost(null);
+    setEditContent('');
+  };
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return 'Just now';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    return `${Math.floor(diffInMinutes / 1440)} days ago`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading posts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${colors.text}`}>
+    <div className="min-h-screen bg-background text-foreground">
       <Head>
         <title>ITI Freelancers Community</title>
         <meta name="description" content="Community for ITI graduates freelancers" />
       </Head>
       
-      <header className={`${colors.primary} text-white shadow-md sticky top-0 z-10`}>
+      {error && (
+        <div className="bg-destructive text-destructive-foreground p-4 text-center">
+          {error}
+          <button 
+            onClick={() => setError(null)}
+            className="ml-2 underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      
+      <header className="bg-primary text-primary-foreground shadow-md sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <div className="flex items-center space-x-2 mb-4 md:mb-0">
               <img
                 src="/logo.jpeg"
                 alt="ITI Logo"
-                className="h-10 w-10 object-contain rounded-full border border-gray-200 bg-white mr-2"
+                className="h-10 w-10 object-contain rounded-full border border-border bg-card mr-2"
               />
                   <h1 className="text-2xl font-bold">ITI Freelancers Community</h1>
             </div>
@@ -172,16 +267,16 @@ export default function CommunityPage() {
               <input 
                 type="text" 
                 placeholder="Search posts or freelancers..." 
-                className="px-4 py-2 rounded-full w-64 focus:outline-none focus:ring-2 focus:ring-red-300 text-white" 
+                className="px-4 py-2 rounded-full w-64 focus:outline-none focus:ring-2 focus:ring-ring text-foreground bg-background/80" 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
-              <span className="absolute right-3 top-2.5 text-gray-500"><HiOutlineMagnifyingGlass className="w-5 h-5" /></span>
+              <span className="absolute right-3 top-2.5 text-muted-foreground"><HiOutlineMagnifyingGlass className="w-5 h-5" /></span>
             </div>
-            <button className={`p-2 rounded-full hover:${colors.primaryDark} transition-colors`}>
+            <button className="p-2 rounded-full hover:bg-primary/80 transition-colors">
               <HiOutlineBell className="w-6 h-6" />
             </button>
-            <div className={`h-10 w-10 rounded-full ${colors.primaryDark} flex items-center justify-center text-white font-medium`}>
+            <div className="h-10 w-10 rounded-full bg-primary/80 flex items-center justify-center text-primary-foreground font-medium">
               {currentUser.avatar}
             </div>
           </div>
@@ -190,43 +285,43 @@ export default function CommunityPage() {
       
       <main className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
         <aside className="w-full md:w-1/4 space-y-6">
-          <div className={`bg-white rounded-xl shadow-md overflow-hidden ${colors.primaryLight} border-l-4 ${colors.primary}`}>
+          <div className="bg-card rounded-xl shadow-md overflow-hidden border-l-4 border-primary">
             <div className="p-4">
               <div className="flex items-center space-x-4">
-                <div className={`h-16 w-16 rounded-full ${colors.primary} flex items-center justify-center text-white font-bold text-xl`}>
+                <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
                   {currentUser.avatar}
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">{currentUser.name}</h3>
-                  <p className="text-sm text-gray-600">{currentUser.role}</p>
+                  <p className="text-sm text-muted-foreground">{currentUser.role}</p>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between">
+              <div className="mt-4 pt-4 border-t border-border flex justify-between">
                 <div className="text-center">
-                  <div className="font-bold">42</div>
-                  <div className="text-xs text-gray-500">Posts</div>
+                  <div className="font-bold">{posts.filter(p => p.authorId === currentUser.uid).length}</div>
+                  <div className="text-xs text-muted-foreground">Posts</div>
                 </div>
                 <div className="text-center">
                   <div className="font-bold">128</div>
-                  <div className="text-xs text-gray-500">Connections</div>
+                  <div className="text-xs text-muted-foreground">Connections</div>
                 </div>
                 <div className="text-center">
                   <div className="font-bold">5</div>
-                  <div className="text-xs text-gray-500">Projects</div>
+                  <div className="text-xs text-muted-foreground">Projects</div>
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className={`p-4 ${colors.primary} text-white`}>
+          <div className="bg-card rounded-xl shadow-md overflow-hidden">
+            <div className="p-4 bg-primary text-primary-foreground">
               <h3 className="font-bold text-lg">ITI Companies</h3>
             </div>
             <div className="p-4">
               <ul className="space-y-3">
                 {['Valeo', 'ITWorx', 'Orange Labs', 'Sumerge', 'IBM Egypt', 'Microsoft Egypt'].map((company) => (
-                  <li key={company} className="flex items-center space-x-3 hover:text-red-600 cursor-pointer transition-colors">
-                    <div className={`h-8 w-8 rounded-full ${colors.primaryLight} flex items-center justify-center text-red-800`}>
+                  <li key={company} className="flex items-center space-x-3 hover:text-primary cursor-pointer transition-colors">
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary">
                       {company.charAt(0)}
                     </div>
                     <span>{company}</span>
@@ -236,31 +331,31 @@ export default function CommunityPage() {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className={`p-4 ${colors.primary} text-white`}>
+          <div className="bg-card rounded-xl shadow-md overflow-hidden">
+            <div className="p-4 bg-primary text-primary-foreground">
               <h3 className="font-bold text-lg">Upcoming Events</h3>
             </div>
             <div className="p-4">
               <ul className="space-y-4">
-                <li className="hover:bg-gray-50 p-2 rounded-lg cursor-pointer transition-colors">
+                <li className="hover:bg-muted p-2 rounded-lg cursor-pointer transition-colors">
                   <div className="flex items-start space-x-3">
-                    <div className={`min-w-12 h-12 ${colors.secondary} rounded-lg flex items-center justify-center font-bold`}>
+                    <div className="min-w-12 h-12 bg-secondary rounded-lg flex items-center justify-center font-bold text-secondary-foreground">
                       Jul
                     </div>
                     <div>
                       <div className="font-medium">ITI Alumni Meetup</div>
-                      <div className="text-sm text-gray-500">July 15, 2023 • Cairo</div>
+                      <div className="text-sm text-muted-foreground">July 15, 2023 • Cairo</div>
                     </div>
                   </div>
                 </li>
-                <li className="hover:bg-gray-50 p-2 rounded-lg cursor-pointer transition-colors">
+                <li className="hover:bg-muted p-2 rounded-lg cursor-pointer transition-colors">
                   <div className="flex items-start space-x-3">
-                    <div className={`min-w-12 h-12 ${colors.secondary} rounded-lg flex items-center justify-center font-bold`}>
+                    <div className="min-w-12 h-12 bg-secondary rounded-lg flex items-center justify-center font-bold text-secondary-foreground">
                       Jul
                     </div>
                     <div>
                       <div className="font-medium">Freelancing Workshop</div>
-                      <div className="text-sm text-gray-500">July 20, 2023 • Online</div>
+                      <div className="text-sm text-muted-foreground">July 20, 2023 • Online</div>
                     </div>
                   </div>
                 </li>
@@ -270,14 +365,14 @@ export default function CommunityPage() {
         </aside>
         
         <div className="w-full md:w-2/4 space-y-6">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className={`p-4 ${colors.primary} text-white`}>
+          <div className="bg-card rounded-xl shadow-md overflow-hidden">
+            <div className="p-4 bg-primary text-primary-foreground">
               <h2 className="text-lg font-bold">Create a Post</h2>
             </div>
             <div className="p-4">
               <form onSubmit={handleAddPost}>
                 <div className="flex items-start space-x-3">
-                  <div className={`h-12 w-12 rounded-full ${colors.primary} flex items-center justify-center text-white font-bold`}>
+                  <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                     {currentUser.avatar}
                   </div>
                   <div className="flex-1">
@@ -285,11 +380,11 @@ export default function CommunityPage() {
                       value={postContent}
                       onChange={(e) => setPostContent(e.target.value)}
                       placeholder="Share your thoughts, projects, or questions..."
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                      className="w-full border border-input rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
                       rows={3}
                     />
                     {postAttachment && (
-                      <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
+                      <div className="mt-2 p-3 bg-muted rounded-lg border border-border flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           {postAttachment.type.startsWith('image') ? (
                             <img 
@@ -298,18 +393,18 @@ export default function CommunityPage() {
                               className="h-12 w-12 object-cover rounded" 
                             />
                           ) : (
-                            <div className={`h-12 w-12 rounded ${colors.primaryLight} flex items-center justify-center`}>
-                              <HiOutlinePaperClip className="w-5 h-5 text-red-600" />
+                            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
+                              <HiOutlinePaperClip className="w-5 h-5 text-primary" />
                             </div>
                           )}
                           <div>
                             <div className="text-sm font-medium truncate max-w-xs">{postAttachment.name}</div>
-                            <div className="text-xs text-gray-500">{postAttachment.type}</div>
+                            <div className="text-xs text-muted-foreground">{postAttachment.type}</div>
                           </div>
                         </div>
                         <button
                           type="button"
-                          className="text-red-500 hover:text-red-700"
+                          className="text-destructive hover:text-destructive/80"
                           onClick={() => setPostAttachment(null)}
                         >
                           ✕
@@ -318,7 +413,7 @@ export default function CommunityPage() {
                     )}
                     <div className="flex justify-between items-center mt-3">
                       <div className="flex space-x-2">
-                        <label className="flex items-center space-x-1 text-gray-500 hover:text-red-600 cursor-pointer transition-colors">
+                        <label className="flex items-center space-x-1 text-muted-foreground hover:text-primary cursor-pointer transition-colors">
                           <HiOutlinePaperClip className="w-5 h-5" />
                           <span className="text-sm">Attachment</span>
                           <input
@@ -334,7 +429,7 @@ export default function CommunityPage() {
                       </div>
                       <button 
                         type="submit" 
-                        className={`px-6 py-2 rounded-lg ${colors.primary} text-white hover:${colors.primaryDark} transition-colors disabled:opacity-50`}
+                        className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/80 transition-colors disabled:opacity-50"
                         disabled={!postContent.trim() && !postAttachment}
                       >
                         Post
@@ -347,48 +442,74 @@ export default function CommunityPage() {
           </div>
           
           {filteredPosts.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md p-8 text-center">
-              <p className="text-gray-500">No posts found matching your search.</p>
+            <div className="bg-card rounded-xl shadow-md p-8 text-center">
+              <p className="text-muted-foreground">
+                {search.trim() ? 'No posts found matching your search.' : 'No posts yet. Be the first to share something!'}
+              </p>
             </div>
           ) : (
             filteredPosts.map(post => (
-              <div key={post.id} className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div key={post.id} className="bg-card rounded-xl shadow-md overflow-hidden">
                 {post.repostOf && (
-                  <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center gap-2 text-sm text-red-800">
+                  <div className="bg-muted border-b border-border px-4 py-2 flex items-center gap-2 text-sm text-primary">
                     <span className="font-semibold">{post.author} reposted</span>
                   </div>
                 )}
                 
                 <div className="p-4">
                   <div className="flex items-start space-x-3">
-                    <div className={`h-12 w-12 rounded-full ${colors.primary} flex items-center justify-center text-white font-bold`}>
+                    <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                       {post.author.charAt(0)}
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-bold">{post.author}</h4>
-                          <p className="text-sm text-gray-600">{post.role}</p>
+                          <p className="text-sm text-muted-foreground">{post.role}</p>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-xs text-gray-400">{post.timestamp}</span>
-                          <button className="text-gray-400 hover:text-gray-600"><HiOutlineEllipsisHorizontal className="w-5 h-5" /></button>
+                          <span className="text-xs text-muted-foreground">{formatTimestamp(post.createdAt)}</span>
+                          
+                          {/* Edit/Delete dropdown for post owner */}
+                          {post.authorId === currentUser.uid && (
+                            <div className="relative group">
+                              <button className="text-muted-foreground hover:text-foreground">
+                                <HiOutlineEllipsisHorizontal className="w-5 h-5" />
+                              </button>
+                              <div className="absolute right-0 top-6 bg-card border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[120px]">
+                                <button
+                                  onClick={() => startEditing(post)}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center space-x-2"
+                                >
+                                  <HiOutlinePencil className="w-4 h-4" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePost(post.id)}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted text-destructive flex items-center space-x-2"
+                                >
+                                  <HiOutlineTrash className="w-4 h-4" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
                       {post.repostOf && (
-                        <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <div className="mt-3 bg-muted border border-border rounded-lg p-3">
                           <div className="flex items-start space-x-3">
-                            <div className={`h-8 w-8 rounded-full ${colors.primary} flex items-center justify-center text-white text-xs font-bold`}>
+                            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
                               {post.repostOf.author.charAt(0)}
                             </div>
                             <div>
                               <h5 className="font-semibold text-sm">{post.repostOf.author}</h5>
-                              <p className="text-xs text-gray-500">{post.repostOf.role}</p>
-                              <p className="text-xs text-gray-400 mt-1">{post.repostOf.timestamp}</p>
+                              <p className="text-xs text-muted-foreground">{post.repostOf.role}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{formatTimestamp(post.repostOf.timestamp)}</p>
                             </div>
                           </div>
-                          <p className="mt-2 text-gray-800 text-sm">{post.repostOf.content}</p>
+                          <p className="mt-2 text-foreground text-sm">{post.repostOf.content}</p>
                           {post.repostOf.attachment && (
                             <div className="mt-2">
                               {post.repostOf.attachment.type && post.repostOf.attachment.type.startsWith('image') ? (
@@ -401,7 +522,7 @@ export default function CommunityPage() {
                                 <a 
                                   href={post.repostOf.attachment.url} 
                                   download={post.repostOf.attachment.name} 
-                                  className="inline-flex items-center text-red-600 hover:text-red-800 text-sm"
+                                  className="inline-flex items-center text-primary hover:text-primary/80 text-sm"
                                 >
                                   <HiOutlinePaperClip className="w-4 h-4 mr-1" /> {post.repostOf.attachment.name}
                                 </a>
@@ -413,7 +534,32 @@ export default function CommunityPage() {
                       
                       {!post.repostOf && (
                         <>
-                          <p className="mt-3 text-gray-800">{post.content}</p>
+                          {editingPost === post.id ? (
+                            <div className="mt-3">
+                              <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full border border-input rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
+                                rows={3}
+                              />
+                              <div className="flex space-x-2 mt-2">
+                                <button
+                                  onClick={() => handleEditPost(post.id)}
+                                  className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/80"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={cancelEditing}
+                                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="mt-3 text-foreground">{post.content}</p>
+                          )}
                           {post.attachment && (
                             <div className="mt-3">
                               {post.attachment.type && post.attachment.type.startsWith('image') ? (
@@ -426,7 +572,7 @@ export default function CommunityPage() {
                                 <a 
                                   href={post.attachment.url} 
                                   download={post.attachment.name} 
-                                  className="inline-flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200 text-red-600 hover:text-red-800"
+                                  className="inline-flex items-center p-3 bg-muted rounded-lg border border-border text-primary hover:text-primary/80"
                                 >
                                   <HiOutlinePaperClip className="w-4 h-4 mr-2" />
                                   <span className="max-w-xs truncate">{post.attachment.name}</span>
@@ -440,23 +586,23 @@ export default function CommunityPage() {
                   </div>
                 </div>
                 
-                <div className="border-t border-gray-200 px-4 py-2 flex justify-between">
+                <div className="border-t border-border px-4 py-2 flex justify-between">
                   <button 
                     onClick={() => handleLikePost(post.id)}
-                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg ${post.isLiked ? 'text-red-600 bg-red-50' : 'text-gray-500 hover:bg-gray-100'}`}
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg ${post.isLiked ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted'}`}
                   >
                     <HiOutlineHandThumbUp className="w-5 h-5" />
-                    <span>Like ({post.likes})</span>
+                    <span>Like ({post.likes || 0})</span>
                   </button>
                   <button 
-                    className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
+                    className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-muted"
                     onClick={() => setOpenComments(openComments === post.id ? null : post.id)}
                   >
                     <HiOutlineChatBubbleLeftRight className="w-5 h-5" />
-                    <span>Comment ({Array.isArray(post.comments) ? post.comments.length : post.comments})</span>
+                    <span>Comment ({Array.isArray(post.comments) ? post.comments.length : 0})</span>
                   </button>
                   <button 
-                    className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
+                    className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-muted"
                     onClick={() => handleRepost(post)}
                   >
                     <HiOutlineArrowPath className="w-5 h-5" />
@@ -465,24 +611,24 @@ export default function CommunityPage() {
                 </div>
                 
                 {openComments === post.id && (
-                  <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
-                    <h5 className="font-semibold mb-3 text-red-800">Comments</h5>
+                  <div className="bg-muted px-4 py-3 border-t border-border">
+                    <h5 className="font-semibold mb-3 text-primary">Comments</h5>
                     {Array.isArray(post.comments) && post.comments.length > 0 ? (
                       <ul className="space-y-3 mb-4">
                         {post.comments.map((comment, idx) => (
                           <li key={idx} className="flex items-start space-x-2">
-                            <div className={`h-8 w-8 rounded-full ${colors.primaryLight} flex items-center justify-center text-red-800 text-xs font-bold`}>
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
                               {currentUser.avatar.charAt(0)}
                             </div>
-                            <div className="flex-1 bg-white rounded-lg p-3 shadow-sm">
+                            <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
                               <div className="font-medium text-sm">{currentUser.name}</div>
-                              <div className="text-gray-700 text-sm mt-1">{comment}</div>
+                              <div className="text-foreground text-sm mt-1">{comment}</div>
                             </div>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <div className="text-center text-gray-400 text-sm py-4">No comments yet. Be the first to comment!</div>
+                      <div className="text-center text-muted-foreground text-sm py-4">No comments yet. Be the first to comment!</div>
                     )}
                     
                     <form
@@ -492,19 +638,19 @@ export default function CommunityPage() {
                         handleAddComment(post.id, commentInputs[post.id] || '');
                       }}
                     >
-                      <div className={`h-10 w-10 rounded-full ${colors.primaryLight} flex items-center justify-center text-red-800 font-bold flex-shrink-0`}>
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold flex-shrink-0">
                         {currentUser.avatar.charAt(0)}
                       </div>
                       <input
                         type="text"
-                        className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                        className="flex-1 border border-input rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-background"
                         placeholder="Write a comment..."
                         value={commentInputs[post.id] || ''}
                         onChange={e => setCommentInputs(inputs => ({ ...inputs, [post.id]: e.target.value }))}
                       />
                       <button
                         type="submit"
-                        className={`h-10 w-10 rounded-full ${colors.primary} text-white flex items-center justify-center hover:${colors.primaryDark} disabled:opacity-50`}
+                        className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/80 disabled:opacity-50"
                         disabled={!(commentInputs[post.id] && commentInputs[post.id].trim())}
                       >
                         ➔
@@ -518,29 +664,29 @@ export default function CommunityPage() {
         </div>
         
         <aside className="w-full md:w-1/4 space-y-6">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className={`p-4 ${colors.primary} text-white`}>
+          <div className="bg-card rounded-xl shadow-md overflow-hidden">
+            <div className="p-4 bg-primary text-primary-foreground">
               <h3 className="font-bold text-lg">Top Freelancers</h3>
             </div>
             <div className="p-4">
               {filteredFreelancers.length === 0 ? (
-                <div className="text-center text-gray-500 py-4">No freelancers found.</div>
+                <div className="text-center text-muted-foreground py-4">No freelancers found.</div>
               ) : (
                 <ul className="space-y-3">
                   {filteredFreelancers.map((freelancer, index) => (
                     <li 
                       key={freelancer.name} 
-                      className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                      className="flex items-center space-x-3 p-2 hover:bg-muted rounded-lg cursor-pointer transition-colors"
                     >
-                      <div className={`h-10 w-10 rounded-full ${colors.primary} flex items-center justify-center text-white font-bold`}>
+                      <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                         {freelancer.name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{freelancer.name}</div>
-                        <div className="text-sm text-gray-500 truncate">{freelancer.role}</div>
+                        <div className="text-sm text-muted-foreground truncate">{freelancer.role}</div>
                       </div>
                       {index < 3 && (
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${index === 0 ? 'bg-red-100 text-red-800' : index === 1 ? 'bg-gray-100 text-gray-800' : 'bg-amber-100 text-amber-800'}`}>
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${index === 0 ? 'bg-primary/10 text-primary' : index === 1 ? 'bg-muted text-muted-foreground' : 'bg-secondary/10 text-secondary'}`}>
                           {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                         </span>
                       )}
@@ -551,8 +697,8 @@ export default function CommunityPage() {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className={`p-4 ${colors.primary} text-white`}>
+          <div className="bg-card rounded-xl shadow-md overflow-hidden">
+            <div className="p-4 bg-primary text-primary-foreground">
               <h3 className="font-bold text-lg">Trending Hashtags</h3>
             </div>
             <div className="p-4">
@@ -560,7 +706,7 @@ export default function CommunityPage() {
                 {['ITI', 'Freelancing', 'WebDev', 'ReactJS', 'ITIGraduates', 'Coding', 'UXDesign', 'MobileApps', 'TechJobs', 'RemoteWork'].map(tag => (
                   <span 
                     key={tag} 
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 hover:bg-gray-200 cursor-pointer transition-colors"
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 cursor-pointer transition-colors"
                   >
                     #{tag}
                   </span>
@@ -569,26 +715,26 @@ export default function CommunityPage() {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className={`p-4 ${colors.primary} text-white`}>
+          <div className="bg-card rounded-xl shadow-md overflow-hidden">
+            <div className="p-4 bg-primary text-primary-foreground">
               <h3 className="font-bold text-lg">Community Guidelines</h3>
             </div>
             <div className="p-4">
-              <ul className="space-y-2 text-sm text-gray-700">
+              <ul className="space-y-2 text-sm text-foreground">
                 <li className="flex items-start space-x-2">
-                  <HiOutlineCheckCircle className="w-5 h-5 text-red-600" />
+                  <HiOutlineCheckCircle className="w-5 h-5 text-primary" />
                   <span>Be respectful to all members</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <HiOutlineCheckCircle className="w-5 h-5 text-red-600" />
+                  <HiOutlineCheckCircle className="w-5 h-5 text-primary" />
                   <span>Share knowledge and help others</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <HiOutlineCheckCircle className="w-5 h-5 text-red-600" />
+                  <HiOutlineCheckCircle className="w-5 h-5 text-primary" />
                   <span>No spam or self-promotion</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <HiOutlineCheckCircle className="w-5 h-5 text-red-600" />
+                  <HiOutlineCheckCircle className="w-5 h-5 text-primary" />
                   <span>Keep discussions professional</span>
                 </li>
               </ul>
@@ -597,25 +743,25 @@ export default function CommunityPage() {
         </aside>
       </main>
       
-      <footer className={`${colors.primary} text-white py-6 mt-8`}>
+      <footer className="bg-primary text-primary-foreground py-6 mt-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
               <img
                 src="/logo.jpeg"
                 alt="ITI Logo"
-                className="h-10 w-10 object-contain rounded-full border border-gray-200 bg-white mr-2"
+                className="h-10 w-10 object-contain rounded-full border border-border bg-card mr-2"
               />
                   <h1 className="text-2xl font-bold">ITI Freelancers Community</h1>
             </div>
             <div className="flex space-x-6">
-              <a href="#" className="hover:text-red-200 transition-colors">About</a>
-              <a href="#" className="hover:text-red-200 transition-colors">Privacy</a>
-              <a href="#" className="hover:text-red-200 transition-colors">Terms</a>
-              <a href="#" className="hover:text-red-200 transition-colors">Contact</a>
+              <a href="#" className="hover:text-primary-foreground/80 transition-colors">About</a>
+              <a href="#" className="hover:text-primary-foreground/80 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-primary-foreground/80 transition-colors">Terms</a>
+              <a href="#" className="hover:text-primary-foreground/80 transition-colors">Contact</a>
             </div>
           </div>
-          <div className="mt-4 text-center md:text-left text-sm text-red-100">
+          <div className="mt-4 text-center md:text-left text-sm text-primary-foreground/80">
             © {new Date().getFullYear()} ITI Freelancers Community. All rights reserved.
           </div>
         </div>

@@ -10,6 +10,8 @@ import {
   deleteDoc,
   serverTimestamp,
   onSnapshot,
+  query,
+  orderBy,
 } from "firebase/firestore";
 
 // islam mohamed
@@ -81,3 +83,150 @@ export const subscribeToUsers = (callback) => {
 };
 
 // -------------------------------------------------------------------------------------------------------------------------------------------
+
+// Posts CRUD Operations
+
+// Create a new post
+export const createPost = async (postData) => {
+  try {
+    const postRef = await addDoc(collection(db, "posts"), {
+      ...postData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { id: postRef.id, ...postData };
+  } catch (error) {
+    console.error("Error creating post:", error);
+    throw error;
+  }
+};
+
+// Get all posts
+export const getAllPosts = async () => {
+  try {
+    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      let createdAt = null;
+      let updatedAt = null;
+
+      if (data.createdAt?.toDate) {
+        createdAt = data.createdAt.toDate().toISOString();
+      } else if (typeof data.createdAt === "string") {
+        createdAt = data.createdAt;
+      }
+
+      if (data.updatedAt?.toDate) {
+        updatedAt = data.updatedAt.toDate().toISOString();
+      } else if (typeof data.updatedAt === "string") {
+        updatedAt = data.updatedAt;
+      }
+
+      return {
+        id: doc.id,
+        ...data,
+        createdAt,
+        updatedAt,
+      };
+    });
+  } catch (error) {
+    console.error("Error getting posts:", error);
+    throw error;
+  }
+};
+
+// Get a single post by ID
+export const getPost = async (postId) => {
+  try {
+    const postRef = doc(db, "posts", postId);
+    const snapshot = await getDoc(postRef);
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      let createdAt = null;
+      let updatedAt = null;
+
+      if (data.createdAt?.toDate) {
+        createdAt = data.createdAt.toDate().toISOString();
+      } else if (typeof data.createdAt === "string") {
+        createdAt = data.createdAt;
+      }
+
+      if (data.updatedAt?.toDate) {
+        updatedAt = data.updatedAt.toDate().toISOString();
+      } else if (typeof data.updatedAt === "string") {
+        updatedAt = data.updatedAt;
+      }
+
+      return {
+        id: snapshot.id,
+        ...data,
+        createdAt,
+        updatedAt,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting post:", error);
+    throw error;
+  }
+};
+
+// Update a post
+export const updatePost = async (postId, updateData) => {
+  try {
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, {
+      ...updateData,
+      updatedAt: serverTimestamp(),
+    });
+    return { id: postId, ...updateData };
+  } catch (error) {
+    console.error("Error updating post:", error);
+    throw error;
+  }
+};
+
+// Delete a post
+export const deletePost = async (postId) => {
+  try {
+    await deleteDoc(doc(db, "posts", postId));
+    return { id: postId };
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    throw error;
+  }
+};
+
+// Subscribe to posts changes (real-time updates)
+export const subscribeToPosts = (callback) => {
+  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const posts = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      let createdAt = null;
+      let updatedAt = null;
+
+      if (data.createdAt?.toDate) {
+        createdAt = data.createdAt.toDate().toISOString();
+      } else if (typeof data.createdAt === "string") {
+        createdAt = data.createdAt;
+      }
+
+      if (data.updatedAt?.toDate) {
+        updatedAt = data.updatedAt.toDate().toISOString();
+      } else if (typeof data.updatedAt === "string") {
+        updatedAt = data.updatedAt;
+      }
+
+      return {
+        id: doc.id,
+        ...data,
+        createdAt,
+        updatedAt,
+      };
+    });
+
+    callback(posts);
+  });
+};
