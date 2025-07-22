@@ -3,7 +3,12 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import NextProvider from "@/components/providers/nextProvider";
 import { UsersProvider } from "@/context/usersContext";
-import { getAllUsers } from "@/services/firebase";
+import { getAllUsers, getUser } from "@/services/firebase";
+import { authOptions } from "@/lib/nextAuth";
+import { getServerSession } from "next-auth";
+import { UserProvider } from "@/context/userContext";
+import { redirect } from "next/navigation";
+// import { getPath } from "recharts/types/shape/Curve";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,9 +26,6 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const users = await getAllUsers();
-  console.log(users);
-
   return (
     <html lang="en">
       <body
@@ -31,11 +33,10 @@ export default async function RootLayout({ children }) {
         cz-shortcut-listen="true"
         data-gr-ext-installed=""
         data-new-gr-c-s-check-loaded="14.1243.0"
+        ata-new-gr-c-s-check-loaded="14.1245.0"
       >
         <Toaster />
-        <NextProvider>
-          <UsersProvider initialUsers={users}>{children}</UsersProvider>
-        </NextProvider>
+        <NextProvider>{children}</NextProvider>
       </body>
     </html>
   );

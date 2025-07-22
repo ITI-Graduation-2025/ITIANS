@@ -31,6 +31,7 @@ export const authOptions = {
           return {
             id: userCredential.user.uid,
             email: userCredential.user.email,
+            verificationStatus: userData?.verificationStatus,
             name: userData?.name || userCredential.user.displayName,
             role: userData?.role || "freelancer",
           };
@@ -54,6 +55,7 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
+        token.verificationStatus = user.verificationStatus;
       }
       return token;
     },
@@ -61,6 +63,7 @@ export const authOptions = {
       if (session.user) {
         session.user.id = token.sub;
         session.user.role = token.role;
+        session.user.verificationStatus = token.verificationStatus;
       }
       return session;
     },

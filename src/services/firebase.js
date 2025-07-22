@@ -33,6 +33,11 @@ export const getUser = async (uid) => {
   return "User not found";
 };
 
+//  updateUser
+export const updateUser = async (uid, data) => {
+  await updateDoc(doc(db, "users", uid), data);
+};
+
 // getAllUsers;
 export const getAllUsers = async () => {
   const snapshot = await getDocs(collection(db, "users"));

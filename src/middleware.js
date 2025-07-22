@@ -1,6 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse, NextRequest } from "next/server";
 import { withAuth } from "next-auth/middleware";
+import { getAllUsers } from "./services/firebase";
 // This function can be marked `async` if using `await` inside
 
 export default withAuth(
@@ -15,6 +16,17 @@ export default withAuth(
     // دي بترجه ترو لو انا ف البروفابل او اي باث بيبدا ب بروفايل
     if (!isAuth && isProtectedRoute) {
       return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const token = await getToken({ req: request });
+    const userStatus = token?.verificationStatus;
+
+    if (userStatus === "Pending") {
+      // return NextResponse.redirect(new URL("/pending", request.url));
+    }
+
+    if (userStatus === "Rejected" || userStatus === "Suspended") {
+      return NextResponse.redirect(new URL("/rejected", request.url));
     }
 
     if (isAuthRoute && isAuth) {
@@ -43,5 +55,8 @@ export const config = {
     "/mentor",
     "/",
     "/profile",
+    "/pending",
+    "/rejected",
+    "/mentorData",
   ],
 };

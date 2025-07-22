@@ -18,6 +18,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebase";
 import { toast } from "sonner";
 import { setUser } from "@/services/firebase";
+import { signIn } from "next-auth/react";
 
 export default function RegisterForm() {
   const {
@@ -93,8 +94,22 @@ export default function RegisterForm() {
         createdAt: new Date().toISOString(),
       });
 
+      const signInResponse = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+      });
+
+      if (signInResponse?.error) {
+        throw new Error("Failed to sign in after registration");
+      }
+
       toast.success("Account created successfully");
-      router.push("/login");
+      if (data.role === "mentor") {
+        router.push("/mentorData");
+      } else {
+        router.push("/login");
+      }
     } catch (error) {
       let errorMessage = "Something went wrong. Please try again.";
       if (error.code === "auth/email-already-in-use") {
@@ -103,6 +118,8 @@ export default function RegisterForm() {
         errorMessage = "Invalid email address.";
       } else if (error.code === "auth/weak-password") {
         errorMessage = "Password is too weak.";
+      } else {
+        errorMessage = error.message;
       }
       toast.error(errorMessage);
       console.error("Registration error:", error);
@@ -166,7 +183,6 @@ export default function RegisterForm() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="freelancer">Freelancer</SelectItem>
-              <SelectItem value="company">Company</SelectItem>
               <SelectItem value="mentor">Mentor</SelectItem>
             </SelectContent>
           </Select>

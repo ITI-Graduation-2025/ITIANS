@@ -120,18 +120,18 @@ export default function UsersPage() {
     );
   };
 
-  // const handleUnsuspend = (userId) => {
-  //   setUsers(
-  //     users.map((user) =>
-  //       user.id === userId
-  //         ? (user.verificationStatus === "Approved" ?? {
-  //             ...user,
-  //             verificationStatus: "Suspended",
-  //           })
-  //         : user,
-  //     ),
-  //   );
-  // };
+  const handleUnsuspend = (userId) => {
+    setUsers(
+      users.map((user) =>
+        user.id === userId
+          ? (user.verificationStatus === "Approved" ?? {
+              ...user,
+              verificationStatus: "Suspended",
+            })
+          : user,
+      ),
+    );
+  };
 
   const handleViewProfile = (userRole) => {
     switch (userRole) {
