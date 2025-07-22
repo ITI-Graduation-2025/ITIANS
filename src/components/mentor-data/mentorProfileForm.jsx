@@ -141,7 +141,7 @@ export default function MentorProfileForm({
         await refetchUser(); // ✅ تحديث البيانات في الكونتكست
         toast.success("Profile updated successfully");
       } else {
-        await setUser(uid, data);
+        await updateUser(uid, data);
         toast.success("Profile created successfully");
       }
 

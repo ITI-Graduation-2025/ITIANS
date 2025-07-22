@@ -419,7 +419,7 @@ export default function ProfessionalInfoStep({ form }) {
         {linkFields.map((field, index) => (
           <div
             key={field.id}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-11"
           >
             <Controller
               name={`links.${index}.platform`}
@@ -466,7 +466,7 @@ export default function ProfessionalInfoStep({ form }) {
                     className="mt-1"
                   />
                   {errors.links?.[index]?.url && (
-                    <p className="text-sm text-destructive absolute bottom-[-20px] animate-in fade-in duration-200">
+                    <p className="text-sm text-destructive absolute bottom-[-40px] animate-in fade-in duration-200">
                       {errors.links[index].url.message}
                     </p>
                   )}

@@ -33,7 +33,6 @@ export default async function RootLayout({ children }) {
         cz-shortcut-listen="true"
         data-gr-ext-installed=""
         data-new-gr-c-s-check-loaded="14.1243.0"
-        ata-new-gr-c-s-check-loaded="14.1245.0"
       >
         <Toaster />
         <NextProvider>{children}</NextProvider>

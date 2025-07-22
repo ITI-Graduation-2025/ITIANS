@@ -8,7 +8,7 @@ import { authOptions } from "@/lib/nextAuth";
 export default async function Layout({ children }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    redirect("/login");
+    // redirect("/login");
   }
   const user = await getUser(session.user.id);
   if (!user) {
