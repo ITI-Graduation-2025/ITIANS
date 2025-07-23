@@ -12,82 +12,59 @@ import {
   FaBriefcase,
   FaDollarSign,
 } from "react-icons/fa";
+import { useUserContext } from "@/context/userContext";
+import { useSession } from "next-auth/react";
+import { updateUser } from "@/services/firebase";
+import { useRef } from "react";
 
 export default function Profile() {
+  const { user, refetchUser } = useUserContext();
+  const { data: session } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const fileInputRef = useRef();
 
-  const [aboutValue, setAboutValue] = useState(
-    "Passionate web developer skilled in React, TailwindCSS and modern web technologies."
-  );
-  const [educationValue, setEducationValue] = useState({
-    university: "ITI",
-    major: "Web UI",
-    graduationYear: 2025,
-  });
-  const [rateValue, setRateValue] = useState("$20/hr");
-  const [hoursValue, setHoursValue] = useState("30 hours/week");
-  const [languagesValue, setLanguagesValue] = useState(["English", "Arabic"]);
-  const [linksValue, setLinksValue] = useState({
-    github: "https://github.com/jihan",
-    linkedin: "https://linkedin.com/in/jihan",
-  });
-  const [certificatesValue, setCertificatesValue] = useState([
-    { title: "ITI Graduation Certificate", year: 2025 },
-  ]);
+  if (!user) {
+    return <div className="text-center mt-10">Loading profile...</div>;
+  }
 
-  const [completedJobs, setCompletedJobs] = useState([
-    {
-      role: "Frontend Developer",
-      company: "Freelancer",
-      date: "Jan 2024 - Mar 2024",
-      details: "Built responsive UI for a client project.",
-      price: "$500",
-      status: "completed",
-    },
-  ]);
+  const resumeUrl = user.resumeUrl || "";
+  const certificates = user.certificates || [];
+  const isOwner = session?.user?.id === user.id;
 
-  const [inProgressJobs, setInProgressJobs] = useState([
-    {
-      role: "Full Stack Developer",
-      company: "Freelancer",
-      date: "Apr 2024 - Present",
-      details: "Working on a MERN stack web app.",
-      price: "$1200",
-      expectedEnd: "Jul 2024",
-      status: "inProgress",
-    },
-  ]);
+  // Resume upload handler
+  async function handleResumeUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    // For demo: just store file as base64 in Firestore (in real app, upload to storage and save URL)
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      await updateUser(user.id, { resumeUrl: reader.result });
+      await refetchUser();
+    };
+    reader.readAsDataURL(file);
+  }
 
-  const [editingJob, setEditingJob] = useState({ tab: "completed", index: null });
+  async function handleResumeDelete() {
+    await updateUser(user.id, { resumeUrl: "" });
+    await refetchUser();
+  }
 
-  const trustedCertificates = [
-    "ITI Graduation Certificate",
-    "Udemy React Course",
-    "Coursera Fullstack Specialization",
-    "Harvard CS50",
-  ];
-
-  const student = {
-    fullName: "Jihan Mohamed",
-    email: "jihan@example.com",
-    profileImage: "https://i.pravatar.cc/100?img=5",
-  };
-
-  const handleSave = () => setIsModalOpen(null);
-
-  const handleEditJob = (tab, index) => {
-    setEditingJob({ tab, index });
-    setIsModalOpen("work");
-  };
-
-  const handleDeleteJob = (tab, index) => {
-    if (tab === "completed") {
-      setCompletedJobs(completedJobs.filter((_, i) => i !== index));
-    } else {
-      setInProgressJobs(inProgressJobs.filter((_, i) => i !== index));
-    }
-  };
+  // Dynamic fields from user object
+  const profileImage = user.profileImage || "https://i.pravatar.cc/100?img=5";
+  const fullName = user.name || user.fullName || "No Name";
+  const email = user.email || "No Email";
+  const jobTitle = user.jobTitle || "Freelancer";
+  const education = user.education || {};
+  const mainTrack = user.mainTrack || "";
+  const skills = user.skills || [];
+  const finishedJobs = user.finishedJobs || [];
+  const currentJob = user.currentJob;
+  const linkedIn = user.linkedIn || "";
+  const github = user.github || "";
+  const bio = user.bio || "";
+  const status = user.status || user.verificationStatus || "";
+  const rating = user.rating || null;
 
   return (
     <div className="min-h-screen font-sans bg-gray-50">
@@ -112,14 +89,14 @@ export default function Profile() {
         </div>
         <div className="flex items-center gap-2 relative">
           <img
-            src={student.profileImage}
-            alt={student.fullName}
+            src={profileImage}
+            alt={fullName}
             className="w-8 h-8 rounded-full cursor-pointer"
             onClick={() => setShowDropdown(!showDropdown)}
           />
           <div>
-            <p className="text-sm font-medium">{student.fullName}</p>
-            <p className="text-xs text-gray-500">{student.email}</p>
+            <p className="text-sm font-medium">{fullName}</p>
+            <p className="text-xs text-gray-500">{email}</p>
           </div>
 
           {showDropdown && (
@@ -136,147 +113,158 @@ export default function Profile() {
         <div className="bg-white rounded-lg shadow-sm p-4 relative">
           <div className="flex items-center gap-4">
             <img
-              src={student.profileImage}
-              alt={student.fullName}
+              src={profileImage}
+              alt={fullName}
               className="w-20 h-20 rounded-full border-2 border-gray-200 shadow-sm"
             />
             <div>
               <h1 className="text-xl font-bold text-[#B71C1C]">
-                {student.fullName}
+                {fullName}
               </h1>
-              <p className="text-black text-sm">Freelancer</p>
+              <p className="text-black text-sm">{jobTitle}</p>
               <p className="text-black flex items-center gap-1 text-sm">
-                <FaEnvelope /> {student.email}
+                <FaEnvelope /> {email}
               </p>
+              {status && (
+                <p className="text-xs text-gray-500 mt-1">Status: {status}</p>
+              )}
+              {rating && (
+                <p className="text-xs text-gray-500 mt-1">Rating: {rating}</p>
+              )}
             </div>
           </div>
 
           <div className="mt-4 flex justify-between text-center">
             <div>
-              <p className="text-xs text-gray-500">Total Earnings</p>
-              <p className="text-base font-semibold text-[#B71C1C]">$1200</p>
+              <p className="text-xs text-gray-500">Main Track</p>
+              <p className="text-base font-semibold text-[#B71C1C]">{mainTrack}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Total Jobs</p>
-              <p className="text-base font-semibold text-[#B71C1C]">8</p>
+              <p className="text-xs text-gray-500">Skills</p>
+              <p className="text-base font-semibold text-[#B71C1C]">
+                {skills.length ? skills.map(s => s.value || s).join(", ") : "-"}
+              </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Total Hours</p>
-              <p className="text-base font-semibold text-[#B71C1C]">250</p>
+              <p className="text-xs text-gray-500">Current Job</p>
+              <p className="text-base font-semibold text-[#B71C1C]">
+                {typeof currentJob === "string" && currentJob ? currentJob : "-"}
+              </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
             <ProfileItem
               title="About Me"
-              value={aboutValue}
-              onEdit={() => setIsModalOpen("about")}
+              value={bio}
+              onEdit={isOwner ? () => setIsModalOpen("about") : undefined}
+              editable={isOwner}
             />
             <ProfileItem
               title="Education"
-              value={`${educationValue.university} - ${educationValue.major} (${educationValue.graduationYear})`}
-              onEdit={() => setIsModalOpen("education")}
+              value={education.school ? `${education.school} - ${education.degree} (${education.year})` : "-"}
+              onEdit={isOwner ? () => setIsModalOpen("education") : undefined}
+              editable={isOwner}
             />
             <ProfileItem
-              title="Hourly Rate"
-              value={rateValue}
-              onEdit={() => setIsModalOpen("rate")}
+              title="LinkedIn"
+              value={linkedIn ? <a href={linkedIn} target="_blank" rel="noreferrer">{linkedIn}</a> : "-"}
+              onEdit={isOwner ? () => setIsModalOpen("links") : undefined}
+              editable={isOwner}
             />
             <ProfileItem
-              title="Hours/Week"
-              value={hoursValue}
-              onEdit={() => setIsModalOpen("hours")}
+              title="GitHub"
+              value={github ? <a href={github} target="_blank" rel="noreferrer">{github}</a> : "-"}
+              onEdit={isOwner ? () => setIsModalOpen("links") : undefined}
+              editable={isOwner}
             />
-            <ProfileItem
-              title="Languages"
-              value={languagesValue.join(", ")}
-              onEdit={() => setIsModalOpen("languages")}
-            />
-            <div>
-              <p className="text-gray-500">Links</p>
-              <div className="flex gap-3 text-[#B71C1C] text-lg mt-1">
-                <a href={linksValue.github} target="_blank" rel="noreferrer">
-                  <FaGithub />
-                </a>
-                <a href={linksValue.linkedin} target="_blank" rel="noreferrer">
-                  <FaLinkedin />
-                </a>
-                <button
-                  className="ml-auto text-gray-400 hover:text-[#B71C1C] text-base"
-                  onClick={() => setIsModalOpen("links")}
-                >
-                  <FiEdit />
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
+        {/* Resume Section */}
+        <ModernSection
+          icon={<FaBriefcase className="text-[#B71C1C] text-xl" />}
+          title="Resume"
+          value={resumeUrl ? (
+            <div className="flex flex-col gap-2">
+              <a href={resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download Resume</a>
+              {isOwner && (
+                <button onClick={handleResumeDelete} className="text-red-500 underline text-left">Delete Resume</button>
+              )}
+            </div>
+          ) : (
+            isOwner ? (
+              <div>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  ref={fileInputRef}
+                  onChange={handleResumeUpload}
+                  className="mb-2"
+                />
+                <p className="text-xs text-gray-500">Upload your resume (PDF, DOCX)</p>
+              </div>
+            ) : <span>No resume uploaded</span>
+          )}
+          editable={isOwner}
+        />
+
+        {/* Certificates Section */}
         <ModernSection
           icon={<FaCertificate className="text-[#B71C1C] text-xl" />}
           title="Certificates"
-          value={certificatesValue.map((c, i) => (
+          value={certificates.length ? certificates.map((c, i) => (
             <div key={i} className="text-sm">
-              {c.title} ({c.year})
+              {c.title} {c.year && `(${c.year})`}
             </div>
-          ))}
-          onEdit={() => setIsModalOpen("certificates")}
+          )) : <div className="text-sm">No certificates</div>}
+          onEdit={isOwner ? () => setIsModalOpen("certificates") : undefined}
+          editable={isOwner}
         />
 
-        <WorkHistorySection
-          completedJobs={completedJobs}
-          inProgressJobs={inProgressJobs}
-          onEdit={handleEditJob}
-          onDeleteJob={handleDeleteJob}
+        {/* Finished Jobs Section */}
+        <ModernSection
+          icon={<FaBriefcase className="text-[#B71C1C] text-xl" />}
+          title="Finished Jobs"
+          value={finishedJobs.length ? finishedJobs.map((job, i) => (
+            <div key={i} className="text-sm">
+              {job.role} at {job.company} ({job.date})<br />
+              {job.details} - {job.price}
+            </div>
+          )) : <div className="text-sm">No finished jobs</div>}
+          onEdit={isOwner ? () => setIsModalOpen("work") : undefined}
+          editable={isOwner}
         />
       </main>
-
       {isModalOpen && (
-        <Modal
+        <EditModal
           type={isModalOpen}
           onClose={() => setIsModalOpen(null)}
-          onSave={handleSave}
-          aboutValue={aboutValue}
-          setAboutValue={setAboutValue}
-          educationValue={educationValue}
-          setEducationValue={setEducationValue}
-          rateValue={rateValue}
-          setRateValue={setRateValue}
-          hoursValue={hoursValue}
-          setHoursValue={setHoursValue}
-          languagesValue={languagesValue}
-          setLanguagesValue={setLanguagesValue}
-          linksValue={linksValue}
-          setLinksValue={setLinksValue}
-          certificatesValue={certificatesValue}
-          setCertificatesValue={setCertificatesValue}
-          trustedCertificates={trustedCertificates}
-          completedJobs={completedJobs}
-          setCompletedJobs={setCompletedJobs}
-          inProgressJobs={inProgressJobs}
-          setInProgressJobs={setInProgressJobs}
-          editingJob={editingJob}
+          user={user}
+          refetchUser={refetchUser}
         />
       )}
     </div>
   );
 }
 
-function ProfileItem({ title, value, onEdit }) {
+function ProfileItem({ title, value, onEdit, editable }) {
   return (
     <div>
       <p className="text-[#B71C1C] font-medium">{title}</p>
       <p className="text-black flex justify-between items-center">
         {value}
-        <button className="text-gray-400 hover:text-[#B71C1C]" onClick={onEdit}>
-          <FiEdit />
-        </button>
+        {editable && onEdit && (
+          <button className="text-gray-400 hover:text-[#B71C1C]" onClick={onEdit}>
+            <FiEdit />
+          </button>
+        )}
       </p>
     </div>
   );
 }
 
-function ModernSection({ icon, title, value, onEdit }) {
+function ModernSection({ icon, title, value, onEdit, editable }) {
   return (
     <div className="py-6 border-b border-gray-300">
       <div className="flex justify-between items-start">
@@ -284,9 +272,11 @@ function ModernSection({ icon, title, value, onEdit }) {
           {icon}
           <h2 className="text-lg font-semibold text-[#B71C1C]">{title}</h2>
         </div>
-        <button className="text-gray-400 hover:text-[#B71C1C]" onClick={onEdit}>
-          <FiEdit />
-        </button>
+        {editable && onEdit && (
+          <button className="text-gray-400 hover:text-[#B71C1C]" onClick={onEdit}>
+            <FiEdit />
+          </button>
+        )}
       </div>
       <div className="mt-2 text-black">{value}</div>
     </div>
@@ -361,313 +351,122 @@ function WorkHistorySection({ completedJobs, inProgressJobs }) {
 }
 
 
-function Modal(props) {
-  const {
-    type,
-    onClose,
-    onSave,
-    aboutValue,
-    setAboutValue,
-    educationValue,
-    setEducationValue,
-    rateValue,
-    setRateValue,
-    hoursValue,
-    setHoursValue,
-    languagesValue,
-    setLanguagesValue,
-    linksValue,
-    setLinksValue,
-    certificatesValue,
-    setCertificatesValue,
-    trustedCertificates,
-    completedJobs = [],
-    setCompletedJobs = () => {},
-    inProgressJobs = [],
-    setInProgressJobs = () => {},
-    editingJob = { tab: "completed", index: null },
-  } = props;
-
+function EditModal({ type, onClose, user, refetchUser }) {
   const [tempValue, setTempValue] = React.useState("");
+  useEffect(() => {
+    if (type === "about") setTempValue(user.bio || "");
+    else if (type === "links") setTempValue({ github: user.github || "", linkedIn: user.linkedIn || "" });
+    else if (type === "education") setTempValue(user.education || { school: "", degree: "", year: "" });
+    else if (type === "work") setTempValue(user.finishedJobs || []);
+    else if (type === "certificates") setTempValue(user.certificates || []);
+  }, [type, user]);
 
-  React.useEffect(() => {
-    if (type === "certificates") setTempValue(certificatesValue[0]?.title || "");
-    else if (type === "links") setTempValue({ ...linksValue });
-    else if (type === "languages") setTempValue(languagesValue.join(", "));
-    else if (type === "education") setTempValue({ ...educationValue });
-    else if (type === "hours") setTempValue(hoursValue);
-    else if (type === "rate") setTempValue(rateValue);
-    else if (type === "about") setTempValue(aboutValue);
-    else if (type === "work") {
-      if (editingJob?.index !== null) {
-        const job =
-          editingJob.tab === "completed"
-            ? completedJobs[editingJob.index]
-            : inProgressJobs[editingJob.index];
-        setTempValue({ ...job });
-      } else {
-        setTempValue({
-          role: "",
-          company: "",
-          date: "",
-          details: "",
-          price: "",
-          expectedEnd: "",
-          status: editingJob?.tab || "completed",
-        });
-      }
+  const handleSave = async () => {
+    if (type === "about") {
+      await updateUser(user.id, { bio: tempValue });
+    } else if (type === "links") {
+      await updateUser(user.id, { github: tempValue.github, linkedIn: tempValue.linkedIn });
+    } else if (type === "education") {
+      await updateUser(user.id, { education: tempValue });
+    } else if (type === "work") {
+      await updateUser(user.id, { finishedJobs: tempValue });
+    } else if (type === "certificates") {
+      await updateUser(user.id, { certificates: tempValue });
     }
-  }, [
-    type,
-    editingJob,
-    certificatesValue,
-    linksValue,
-    languagesValue,
-    educationValue,
-    hoursValue,
-    rateValue,
-    aboutValue,
-    completedJobs,
-    inProgressJobs,
-  ]);
-
-  const save = () => {
-    switch (type) {
-      case "about":
-        setAboutValue(tempValue);
-        break;
-      case "education":
-        setEducationValue(tempValue);
-        break;
-      case "rate":
-        setRateValue(tempValue);
-        break;
-      case "hours":
-        setHoursValue(tempValue);
-        break;
-      case "languages":
-        setLanguagesValue(tempValue.split(",").map((l) => l.trim()));
-        break;
-      case "links":
-        setLinksValue(tempValue);
-        break;
-      case "certificates":
-        setCertificatesValue([
-          { title: tempValue, year: new Date().getFullYear() },
-        ]);
-        break;
-      case "work":
-        if (editingJob.tab === "completed") {
-          const updated = [...completedJobs];
-          if (editingJob.index !== null) {
-            updated[editingJob.index] = tempValue;
-          } else {
-            updated.push(tempValue);
-          }
-          setCompletedJobs(updated);
-        } else {
-          const updated = [...inProgressJobs];
-          if (editingJob.index !== null) {
-            updated[editingJob.index] = tempValue;
-          } else {
-            updated.push(tempValue);
-          }
-          setInProgressJobs(updated);
-        }
-        break;
-      default:
-        break;
-    }
-    onSave();
+    await refetchUser();
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-1/3 p-6 space-y-4 max-h-[90vh] overflow-auto">
         <h2 className="text-lg font-semibold capitalize">Edit {type}</h2>
-
-        {type === "about" ? (
-          <div className="space-y-2">
-            <label
-              htmlFor="aboutText"
-              className="text-sm font-medium text-gray-700"
-            >
-              About You
-            </label>
-            <p className="text-xs text-gray-500">
-              Describe your skills, experience, and what you offer to clients.
-            </p>
-
-            <textarea
-              id="aboutText"
-              rows="5"
-              className="w-full border px-3 py-2 rounded"
-              placeholder="e.g., I'm a frontend developer with 3+ years of experience building responsive web apps..."
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
-            />
-
-            <p className="text-xs text-gray-500 mt-1">
-              This is the first thing clients will see on your profile.
-            </p>
-          </div>
-        ) : type === "rate" ? (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Your Profile Hourly Rate
-            </label>
-            <p className="text-xs text-gray-500">
-              How much you’ll charge clients per hour for your work.
-            </p>
-            <div className="relative mt-1">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                $
-              </span>
-              <input
-                type="number"
-                min="1"
-                className="w-full border px-6 py-2 rounded text-right"
-                value={tempValue.replace("$", "").replace("/hr", "")}
-                onChange={(e) =>
-                  setTempValue(`$${e.target.value}/hr`)
-                }
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              This is the rate clients will see on your profile and in search
-              results.
-            </p>
-          </div>
-        ) : type === "hours" ? (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Your Availability
-            </label>
-            <p className="text-xs text-gray-500">
-              How many hours per week are you available for work?
-            </p>
-
-            <select
-              className="w-full border px-3 py-2 rounded"
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
-            >
-              <option>As Needed — Open to Offers</option>
-              <option>Less than 30 hrs/week</option>
-              <option>More than 30 hrs/week</option>
-            </select>
-
-            <p className="text-xs text-gray-500 mt-1">
-              You can update your availability anytime from your profile.
-            </p>
-          </div>
-        ) : type === "languages" ? (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Languages You Speak
-            </label>
-            <p className="text-xs text-gray-500">
-              Add the languages you can communicate in with clients.
-            </p>
-
-            <input
-              type="text"
-              className="w-full border px-3 py-2 rounded"
-              placeholder="e.g., English, Arabic"
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
-            />
-
-            <p className="text-xs text-gray-500 mt-1">
-              Separate multiple languages with commas.
-            </p>
-          </div>
-        ) : type === "certificates" ? (
-          <CertificateSelect
+        {type === "about" && (
+          <textarea
+            className="w-full border px-3 py-2 rounded"
+            rows={5}
             value={tempValue}
-            onChange={setTempValue}
-            options={trustedCertificates}
+            onChange={e => setTempValue(e.target.value)}
           />
-        ) : type === "links" ? (
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Your Online Profiles
-            </label>
-            <p className="text-xs text-gray-500">
-              Share links to your professional online profiles.
-            </p>
-
+        )}
+        {type === "links" && (
+          <>
             <input
               type="url"
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border px-3 py-2 rounded mb-2"
               placeholder="GitHub Profile"
               value={tempValue.github || ""}
-              onChange={(e) =>
-                setTempValue({ ...tempValue, github: e.target.value })
-              }
+              onChange={e => setTempValue({ ...tempValue, github: e.target.value })}
             />
-
             <input
               type="url"
               className="w-full border px-3 py-2 rounded"
               placeholder="LinkedIn Profile"
-              value={tempValue.linkedin || ""}
-              onChange={(e) =>
-                setTempValue({ ...tempValue, linkedin: e.target.value })
-              }
+              value={tempValue.linkedIn || ""}
+              onChange={e => setTempValue({ ...tempValue, linkedIn: e.target.value })}
             />
-
-            <p className="text-xs text-gray-500 mt-1">
-              Clients will be able to view these profiles from your portfolio.
-            </p>
-          </div>
-        ) : type === "education" ? (
-          <div className="space-y-2">
+          </>
+        )}
+        {type === "education" && (
+          <>
             <input
               type="text"
               placeholder="School / University"
-              value={tempValue.university || ""}
-              onChange={(e) =>
-                setTempValue({ ...tempValue, university: e.target.value })
-              }
-              className="w-full border px-3 py-2 rounded"
+              value={tempValue.school || ""}
+              onChange={e => setTempValue({ ...tempValue, school: e.target.value })}
+              className="w-full border px-3 py-2 rounded mb-2"
             />
             <input
               type="text"
               placeholder="Degree / Major"
-              value={tempValue.major || ""}
-              onChange={(e) =>
-                setTempValue({ ...tempValue, major: e.target.value })
-              }
-              className="w-full border px-3 py-2 rounded"
+              value={tempValue.degree || ""}
+              onChange={e => setTempValue({ ...tempValue, degree: e.target.value })}
+              className="w-full border px-3 py-2 rounded mb-2"
             />
             <input
               type="number"
               placeholder="Year of Graduation"
-              value={tempValue.graduationYear || ""}
-              onChange={(e) =>
-                setTempValue({ ...tempValue, graduationYear: e.target.value })
-              }
+              value={tempValue.year || ""}
+              onChange={e => setTempValue({ ...tempValue, year: e.target.value })}
               className="w-full border px-3 py-2 rounded"
             />
-          </div>
-        ) : type === "work" ? (
-          <WorkForm tempValue={tempValue} setTempValue={setTempValue} />
-        ) : null}
-
+          </>
+        )}
+        {type === "certificates" && (
+          <>
+            {(Array.isArray(tempValue) ? tempValue : []).map((c, i) => (
+              <div key={i} className="flex gap-2 mb-2 items-center">
+                <input
+                  type="text"
+                  value={c.title || ""}
+                  onChange={e => {
+                    const arr = [...tempValue];
+                    arr[i] = { ...arr[i], title: e.target.value };
+                    setTempValue(arr);
+                  }}
+                  placeholder="Certificate Title"
+                  className="border px-2 py-1 rounded"
+                />
+                <input
+                  type="number"
+                  value={c.year || ""}
+                  onChange={e => {
+                    const arr = [...tempValue];
+                    arr[i] = { ...arr[i], year: e.target.value };
+                    setTempValue(arr);
+                  }}
+                  placeholder="Year"
+                  className="border px-2 py-1 rounded w-24"
+                />
+                <button onClick={() => setTempValue(tempValue.filter((_, idx) => idx !== i))} className="text-red-500">Delete</button>
+              </div>
+            ))}
+            <button onClick={() => setTempValue([...(tempValue || []), { title: "", year: "" }])} className="text-blue-600 underline">Add Certificate</button>
+          </>
+        )}
         <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border rounded text-sm"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={save}
-            className="px-4 py-2 bg-[#B71C1C] text-white rounded text-sm"
-          >
-            Save
-          </button>
+          <button onClick={onClose} className="px-4 py-2 border rounded text-sm">Cancel</button>
+          <button onClick={handleSave} className="px-4 py-2 bg-[#B71C1C] text-white rounded text-sm">Save</button>
         </div>
       </div>
     </div>

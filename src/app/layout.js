@@ -35,7 +35,9 @@ export default async function RootLayout({ children }) {
         data-new-gr-c-s-check-loaded="14.1245.0"
       >
         <Toaster />
-        <NextProvider>{children}</NextProvider>
+        <NextProvider>
+          <UserProvider>{children}</UserProvider>
+        </NextProvider>
       </body>
     </html>
   );

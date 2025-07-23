@@ -107,6 +107,8 @@ export default function RegisterForm() {
       toast.success("Account created successfully");
       if (data.role === "mentor") {
         router.push("/mentorData");
+      } else if (data.role === "freelancer") {
+        router.push("/completeProfile");
       } else {
         router.push("/login");
       }
