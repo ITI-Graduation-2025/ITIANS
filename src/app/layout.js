@@ -32,7 +32,7 @@ export default async function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased debug-screens`}
         cz-shortcut-listen="true"
         data-gr-ext-installed=""
-        data-new-gr-c-s-check-loaded="14.1243.0"
+        data-new-gr-c-s-check-loaded="14.1245.0"
       >
         <Toaster />
         <NextProvider>{children}</NextProvider>
