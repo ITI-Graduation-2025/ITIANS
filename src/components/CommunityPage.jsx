@@ -1,6 +1,7 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useContext } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import {
   HiOutlineBell,
   HiOutlinePaperClip,
@@ -21,6 +22,8 @@ import {
   deletePost,
   subscribeToPosts,
 } from "@/services/firebase";
+import { useSession } from "next-auth/react";
+import { UserContext } from "@/context/userContext"; // adjust path as needed
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState([]);
@@ -45,12 +48,9 @@ export default function CommunityPage() {
   const [editingPost, setEditingPost] = useState(null);
   const [editContent, setEditContent] = useState("");
 
-  const currentUser = {
-    name: "Wafaa Samir",
-    role: "Web Developer - ITI Grad",
-    avatar: "WS",
-    uid: "current-user-id", // This should come from your auth system
-  };
+  // Get current user dynamically
+  const { data: session } = useSession();
+  const { user: currentUser } = useContext(UserContext);
 
   // Load posts from Firebase
   useEffect(() => {
@@ -77,6 +77,10 @@ export default function CommunityPage() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    console.log("Current user for posting:", currentUser);
+  }, [currentUser]);
+
   const filteredPosts = useMemo(() => {
     if (!search.trim()) return posts;
     return posts.filter(
@@ -99,7 +103,12 @@ export default function CommunityPage() {
 
   const handleAddPost = async (e) => {
     e.preventDefault();
+    const userId = currentUser?.uid || currentUser?.id;
     if (!postContent.trim() && !postAttachment) return;
+    if (!currentUser || !userId) {
+      setError("You must be logged in to create a post.");
+      return;
+    }
 
     try {
       const newPostData = {
@@ -116,7 +125,7 @@ export default function CommunityPage() {
               url: URL.createObjectURL(postAttachment),
             }
           : null,
-        authorId: currentUser.uid,
+        authorId: userId,
       };
 
       await createPost(newPostData);
@@ -147,6 +156,11 @@ export default function CommunityPage() {
   };
 
   const handleRepost = async (post) => {
+    const userId = currentUser?.uid || currentUser?.id;
+    if (!currentUser || !userId) {
+      setError("You must be logged in to repost.");
+      return;
+    }
     try {
       const newPostData = {
         author: currentUser.name,
@@ -163,7 +177,7 @@ export default function CommunityPage() {
           timestamp: post.createdAt,
           attachment: post.attachment || null,
         },
-        authorId: currentUser.uid,
+        authorId: userId,
       };
 
       await createPost(newPostData);
@@ -303,7 +317,7 @@ export default function CommunityPage() {
               <HiOutlineBell className="w-6 h-6" />
             </button>
             <div className="h-10 w-10 rounded-full bg-primary/80 flex items-center justify-center text-primary-foreground font-medium">
-              {currentUser.avatar}
+              {currentUser?.avatar}
             </div>
           </div>
         </div>
@@ -315,19 +329,19 @@ export default function CommunityPage() {
             <div className="p-4">
               <div className="flex items-center space-x-4">
                 <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-                  {currentUser.avatar}
+                  {currentUser?.avatar}
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">{currentUser.name}</h3>
+                  <h3 className="font-bold text-lg">{currentUser?.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {currentUser.role}
+                    {currentUser?.role}
                   </p>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-border flex justify-between">
                 <div className="text-center">
                   <div className="font-bold">
-                    {posts.filter((p) => p.authorId === currentUser.uid).length}
+                    {posts.filter((p) => p.authorId === (currentUser?.uid || currentUser?.id)).length}
                   </div>
                   <div className="text-xs text-muted-foreground">Posts</div>
                 </div>
@@ -416,78 +430,82 @@ export default function CommunityPage() {
               <h2 className="text-lg font-bold">Create a Post</h2>
             </div>
             <div className="p-4">
-              <form onSubmit={handleAddPost}>
-                <div className="flex items-start space-x-3">
-                  <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                    {currentUser.avatar}
-                  </div>
-                  <div className="flex-1">
-                    <textarea
-                      value={postContent}
-                      onChange={(e) => setPostContent(e.target.value)}
-                      placeholder="Share your thoughts, projects, or questions..."
-                      className="w-full border border-input rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
-                      rows={3}
-                    />
-                    {postAttachment && (
-                      <div className="mt-2 p-3 bg-muted rounded-lg border border-border flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {postAttachment.type.startsWith("image") ? (
-                            <img
-                              src={URL.createObjectURL(postAttachment)}
-                              alt="Preview"
-                              className="h-12 w-12 object-cover rounded"
-                            />
-                          ) : (
-                            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
-                              <HiOutlinePaperClip className="w-5 h-5 text-primary" />
-                            </div>
-                          )}
-                          <div>
-                            <div className="text-sm font-medium truncate max-w-xs">
-                              {postAttachment.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {postAttachment.type}
+              {!currentUser ? (
+                <div>Loading user...</div>
+              ) : (
+                <form onSubmit={handleAddPost}>
+                  <div className="flex items-start space-x-3">
+                    <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                      {currentUser?.avatar}
+                    </div>
+                    <div className="flex-1">
+                      <textarea
+                        value={postContent}
+                        onChange={(e) => setPostContent(e.target.value)}
+                        placeholder="Share your thoughts, projects, or questions..."
+                        className="w-full border border-input rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
+                        rows={3}
+                      />
+                      {postAttachment && (
+                        <div className="mt-2 p-3 bg-muted rounded-lg border border-border flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            {postAttachment.type.startsWith("image") ? (
+                              <img
+                                src={URL.createObjectURL(postAttachment)}
+                                alt="Preview"
+                                className="h-12 w-12 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
+                                <HiOutlinePaperClip className="w-5 h-5 text-primary" />
+                              </div>
+                            )}
+                            <div>
+                              <div className="text-sm font-medium truncate max-w-xs">
+                                {postAttachment.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {postAttachment.type}
+                              </div>
                             </div>
                           </div>
+                          <button
+                            type="button"
+                            className="text-destructive hover:text-destructive/80"
+                            onClick={() => setPostAttachment(null)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center mt-3">
+                        <div className="flex space-x-2">
+                          <label className="flex items-center space-x-1 text-muted-foreground hover:text-primary cursor-pointer transition-colors">
+                            <HiOutlinePaperClip className="w-5 h-5" />
+                            <span className="text-sm">Attachment</span>
+                            <input
+                              type="file"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setPostAttachment(e.target.files[0]);
+                                }
+                              }}
+                            />
+                          </label>
                         </div>
                         <button
-                          type="button"
-                          className="text-destructive hover:text-destructive/80"
-                          onClick={() => setPostAttachment(null)}
+                          type="submit"
+                          className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/80 transition-colors disabled:opacity-50"
+                          disabled={!postContent.trim() && !postAttachment}
                         >
-                          ✕
+                          Post
                         </button>
                       </div>
-                    )}
-                    <div className="flex justify-between items-center mt-3">
-                      <div className="flex space-x-2">
-                        <label className="flex items-center space-x-1 text-muted-foreground hover:text-primary cursor-pointer transition-colors">
-                          <HiOutlinePaperClip className="w-5 h-5" />
-                          <span className="text-sm">Attachment</span>
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                setPostAttachment(e.target.files[0]);
-                              }
-                            }}
-                          />
-                        </label>
-                      </div>
-                      <button
-                        type="submit"
-                        className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/80 transition-colors disabled:opacity-50"
-                        disabled={!postContent.trim() && !postAttachment}
-                      >
-                        Post
-                      </button>
                     </div>
                   </div>
-                </div>
-              </form>
+                </form>
+              )}
             </div>
           </div>
 
@@ -515,153 +533,155 @@ export default function CommunityPage() {
 
                 <div className="p-4">
                   <div className="flex items-start space-x-3">
-                    <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                      {post.author.charAt(0)}
-                    </div>
+                    <Link href={`/profile/${post.authorId}`}>
+                      <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold cursor-pointer">
+                        {post.author.charAt(0)}
+                      </div>
+                    </Link>
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-bold">{post.author}</h4>
+                          <Link href={`/profile/${post.authorId}`}>
+                            <h4 className="font-bold cursor-pointer hover:underline">
+                              {post.author}
+                            </h4>
+                          </Link>
                           <p className="text-sm text-muted-foreground">
                             {post.role}
                           </p>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs text-muted-foreground">
-                            {formatTimestamp(post.createdAt)}
-                          </span>
-
-                          {/* Edit/Delete dropdown for post owner */}
-                          {post.authorId === currentUser.uid && (
-                            <div className="relative group">
-                              <button className="text-muted-foreground hover:text-foreground">
-                                <HiOutlineEllipsisHorizontal className="w-5 h-5" />
+                        {/* Edit/Delete options for current user's posts */}
+                        {(post.authorId === (currentUser?.uid || currentUser?.id)) && (
+                          <div className="relative group">
+                            <button className="text-muted-foreground hover:text-foreground">
+                              <HiOutlineEllipsisHorizontal className="w-5 h-5" />
+                            </button>
+                            <div className="absolute right-0 top-6 bg-card border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[120px]">
+                              <button
+                                onClick={() => startEditing(post)}
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center space-x-2"
+                              >
+                                <HiOutlinePencil className="w-4 h-4" />
+                                <span>Edit</span>
                               </button>
-                              <div className="absolute right-0 top-6 bg-card border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[120px]">
-                                <button
-                                  onClick={() => startEditing(post)}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center space-x-2"
-                                >
-                                  <HiOutlinePencil className="w-4 h-4" />
-                                  <span>Edit</span>
-                                </button>
-                                <button
-                                  onClick={() => handleDeletePost(post.id)}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-muted text-destructive flex items-center space-x-2"
-                                >
-                                  <HiOutlineTrash className="w-4 h-4" />
-                                  <span>Delete</span>
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {post.repostOf && (
-                        <div className="mt-3 bg-muted border border-border rounded-lg p-3">
-                          <div className="flex items-start space-x-3">
-                            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                              {post.repostOf.author.charAt(0)}
-                            </div>
-                            <div>
-                              <h5 className="font-semibold text-sm">
-                                {post.repostOf.author}
-                              </h5>
-                              <p className="text-xs text-muted-foreground">
-                                {post.repostOf.role}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {formatTimestamp(post.repostOf.timestamp)}
-                              </p>
+                              <button
+                                onClick={() => handleDeletePost(post.id)}
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-muted text-destructive flex items-center space-x-2"
+                              >
+                                <HiOutlineTrash className="w-4 h-4" />
+                                <span>Delete</span>
+                              </button>
                             </div>
                           </div>
-                          <p className="mt-2 text-foreground text-sm">
-                            {post.repostOf.content}
-                          </p>
-                          {post.repostOf.attachment && (
-                            <div className="mt-2">
-                              {post.repostOf.attachment.type &&
-                              post.repostOf.attachment.type.startsWith(
-                                "image",
-                              ) ? (
-                                <img
-                                  src={post.repostOf.attachment.url}
-                                  alt="Attachment"
-                                  className="max-h-48 w-auto rounded-lg border"
-                                />
-                              ) : (
-                                <a
-                                  href={post.repostOf.attachment.url}
-                                  download={post.repostOf.attachment.name}
-                                  className="inline-flex items-center text-primary hover:text-primary/80 text-sm"
-                                >
-                                  <HiOutlinePaperClip className="w-4 h-4 mr-1" />{" "}
-                                  {post.repostOf.attachment.name}
-                                </a>
-                              )}
-                            </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {post.repostOf && (
+                    <div className="mt-3 bg-muted border border-border rounded-lg p-3">
+                      <div className="flex items-start space-x-3">
+                        <Link href={`/profile/${post.authorId}`}>
+                          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold cursor-pointer">
+                            {post.repostOf.author.charAt(0)}
+                          </div>
+                        </Link>
+                        <Link href={`/profile/${post.authorId}`}>
+                          <h5 className="font-semibold text-sm cursor-pointer hover:underline">
+                            {post.repostOf.author}
+                          </h5>
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                          {post.repostOf.role}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatTimestamp(post.repostOf.timestamp)}
+                        </p>
+                      </div>
+                      <p className="mt-2 text-foreground text-sm">
+                        {post.repostOf.content}
+                      </p>
+                      {post.repostOf.attachment && (
+                        <div className="mt-2">
+                          {post.repostOf.attachment.type &&
+                          post.repostOf.attachment.type.startsWith(
+                            "image",
+                          ) ? (
+                            <img
+                              src={post.repostOf.attachment.url}
+                              alt="Attachment"
+                              className="max-h-48 w-auto rounded-lg border"
+                            />
+                          ) : (
+                            <a
+                              href={post.repostOf.attachment.url}
+                              download={post.repostOf.attachment.name}
+                              className="inline-flex items-center text-primary hover:text-primary/80 text-sm"
+                            >
+                              <HiOutlinePaperClip className="w-4 h-4 mr-1" />{" "}
+                              {post.repostOf.attachment.name}
+                            </a>
                           )}
                         </div>
                       )}
-
-                      {!post.repostOf && (
-                        <>
-                          {editingPost === post.id ? (
-                            <div className="mt-3">
-                              <textarea
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                className="w-full border border-input rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
-                                rows={3}
-                              />
-                              <div className="flex space-x-2 mt-2">
-                                <button
-                                  onClick={() => handleEditPost(post.id)}
-                                  className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/80"
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={cancelEditing}
-                                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="mt-3 text-foreground">
-                              {post.content}
-                            </p>
-                          )}
-                          {post.attachment && (
-                            <div className="mt-3">
-                              {post.attachment.type &&
-                              post.attachment.type.startsWith("image") ? (
-                                <img
-                                  src={post.attachment.url}
-                                  alt="Attachment"
-                                  className="max-h-96 w-full object-contain rounded-lg border"
-                                />
-                              ) : (
-                                <a
-                                  href={post.attachment.url}
-                                  download={post.attachment.name}
-                                  className="inline-flex items-center p-3 bg-muted rounded-lg border border-border text-primary hover:text-primary/80"
-                                >
-                                  <HiOutlinePaperClip className="w-4 h-4 mr-2" />
-                                  <span className="max-w-xs truncate">
-                                    {post.attachment.name}
-                                  </span>
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      )}
                     </div>
-                  </div>
+                  )}
+
+                  {!post.repostOf && (
+                    <>
+                      {editingPost === post.id ? (
+                        <div className="mt-3">
+                          <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full border border-input rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
+                            rows={3}
+                          />
+                          <div className="flex space-x-2 mt-2">
+                            <button
+                              onClick={() => handleEditPost(post.id)}
+                              className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/80"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-foreground">
+                          {post.content}
+                        </p>
+                      )}
+                      {post.attachment && (
+                        <div className="mt-3">
+                          {post.attachment.type &&
+                          post.attachment.type.startsWith("image") ? (
+                            <img
+                              src={post.attachment.url}
+                              alt="Attachment"
+                              className="max-h-96 w-full object-contain rounded-lg border"
+                            />
+                          ) : (
+                            <a
+                              href={post.attachment.url}
+                              download={post.attachment.name}
+                              className="inline-flex items-center p-3 bg-muted rounded-lg border border-border text-primary hover:text-primary/80"
+                            >
+                              <HiOutlinePaperClip className="w-4 h-4 mr-2" />
+                              <span className="max-w-xs truncate">
+                                {post.attachment.name}
+                              </span>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <div className="border-t border-border px-4 py-2 flex justify-between">
@@ -704,11 +724,11 @@ export default function CommunityPage() {
                         {post.comments.map((comment, idx) => (
                           <li key={idx} className="flex items-start space-x-2">
                             <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
-                              {currentUser.avatar.charAt(0)}
+                              {currentUser?.avatar.charAt(0)}
                             </div>
                             <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
                               <div className="font-medium text-sm">
-                                {currentUser.name}
+                                {currentUser?.name}
                               </div>
                               <div className="text-foreground text-sm mt-1">
                                 {comment}
@@ -731,7 +751,7 @@ export default function CommunityPage() {
                       }}
                     >
                       <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold flex-shrink-0">
-                        {currentUser.avatar.charAt(0)}
+                        {currentUser?.avatar.charAt(0)}
                       </div>
                       <input
                         type="text"
