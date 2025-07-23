@@ -42,46 +42,39 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function UsersPage() {
-  // const [users, setUsers] = useState(mockUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const { users, setUsers } = useContext(UsersContext);
 
-  // console.log(users);
-
   const router = useRouter();
 
-  // console.log(...mockUsers);
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const totalUsersData = await getAllUsers();
-  //       setUsers(totalUsersData);
-  //     } catch (error) {
-  //       console.log("خطأ في جلب البيانات:", error);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, []);
-
-  // search
   const filteredUsers = users.filter((user) => {
+    const name = user?.name || "";
+    const email = user?.email || "";
+    const role = user?.role || "";
+    const status = user?.verificationStatus || "";
+
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole =
+      roleFilter === "all" ||
+      user.role?.toLowerCase() === roleFilter.toLowerCase();
+
     const matchesStatus =
-      statusFilter === "all" || user.verificationStatus === statusFilter;
+      statusFilter === "all" ||
+      user.verificationStatus?.toLowerCase() === statusFilter.toLowerCase();
+
     return matchesSearch && matchesRole && matchesStatus;
   });
 
   const handleApprove = (userId) => {
     setUsers(
       users.map((user) =>
-        user.id === userId ? { ...user, verificationStatus: "Approved" } : user,
+        user?.id === userId
+          ? { ...user, verificationStatus: "Approved" }
+          : user,
       ),
     );
   };
@@ -89,45 +82,24 @@ export default function UsersPage() {
   const handleReject = (userId) => {
     setUsers(
       users.map((user) =>
-        user.id === userId ? { ...user, verificationStatus: "Rejected" } : user,
-      ),
-    );
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "Approved":
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case "Rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
-      case "Pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      default:
-        return <Badge>Unknown</Badge>;
-    }
-  };
-
-  const handleSuspend = (userId) => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId
-          ? (user.verificationStatus === "Suspended" ?? {
-              ...user,
-              verificationStatus: "Approved",
-            })
+        user?.id === userId
+          ? { ...user, verificationStatus: "Rejected" }
           : user,
       ),
     );
   };
 
-  const handleUnsuspend = (userId) => {
+  const handleSuspend = (userId) => {
     setUsers(
       users.map((user) =>
-        user.id === userId
-          ? (user.verificationStatus === "Approved" ?? {
+        user?.id === userId
+          ? {
               ...user,
-              verificationStatus: "Suspended",
-            })
+              verificationStatus:
+                user?.verificationStatus === "Suspended"
+                  ? "Approved"
+                  : "Suspended",
+            }
           : user,
       ),
     );
@@ -149,9 +121,22 @@ export default function UsersPage() {
         break;
     }
   };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "Approved":
+        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+      case "Rejected":
+        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+      case "Pending":
+        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+      default:
+        return <Badge>Unknown</Badge>;
+    }
+  };
+
   const getRoleBadge = (role) => {
-    // console.log(role.toLowerCase());
-    switch (role) {
+    switch (role?.toLowerCase()) {
       case "freelancer":
         return (
           <Badge variant="outline" className="bg-blue-50 text-blue-700">
@@ -192,7 +177,6 @@ export default function UsersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Filters */}
             <div className="flex items-center space-x-4 mb-4">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -229,7 +213,6 @@ export default function UsersPage() {
               </Select>
             </div>
 
-            {/* Users Table */}
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -245,30 +228,35 @@ export default function UsersPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow key={user?.id || Math.random()}>
                       <TableCell className="font-medium">
                         <div className="flex items-center space-x-2">
-                          {user.avatar && (
+                          {user?.avatar && (
                             <Image
                               src={user.avatar}
-                              alt={user.name}
+                              alt={user?.name || "Avatar"}
                               width={32}
                               height={32}
                               className="h-8 w-8 rounded-full"
                             />
                           )}
-                          <span>{user.name}</span>
+                          <span>{user?.name || "-"}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{getRoleBadge(user.role)}</TableCell>
+                      <TableCell>{getRoleBadge(user?.role)}</TableCell>
                       <TableCell className="font-mono text-sm">
-                        {user.nationalId}
+                        {user?.nationalId || "-"}
                       </TableCell>
-                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user?.email || "-"}</TableCell>
                       <TableCell>
-                        {getStatusBadge(user.verificationStatus)}
+                        {getStatusBadge(user?.verificationStatus)}
                       </TableCell>
-                      <TableCell>{user.createdAt.split("T")[0]}</TableCell>
+                      <TableCell>
+                        {typeof user?.createdAt === "string" &&
+                        user.createdAt.includes("T")
+                          ? user.createdAt.split("T")[0]
+                          : "-"}
+                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -278,21 +266,21 @@ export default function UsersPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() => handleViewProfile(user.role)}
+                              onClick={() => handleViewProfile(user?.role)}
                             >
                               <Eye className="mr-2 h-4 w-4" />
                               View Profile
                             </DropdownMenuItem>
-                            {user.verificationStatus === "Pending" && (
+                            {user?.verificationStatus === "Pending" && (
                               <>
                                 <DropdownMenuItem
-                                  onClick={() => handleApprove(user.id)}
+                                  onClick={() => handleApprove(user?.id)}
                                 >
                                   <Check className="mr-2 h-4 w-4" />
                                   Approve
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => handleReject(user.id)}
+                                  onClick={() => handleReject(user?.id)}
                                 >
                                   <X className="mr-2 h-4 w-4" />
                                   Reject
@@ -300,7 +288,7 @@ export default function UsersPage() {
                               </>
                             )}
                             <DropdownMenuItem
-                              onClick={() => handleSuspend(user.id)}
+                              onClick={() => handleSuspend(user?.id)}
                               className="text-red-600"
                             >
                               <Ban className="mr-2 h-4 w-4" />

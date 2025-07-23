@@ -85,4 +85,23 @@ export const subscribeToUsers = (callback) => {
   });
 };
 
+// companyAccount Logic
+
+// setCompany
+export const setCompany = async (email, data) => {
+  await setDoc(doc(db, "companyAccount", email), {
+    ...data,
+    createdAt: serverTimestamp(),
+    verificationStatus: "Pending",
+    rating: 0,
+    reviews: 0,
+    stats: {
+      activeJobs: 0,
+      totalHires: 0,
+      successRate: "0%",
+    },
+    specializations: [],
+  });
+};
+
 // -------------------------------------------------------------------------------------------------------------------------------------------

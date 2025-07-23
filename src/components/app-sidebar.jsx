@@ -7,6 +7,7 @@ import {
   MessageCircle,
   LayoutDashboard,
   Settings,
+  Building2,
 } from "lucide-react";
 
 import {
@@ -35,6 +36,11 @@ const menuItems = [
     title: "Users",
     url: "/dashboard/users",
     icon: Users,
+  },
+  {
+    title: "Companies",
+    url: "/dashboard/companies",
+    icon: Building2,
   },
   {
     title: "Jobs",

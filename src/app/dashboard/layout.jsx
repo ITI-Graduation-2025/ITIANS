@@ -17,7 +17,7 @@ export const metadata = {
 
 export default async function RootLayout({ children }) {
   const users = await getAllUsers();
-  // console.log(users);
+  console.log(users);
 
   return (
     <html lang="en">
