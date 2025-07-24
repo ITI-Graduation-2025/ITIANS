@@ -3,24 +3,28 @@
 import React from "react";
 import { User, LogOut, Settings } from "lucide-react";
 
-export default function ProfileDropdown({ onAction, onClose }) {
+export default function ProfileDropdown({ user, onAction, onClose }) {
   const handleAction = (action) => {
     if (onAction) onAction(action);
     if (onClose) onClose(); 
   };
+
+  const avatar = user?.profileImage || "/your-avatar.png";
+  const name = user?.name || "User Name";
+  const role = user?.role || "Freelancer";
 
   return (
     <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 text-sm">
      
       <div className="flex items-center gap-3 px-4 py-3 border-b">
         <img
-          src="/your-avatar.png"
+          src={avatar}
           alt="Profile"
           className="w-10 h-10 rounded-full object-cover"
         />
         <div>
-          <p className="font-semibold text-gray-800">Jihan Mohamed Abdel…</p>
-          <p className="text-gray-500 text-xs">Freelancer</p>
+          <p className="font-semibold text-gray-800">{name}</p>
+          <p className="text-gray-500 text-xs">{role}</p>
         </div>
       </div>
 
