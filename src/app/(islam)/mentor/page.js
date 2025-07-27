@@ -18,7 +18,7 @@ export default function MentorHome() {
               <MentorProfile />
               <TabsSection />
             </div>
-            <div className="w-full lg:w-[300px] xl:w-[300px] md:flex overflow-hidden">
+            <div className="w-full lg:w-[300px] xl:w-[450px] md:flex overflow-hidden">
               <CommunityStats />
             </div>
           </div>

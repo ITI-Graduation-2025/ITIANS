@@ -20,6 +20,7 @@ export function OverviewTab() {
   const { user } = useUserContext();
   const [openExperience, setOpenExperience] = useState(null);
   const [openEducation, setOpenEducation] = useState(null);
+  console.log(user);
 
   if (!user) {
     return (

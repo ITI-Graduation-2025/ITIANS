@@ -4,11 +4,11 @@ import { useUserContext } from "@/context/userContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
-import { DashboardTab } from "./(tabs)/dashboard-tab";
 import { ReviewsTab } from "./(tabs)/reviews-tap";
 import { AchievementsTab } from "./achievements-tab";
 import { GroupSessionsTab } from "./(tabs)/group-sessions-tab";
 import { OverviewTab } from "./(tabs)/overview-tab";
+import { DashboardTab } from "./(tabs)/dashboard-tab";
 
 export function TabsSection() {
   const { user } = useUserContext();
