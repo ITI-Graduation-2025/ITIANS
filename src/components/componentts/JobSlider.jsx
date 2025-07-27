@@ -7,76 +7,36 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import {
-  FaBrain,
-  FaNetworkWired,
-  FaShieldAlt,
-  FaCode,
-  FaGlobe,
-  FaMobileAlt,
-  FaMicrochip,
-  FaImage,
-  FaChartBar,
-} from "react-icons/fa";
-
-const jobs = [
-  {
-    id: 1,
-    title: "Artificial Intelligence (AI) & Machine Learning (ML)",
-    description: "Explore AI and ML innovations to solve complex problems.",
-    icon: <FaBrain />,
-  },
-  {
-    id: 2,
-    title: "Networking & Communication",
-    description: "Master network design and communication protocols.",
-    icon: <FaNetworkWired />,
-  },
-  {
-    id: 3,
-    title: "Cybersecurity & Cryptography",
-    description: "Protect systems with advanced security techniques.",
-    icon: <FaShieldAlt />,
-  },
-  {
-    id: 4,
-    title: "Software Engineering",
-    description: "Develop robust software solutions with best practices.",
-    icon: <FaCode />,
-  },
-  {
-    id: 5,
-    title: "Web Development",
-    description: "Build dynamic and responsive web applications.",
-    icon: <FaGlobe />,
-  },
-  {
-    id: 6,
-    title: "Mobile Development",
-    description: "Create cutting-edge mobile apps for all platforms.",
-    icon: <FaMobileAlt />,
-  },
-  {
-    id: 7,
-    title: "Computer Architecture & Organization",
-    description: "Design and optimize computer systems and hardware.",
-    icon: <FaMicrochip />,
-  },
-  {
-    id: 8,
-    title: "Graphics & Multimedia",
-    description: "Craft stunning visuals and multimedia content.",
-    icon: <FaImage />,
-  },
-  {
-    id: 9,
-    title: "Data Science & Analytics",
-    description: "Analyze data to drive insightful business decisions.",
-    icon: <FaChartBar />,
-  },
-];
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { db } from "@/config/firebase";
 
 export default function JobsSection() {
+  const [jobs, setJobs] = useState([]);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const q = query(
+        collection(db, "jobs"),
+        orderBy("createdAt", "desc"),
+        limit(5),
+      );
+      const querySnapshot = await getDocs(q);
+      const jobsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setJobs(jobsData);
+    };
+
+    fetchJobs();
+  }, []);
+
+  const truncateDescription = (text, maxLength = 120) => {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength).trim() + "...";
+  };
+
   return (
     <section className="py-20 px-4 bg-[#fffbf5]">
       <motion.h2
@@ -114,23 +74,21 @@ export default function JobsSection() {
               }}
               className="bg-[#fcf6f6] shadow-md p-6 rounded-2xl flex flex-col justify-between text-center transition-all duration-300 w-[420px] min-h-[230px] max-h-[230px]"
             >
-              {/* Icon and Title */}
-              <div className="flex items-center justify-center gap-2 mb-4 w-full text-center">
-                <div className="text-2xl text-[#B71C1C]">{job.icon}</div>
-                <h3 className="text-xl md:text-2xl font-bold text-[#B71C1C] text-left truncate text-center">
-                  {job.title}
-                </h3>
-              </div>
-
-              {/* Description and Link */}
               <div className="flex flex-col justify-between flex-grow">
-                <p className="text-black text-lg mb-6">{job.description}</p>
+                <h3 className="text-xl md:text-2xl font-bold text-[#B71C1C] text-center mb-4">
+                  {/* {job.title} */}
+                  {job.title.charAt(0).toUpperCase() + job.title.slice(1)}
+                </h3>
+                <p className="text-gray-600 text-md mb-4">{job.company}</p>
+                <p className="text-black text-lg mb-6">
+                  {truncateDescription(job.description)}
+                </p>
 
                 <Link
-                  href={`/jobs`}
+                  href={`/jobs/${job.id}`}
                   className="text-[#B71C1C] text-base md:text-lg font-semibold hover:underline mt-auto"
                 >
-                  Learn More &gt;
+                  Read More &gt;
                 </Link>
               </div>
             </motion.div>
@@ -138,7 +96,6 @@ export default function JobsSection() {
         ))}
       </Swiper>
 
-      {/* Swiper styles */}
       <style jsx global>{`
         .swiper-button-next,
         .swiper-button-prev {

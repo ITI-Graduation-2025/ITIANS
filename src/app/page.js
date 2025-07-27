@@ -7,6 +7,8 @@ import QuoteSection from "@/components/componentts/QuoteSection";
 import LandingSection from "@/components/componentts/LandingSection";
 import AboutUsSection from "@/components/componentts/AboutUsSection";
 import CompaniesTicker from "@/components/componentts/CompaniesTicker";
+import Link from "next/link";
+import { BsChatDots } from "react-icons/bs";
 
 export default function Home() {
   return (

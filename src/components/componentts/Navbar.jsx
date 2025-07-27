@@ -6,9 +6,9 @@ import { FaBars, FaTimes } from "react-icons/fa";
 import UserInfo from "../pages/userInfo";
 
 const navLinks = [
-  { name: "Home", href: "/" },
-  { name: "Jobs", href: "/#jobs" },
-  { name: "Mentors", href: "/#mentors" },
+  { name: "Home", href: "" },
+  { name: "Jobs", href: "/jobs" },
+  { name: "Mentors", href: "/mentors" },
   { name: "About", href: "/#about" },
   { name: "Contact", href: "/#contact" },
 ];
@@ -24,7 +24,7 @@ export default function Navbar() {
       navLinks.forEach((link) => {
         const section = document.querySelector(link.href.replace("/#", "#"));
         if (section) {
-          const offsetTop = section.offsetTop - 80; // adjust based on your navbar height
+          const offsetTop = section.offsetTop - 80;
           const offsetBottom = offsetTop + section.offsetHeight;
 
           if (scrollPosition >= offsetTop && scrollPosition < offsetBottom) {
@@ -63,7 +63,7 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-4">
           <UserInfo />
         </div>
 
