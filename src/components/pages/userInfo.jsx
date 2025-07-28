@@ -45,7 +45,7 @@ export default function UserInfo() {
               <DropdownMenuCheckboxItem
                 checked={showPanel}
                 onCheckedChange={setShowPanel}
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: "/login" })}
               >
                 signout
               </DropdownMenuCheckboxItem>

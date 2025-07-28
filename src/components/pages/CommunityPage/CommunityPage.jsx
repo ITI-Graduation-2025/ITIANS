@@ -1,0 +1,140 @@
+"use client";
+import { UserContext } from "@/context/userContext";
+import { getAllPosts, subscribeToPosts } from "@/services/firebase";
+import { useSession } from "next-auth/react";
+import Head from "next/head";
+import { useContext, useEffect, useMemo, useState } from "react";
+import CommunityRightSidebar from "./components/CommunityRightSidebar";
+import CommunitySidebar from "./components/CommunitySidebar";
+import PostCreation from "./components/PostCreation";
+import PostList from "./components/PostList";
+import CommunityFooter from "./components/CommunityFooter";
+import CommunityHeader from "./components/CommunityHeader";
+
+export default function CommunityPage() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const [freelancers] = useState([
+    { name: "Ahmed Mohamed", role: "Web Developer" },
+    { name: "Amira Mostafa", role: "UI/UX Designer" },
+    { name: "jihan Mohammed ", role: "Mobile Developer" },
+    { name: "Islam Mohamed", role: "Backend Developer" },
+    { name: "Wafaa Samir", role: "Full Stack Developer" },
+  ]);
+
+  // Get current user dynamically
+//   const { data: session } = useSession();
+  const { user: currentUser } = useContext(UserContext);
+//   console.log(data);
+  // console.log(user);
+
+  // Load posts from Firebase
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        setLoading(true);
+        const postsData = await getAllPosts();
+        setPosts(postsData);
+      } catch (err) {
+        setError("Failed to load posts");
+        console.error("Error loading posts:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPosts();
+
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToPosts((updatedPosts) => {
+      setPosts(updatedPosts);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    console.log("Current user for posting:", currentUser);
+  }, [currentUser]);
+
+  const filteredPosts = useMemo(() => {
+    if (!search.trim()) return posts;
+    return posts.filter(
+      (post) =>
+        (post.content &&
+          post.content.toLowerCase().includes(search.toLowerCase())) ||
+        (post.author &&
+          post.author.toLowerCase().includes(search.toLowerCase())),
+    );
+  }, [search, posts]);
+
+  const filteredFreelancers = useMemo(() => {
+    if (!search.trim()) return freelancers;
+    return freelancers.filter(
+      (freelancer) =>
+        freelancer.name.toLowerCase().includes(search.toLowerCase()) ||
+        freelancer.role.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [search, freelancers]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading posts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Head>
+        <title>ITI Freelancers Community</title>
+        <meta
+          name="description"
+          content="Community for ITI graduates freelancers"
+        />
+      </Head>
+
+      {error && (
+        <div className="bg-destructive text-destructive-foreground p-4 text-center">
+          {error}
+          <button onClick={() => setError(null)} className="ml-2 underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      <CommunityHeader
+        search={search}
+        setSearch={setSearch}
+        currentUser={currentUser}
+      />
+
+      <main className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
+        <CommunitySidebar currentUser={currentUser} posts={posts} />
+
+        <div className="w-full md:w-2/4 space-y-6">
+          <PostCreation currentUser={currentUser} />
+          <PostList
+            posts={filteredPosts}
+            currentUser={currentUser}
+            search={search}
+          />
+        </div>
+
+        <CommunityRightSidebar
+          freelancers={filteredFreelancers}
+          search={search}
+        />
+      </main>
+
+      <CommunityFooter />
+    </div>
+  );
+}

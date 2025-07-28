@@ -95,6 +95,7 @@ const FreelancerProfile = () => {
           linkedIn={linkedIn}
           github={github}
           isOwner={isOwner}
+          setIsModalOpen={setIsModalOpen}
         />
         <ResumeSection
           resumeUrl={resumeUrl}
