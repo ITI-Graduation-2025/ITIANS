@@ -1,8 +1,7 @@
-// app/(islam)/mentor/page.js
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/nextAuth";
-import { getUser } from "@/services/firebase";
+// app/mentors/[id]/page.jsx
 import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { getUser } from "@/services/firebase";
 
 import { Header } from "@/components/mentorComp/header";
 import { Sidebar } from "@/components/mentorComp/sidebar";
@@ -10,19 +9,21 @@ import { MentorProfile } from "@/components/mentorComp/mentor-profile";
 import { TabsSection } from "@/components/mentorComp/tabs-section";
 import { Testimonials } from "@/components/mentorComp/testimonials";
 import { CommunityStats } from "@/components/mentorComp/commuintyStats";
+import { authOptions } from "@/lib/nextAuth";
 
-export default async function MentorHome() {
-  // ✅ 1. Get the current session
+export default async function MentorProfilePage({ params }) {
+  const mentorIdFromUrl = params.id;
+
   const session = await getServerSession(authOptions);
-  const mentorId = session?.user?.id;
+  const currentUserId = session?.user?.id;
 
-  // ✅ 2. Get mentor data from Firestore
-  const mentor = await getUser(mentorId);
-  if (!mentor || mentor === "User not found") {
-    notFound(); // Show 404 page
+  const mentorData = await getUser(mentorIdFromUrl);
+  if (!mentorData || mentorData === "User not found") {
+    notFound();
   }
 
-  // ✅ 3. Pass mentor as props to all components
+  const isOwner = currentUserId === mentorIdFromUrl;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -31,14 +32,14 @@ export default async function MentorHome() {
         <main className="flex-1 md:ml-16 px-4 md:px-0">
           <div className="flex px-4 flex-col lg:flex-row gap-4">
             <div className="flex-1 max-w-5xl">
-              <MentorProfile mentor={mentor} isOwner />
-              <TabsSection mentor={mentor} isOwner />
+              <MentorProfile mentor={mentorData} isOwner={isOwner} />
+              <TabsSection mentor={mentorData} isOwner={isOwner} />
             </div>
             <div className="w-full lg:w-[300px] xl:w-[450px] md:flex overflow-hidden">
-              <CommunityStats mentor={mentor} isOwner />
+              <CommunityStats mentor={mentorData} isOwner={isOwner} />
             </div>
           </div>
-          <Testimonials mentorId={mentorId} />
+          <Testimonials mentorId={mentorIdFromUrl} />
         </main>
       </div>
     </div>

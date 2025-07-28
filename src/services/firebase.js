@@ -241,15 +241,15 @@ export const createSessionRequest = async (
     );
 
     // === إرسال إشعار للموجه ===
-    await createNotification({
-      recipientId: mentorId, // المستلم هو الموجه
-      senderId: menteeId, // المرسل هو المتقدم
-      type: "session_request",
-      message: `New request for your session on ${requestData.createdAt?.toDate ? requestData.createdAt.toDate().toLocaleDateString() : "N/A"}.`, // رسالة بسيطة، ممكن تحسّنها لاحقًا
-      relatedId: requestRef.id, // معرف الطلب
-      read: false,
-      createdAt: serverTimestamp(),
-    });
+    // await createNotification({
+    //   recipientId: mentorId, // المستلم هو الموجه
+    //   senderId: menteeId, // المرسل هو المتقدم
+    //   type: "session_request",
+    //   message: `New request for your session on ${requestData.createdAt?.toDate ? requestData.createdAt.toDate().toLocaleDateString() : "N/A"}.`, // رسالة بسيطة، ممكن تحسّنها لاحقًا
+    //   relatedId: requestRef.id, // معرف الطلب
+    //   read: false,
+    //   createdAt: serverTimestamp(),
+    // });
 
     return { id: requestRef.id, ...requestData };
   } catch (error) {

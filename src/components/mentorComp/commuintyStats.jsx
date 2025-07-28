@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUserContext } from "@/context/userContext";
 
 import { toast } from "sonner";
 
@@ -15,21 +14,22 @@ import {
   getAvailableSessions,
   getAvailableSessionsForCommunity,
 } from "@/services/firebase";
+import { useUserContext } from "@/context/userContext";
 
-export function CommunityStats() {
-  // States للبيانات والتحميل
+export function CommunityStats({ mentor, isOwner }) {
   const [communitySessions, setCommunitySessions] = useState([]);
   const [isLoadingCommunitySessions, setIsLoadingCommunitySessions] =
     useState(true);
   const { user } = useUserContext();
+  // console.log(user);
+  // console.log(mentor);
 
-  // 1. جلب الجلسات المتاحة للكوميونتي عند تحميل الكومبوننت
   useEffect(() => {
     const fetchSessions = async () => {
       setIsLoadingCommunitySessions(true);
       try {
         // استدعاء الدالة اللي خليناها في firebase.js
-        const sessions = await getAvailableSessions(user.id);
+        const sessions = await getAvailableSessions(mentor.id);
         setCommunitySessions(sessions);
         console.log("Community sessions:", sessions);
       } catch (err) {
@@ -43,28 +43,27 @@ export function CommunityStats() {
     };
 
     fetchSessions();
-  }, []); // [] معناها يشتغل مرة واحدة بس لما الكومبوننت يتحمل
+  }, []);
 
-  // 2. دالة التعامل مع طلب الجلسة
   const handleRequestSession = async (session) => {
-    // نفس الدالة اللي كتبناها قبل كده
-    if (!user || !user.id) {
+    if (!user || !mentor.id) {
       toast.error("You need to be logged in to request a session.");
       return;
     }
     if (user.id === session.mentorId) {
+      console.log(mentor.id, session.mentorId);
+
       toast.error("You cannot request a session with yourself.");
       return;
     }
 
     try {
-      // افتراض: createSessionRequest موجودة وشغالة في firebase.js
       await createSessionRequest(
         session.id,
         session.mentorId,
-        user.id,
-        user.name || "User",
-        user.jobTitle || "",
+        mentor.id,
+        mentor.name || "mentor",
+        mentor.jobTitle || "",
       );
       toast.success("Session request sent!");
       // يمكن تحديث الواجهة علشان تظهر رسالة أو تلغي الزر مؤقتًا
@@ -154,7 +153,7 @@ export function CommunityStats() {
                   <Button
                     className="mt-2 sm:mt-0 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--primary-foreground)] px-4 sm:px-6 text-xs sm:text-sm"
                     onClick={() => handleRequestSession(session)}
-                    disabled={!user}
+                    disabled={!mentor}
                   >
                     Book
                   </Button>
@@ -192,7 +191,9 @@ export function CommunityStats() {
                 <Image
                   width={200}
                   height={200}
-                  src={user.photo || "https://picsum.photos/200/300".trimEnd()}
+                  src={
+                    mentor.photo || "https://picsum.photos/200/300".trimEnd()
+                  }
                   alt="avatar"
                   className="w-12 sm:w-16 h-12 sm:h-16 rounded-lg object-cover"
                 />
@@ -210,7 +211,7 @@ export function CommunityStats() {
                   width={200}
                   height={200}
                   src={
-                    user.photo || "https://picsum.photos/200/300  ".trimEnd()
+                    mentor.photo || "https://picsum.photos/200/300  ".trimEnd()
                   }
                   alt="avatar"
                   className="w-12 sm:w-16 h-12 sm:h-16 rounded-lg object-cover"
@@ -229,7 +230,7 @@ export function CommunityStats() {
                   width={200}
                   height={200}
                   src={
-                    user.photo || "https://picsum.photos/200/300  ".trimEnd()
+                    mentor.photo || "https://picsum.photos/200/300  ".trimEnd()
                   }
                   alt="avatar"
                   className="w-12 sm:w-16 h-12 sm:h-16 rounded-lg object-cover"

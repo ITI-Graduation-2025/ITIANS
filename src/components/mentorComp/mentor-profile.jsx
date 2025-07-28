@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useUserContext } from "@/context/userContext";
 import {
   MessageCircle,
   Heart,
@@ -25,18 +24,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-export function MentorProfile() {
-  const { user } = useUserContext();
+
+export function MentorProfile({ mentor, isOwner }) {
   const [isBioOpen, setIsBioOpen] = useState(false);
   const maxBioLines = 3;
   const bioLineHeight = 24;
-  const isBioLong = user?.bio && user.bio.split("\n").length > maxBioLines;
-
-  if (!user) {
-    return <div>User not found</div>;
-  }
+  const isBioLong = mentor?.bio && mentor.bio.split("\n").length > maxBioLines;
 
   const router = useRouter();
+
+  if (!mentor) {
+    return <div>Mentor not found</div>;
+  }
 
   return (
     <div className="bg-[var(--card)]">
@@ -45,47 +44,51 @@ export function MentorProfile() {
           <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
             <div className="w-24 sm:w-32 h-24 sm:h-32 bg-[var(--card)] rounded-full p-1">
               <Image
-                src={user.photo || "https://picsum.photos/200/300"}
+                src={mentor.photo || "https://picsum.photos/200/300"}
                 width={200}
                 height={200}
-                alt={user.name}
+                alt={mentor.name}
                 className="w-full h-full rounded-full object-cover"
               />
             </div>
             <div className="text-white text-center sm:text-left pb-2">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex flex-col sm:flex-row items-center justify-center sm:justify-start space-y-2 sm:space-y-0 sm:space-x-2">
-                <span>{user.name}</span>
+                <span>{mentor.name}</span>
                 <span className="text-lg sm:text-xl md:text-2xl">🇪🇬</span>
               </h1>
               <p className="text-sm sm:text-base md:text-xl text-[var(--muted-foreground)] mt-1">
-                {user.jobTitle} at {user.company}
+                {mentor.jobTitle} at {mentor.company}
               </p>
             </div>
           </div>
           <div className="ml-auto flex items-center space-x-3 pb-2">
-            <Button variant="outline" size="sm" className={"cursor-pointer"}>
+            <Button variant="outline" size="sm" className="cursor-pointer">
               <MessageCircle className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="sm" className={"cursor-pointer"}>
+            <Button variant="outline" size="sm" className="cursor-pointer">
               <Heart className="w-4 h-4" />
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={"cursor-pointer"}
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
+              {isOwner && (
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              )}
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => router.push("/mentorEdit")}
-                  className="flex items-center space-x-2 cursor-pointer"
-                >
-                  <span>Edit Profile</span>
-                </DropdownMenuItem>
+                {isOwner && (
+                  <DropdownMenuItem
+                    onClick={() => router.push("/mentorEdit")}
+                    className="flex items-center space-x-2 cursor-pointer"
+                  >
+                    <span>Edit Profile</span>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -103,7 +106,7 @@ export function MentorProfile() {
               maxHeight: `${maxBioLines * bioLineHeight}px`,
             }}
           >
-            {user.bio}
+            {mentor.bio}
           </div>
           {isBioLong && (
             <Dialog open={isBioOpen} onOpenChange={setIsBioOpen}>
@@ -118,17 +121,17 @@ export function MentorProfile() {
               <DialogContent className="sm:max-w-[425px] bg-[var(--card)] border-[var(--border)] rounded-lg p-4">
                 <DialogHeader>
                   <DialogTitle className="text-[var(--foreground)] text-lg">
-                    About {user.name}
+                    About {mentor.name}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="max-h-[60vh] overflow-y-auto text-[var(--foreground)] text-sm sm:text-base">
-                  {user.bio}
+                  {mentor.bio}
                 </div>
               </DialogContent>
             </Dialog>
           )}
           <div className="flex flex-wrap items-center gap-4 mt-4 sm:mt-6">
-            {user.links?.map((link, index) => {
+            {mentor.links?.map((link, index) => {
               const hostname = new URL(link.url).hostname.toLowerCase();
               return (
                 <Button

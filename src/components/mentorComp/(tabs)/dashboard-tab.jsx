@@ -17,6 +17,7 @@ import {
   User,
   X,
   Eye,
+  Check,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -74,7 +75,6 @@ export function DashboardTab() {
   } = useForm();
   const { user } = useUserContext();
   const mentorId = user.id;
-  console.log(bookedSessions);
 
   useEffect(() => {
     if (!mentorId) return;

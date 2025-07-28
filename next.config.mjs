@@ -15,7 +15,11 @@ const nextConfig = {
         hostname: "www.creativefabrica.com",
       },
     ],
-    domains: ["picsum.photos"],
+    domains: [
+      "picsum.photos",
+      "firebasestorage.googleapis.com",
+      "your-other-domains.com",
+    ],
   },
 };
 

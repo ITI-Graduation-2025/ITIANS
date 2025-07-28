@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useUserContext } from "@/context/userContext";
 import { TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,17 +14,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useUserContext } from "@/context/userContext";
 
-export function OverviewTab() {
+export function OverviewTab({ mentor }) {
   const { user } = useUserContext();
   const [openExperience, setOpenExperience] = useState(null);
   const [openEducation, setOpenEducation] = useState(null);
-  console.log(user);
 
-  if (!user) {
+  if (!mentor) {
     return (
       <TabsContent value="overview" className="p-4 sm:p-6">
-        <div>User not found</div>
+        <div>mentor not found</div>
       </TabsContent>
     );
   }
@@ -44,10 +43,10 @@ export function OverviewTab() {
               </h4>
               <div className="flex flex-wrap gap-2">
                 <Badge className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent)]/90 px-2 sm:px-3 py-1 text-xs sm:text-sm">
-                  {user.generalSpecialization}
+                  {mentor.generalSpecialization}
                 </Badge>
                 <Badge className="bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:bg-[var(--secondary)]/90 px-2 sm:px-3 py-1 text-xs sm:text-sm">
-                  {user.specificSpecialization}
+                  {mentor.specificSpecialization}
                 </Badge>
               </div>
             </div>
@@ -60,8 +59,8 @@ export function OverviewTab() {
                   variant="outline"
                   className="px-2 sm:px-3 py-1 border-[var(--border)] text-[var(--foreground)] text-xs sm:text-sm"
                 >
-                  {user.customGeneralSpecialization ||
-                    user.generalSpecialization}
+                  {mentor.customGeneralSpecialization ||
+                    mentor.generalSpecialization}
                 </Badge>
               </div>
             </div>
@@ -70,7 +69,7 @@ export function OverviewTab() {
                 Fluent in
               </h4>
               <div className="flex flex-wrap gap-2">
-                {user.languages.map((lang, index) => (
+                {mentor.languages.map((lang, index) => (
                   <Badge
                     key={index}
                     variant="outline"
@@ -88,10 +87,10 @@ export function OverviewTab() {
             <h3 className="text-lg sm:text-xl font-semibold flex items-center space-x-2 text-[var(--foreground)]">
               <span>Experience</span>
               <Badge className="bg-[var(--muted)] text-[var(--muted-foreground)] text-[10px] sm:text-xs">
-                {user.workExperiences.length}
+                {mentor.workExperiences.length}
               </Badge>
             </h3>
-            {user.workExperiences.length > 1 && (
+            {mentor.workExperiences.length > 1 && (
               <Dialog
                 open={openExperience === "all"}
                 onOpenChange={(open) => setOpenExperience(open ? "all" : null)}
@@ -126,7 +125,7 @@ export function OverviewTab() {
                       scrollbarWidth: "thin",
                     }}
                   >
-                    {user.workExperiences.map((exp, index) => (
+                    {mentor.workExperiences.map((exp, index) => (
                       <div
                         key={index}
                         className="border-b border-[var(--border)] pb-4 mb-4 last:mb-0 last:border-b-0"
@@ -159,7 +158,7 @@ export function OverviewTab() {
             )}
           </div>
           <div className="space-y-4 sm:space-y-6">
-            {user.workExperiences.slice(0, 1).map((exp, index) => (
+            {mentor.workExperiences.slice(0, 1).map((exp, index) => (
               <div
                 key={index}
                 className="flex items-start space-x-3 sm:space-x-4"
@@ -258,10 +257,10 @@ export function OverviewTab() {
             <h3 className="text-lg sm:text-xl font-semibold flex items-center space-x-2 text-[var(--foreground)]">
               <span>Education</span>
               <Badge className="bg-[var(--muted)] text-[var(--muted-foreground)] text-[10px] sm:text-xs">
-                {user.education.length}
+                {mentor.education.length}
               </Badge>
             </h3>
-            {user.education.length > 1 && (
+            {mentor.education.length > 1 && (
               <Dialog
                 open={openEducation === "all"}
                 onOpenChange={(open) => setOpenEducation(open ? "all" : null)}
@@ -296,7 +295,7 @@ export function OverviewTab() {
                       scrollbarWidth: "thin",
                     }}
                   >
-                    {user.education.map((edu, index) => (
+                    {mentor.education.map((edu, index) => (
                       <div
                         key={index}
                         className="border-b border-[var(--border)] pb-4 mb-4 last:mb-0 last:border-b-0"
@@ -324,7 +323,7 @@ export function OverviewTab() {
             )}
           </div>
           <div className="space-y-4 sm:space-y-6">
-            {user.education.slice(0, 1).map((edu, index) => (
+            {mentor.education.slice(0, 1).map((edu, index) => (
               <div
                 key={index}
                 className="flex items-start space-x-3 sm:space-x-4"

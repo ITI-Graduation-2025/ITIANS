@@ -1,58 +1,78 @@
 "use client";
-import { authOptions } from "@/lib/nextAuth";
-import { getServerSession } from "next-auth";
-import React from "react";
-import Signout from "./signout";
-import { signOut, useSession } from "next-auth/react";
+
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import { FaUserCircle, FaSignOutAlt, FaRegUser } from "react-icons/fa";
+import { Loader2 } from "lucide-react";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 
 export default function UserInfo() {
   const { data, status } = useSession();
-  console.log(data);
 
-  const [showStatusBar, setShowStatusBar] = React.useState(false);
-  const [showActivityBar, setShowActivityBar] = React.useState(false);
-  const [showPanel, setShowPanel] = React.useState(false);
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-white" />
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <Link
+        href="/login"
+        className="bg-white text-[#B71C1C] px-3 py-1 rounded hover:bg-gray-100"
+      >
+        Login
+      </Link>
+    );
+  }
 
   return (
-    <div>
-      {status === "loading" && <div>loading...</div>}
-      {status === "unauthenticated" && <Link href="/login">Login</Link>}
-      {status === "authenticated" && (
-        <div className="flex items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>{data.user.name}</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              {/* <DropdownMenuSeparator /> */}
-              <DropdownMenuCheckboxItem
-                checked={showStatusBar}
-                onCheckedChange={setShowStatusBar}
-              >
-                Status Bar
-              </DropdownMenuCheckboxItem>
+    <div className="flex items-center space-x-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="flex items-center space-x-2 text-white hover:text-[#E57373] hover:bg-transparent"
+          >
+            <FaUserCircle className="w-6 h-6" />
+            <span>{data.user.name}</span>
+          </Button>
+        </DropdownMenuTrigger>
 
-              <DropdownMenuCheckboxItem
-                checked={showPanel}
-                onCheckedChange={setShowPanel}
-                onClick={() => signOut()}
-              >
-                signout
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+        <DropdownMenuContent
+          align="end"
+          className="bg-white text-[#B71C1C] border-none shadow-lg"
+        >
+          <DropdownMenuItem
+            asChild
+            className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
+          >
+            <Link
+              href={data.user.role === "mentor" ? "/mentor" : "/profile"}
+              className="flex items-center gap-3"
+            >
+              <FaRegUser className="text-[#B71C1C] group-hover:text-white" />
+              <span>Profile</span>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => signOut()}
+            className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
+          >
+            <FaSignOutAlt className="text-[#B71C1C] group-hover:text-white" />
+            <span>Sign Out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
