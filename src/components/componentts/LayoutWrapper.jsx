@@ -6,12 +6,21 @@ import Footer from "@/components/componentts/Footer";
 
 export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
-  const hideBoth = [
+
+  const hideBothExactPaths = [
     "/login",
     "/register",
     "/mentor",
     "/dashboardCompany",
-  ].includes(pathname);
+    "/dashboard",
+    "/mentor/[id]",
+  ];
+
+  const hideBoth =
+    hideBothExactPaths.includes(pathname) ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/mentor/");
+
   const hideNavbar = pathname === "/profile";
 
   return (

@@ -20,9 +20,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Search } from "lucide-react";
-import { setCompany } from "@/services/firebase";
+import { setUser, getUser } from "@/services/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/config/firebase";
+
+// Function to generate a random password
+const generateRandomPassword = (length = 12) => {
+  const charset =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  return password;
+};
 
 export default function CompanyForm() {
   const {
@@ -32,6 +53,8 @@ export default function CompanyForm() {
     control,
   } = useForm();
   const [isLoading, setIsLoading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [credentials, setCredentials] = useState({ email: "", password: "" });
   const router = useRouter();
 
   const registerOptions = {
@@ -67,15 +90,59 @@ export default function CompanyForm() {
   const handleRegister = async (data) => {
     setIsLoading(true);
     try {
-      await setCompany(data.email, data);
-      toast.success("Company account created successfully");
-      router.push("/companyprofile");
+      // Check if email already exists in users collection
+      const existingUser = await getUser(data.email);
+      if (existingUser !== "User not found") {
+        throw new Error("Email already exists. Please use a different email.");
+      }
+
+      // Generate a random password
+      const password = generateRandomPassword();
+
+      // Create Firebase Auth user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        password,
+      );
+      const user = userCredential.user;
+
+      // Prepare user data for Firestore
+      const userData = {
+        ...data,
+        role: "company",
+        createdAt: new Date().toISOString(),
+        status: "Pending",
+        verificationStatus: "Pending",
+        rating: 0,
+        reviews: 0,
+        stats: {
+          activeJobs: 0,
+          totalHires: 0,
+          successRate: "0%",
+        },
+        specializations: [],
+      };
+
+      // Save user data to users collection
+      await setUser(user.uid, userData);
+
+      // Store credentials for dialog
+      setCredentials({ email: data.email, password });
+      setIsDialogOpen(true);
     } catch (error) {
-      toast.error("Failed to create company account. Please try again.");
+      alert(
+        error.message || "Failed to create company account. Please try again.",
+      );
       console.error("Registration error:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    router.push("/companyprofile");
   };
 
   const handleErrors = (errors) => {
@@ -217,12 +284,6 @@ export default function CompanyForm() {
                       </div>
                     )}
                   />
-
-                  {errors.size && (
-                    <p className="text-sm text-primary mt-1">
-                      {errors.size.message}
-                    </p>
-                  )}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -339,6 +400,41 @@ export default function CompanyForm() {
             </form>
           </CardContent>
         </Card>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Company Account Created</DialogTitle>
+              <DialogDescription>
+                Your company account has been successfully created. Use the
+                following credentials to log in. Please change your password
+                after logging in.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Email
+                </Label>
+                <Input value={credentials.email} readOnly className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Password
+                </Label>
+                <Input value={credentials.password} readOnly className="mt-1" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={handleDialogClose}
+                className="bg-primary hover:bg-primary/90"
+              >
+                Close and Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
