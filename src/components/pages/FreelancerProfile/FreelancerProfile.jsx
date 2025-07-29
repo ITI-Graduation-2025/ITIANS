@@ -16,8 +16,8 @@ import {
   ResumeSection,
 } from "./components";
 
-const FreelancerProfile = () => {
-  const { user, refetchUser } = useUserContext();
+const FreelancerProfile = ({user, refetchUser}) => {
+  
   const { data: session } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(null);
   const fileInputRef = useRef();
