@@ -1,15 +1,15 @@
 "use client";
 import { UserContext } from "@/context/userContext";
+import { UsersContext } from "@/context/usersContext";
 import { getAllPosts, subscribeToPosts } from "@/services/firebase";
-import { useSession } from "next-auth/react";
 import Head from "next/head";
 import { useContext, useEffect, useMemo, useState } from "react";
+import CommunityFooter from "./components/CommunityFooter";
+import CommunityHeader from "./components/CommunityHeader";
 import CommunityRightSidebar from "./components/CommunityRightSidebar";
 import CommunitySidebar from "./components/CommunitySidebar";
 import PostCreation from "./components/PostCreation";
 import PostList from "./components/PostList";
-import CommunityFooter from "./components/CommunityFooter";
-import CommunityHeader from "./components/CommunityHeader";
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState([]);
@@ -24,11 +24,13 @@ export default function CommunityPage() {
     { name: "Islam Mohamed", role: "Backend Developer" },
     { name: "Wafaa Samir", role: "Full Stack Developer" },
   ]);
+  const { users } = useContext(UsersContext);
+
 
   // Get current user dynamically
-//   const { data: session } = useSession();
+  //   const { data: session } = useSession();
   const { user: currentUser } = useContext(UserContext);
-//   console.log(data);
+  //   console.log(data);
   // console.log(user);
 
   // Load posts from Firebase
@@ -72,13 +74,13 @@ export default function CommunityPage() {
   }, [search, posts]);
 
   const filteredFreelancers = useMemo(() => {
-    if (!search.trim()) return freelancers;
-    return freelancers.filter(
-      (freelancer) =>
-        freelancer.name.toLowerCase().includes(search.toLowerCase()) ||
-        freelancer.role.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [search, freelancers]);
+    const freelancers = users
+      .filter((user) => user?.role === "freelancer")
+      .sort((a, b) => (a.rating || 0) - (b.rating || 0))
+      .slice(0, 5);
+
+    return freelancers;
+  }, [users]);
 
   if (loading) {
     return (

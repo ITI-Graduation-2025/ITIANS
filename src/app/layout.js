@@ -1,13 +1,9 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
 import NextProvider from "@/components/providers/nextProvider";
-import { UsersProvider } from "@/context/usersContext";
-import { getAllUsers, getUser } from "@/services/firebase";
-import { authOptions } from "@/lib/nextAuth";
-import { getServerSession } from "next-auth";
 import { UserProvider } from "@/context/userContext";
-import { redirect } from "next/navigation";
+import { UsersProvider } from "@/context/usersContext";
+import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
+import "./globals.css";
 // import { getPath } from "recharts/types/shape/Curve";
 
 const geistSans = Geist({
@@ -36,7 +32,9 @@ export default async function RootLayout({ children }) {
       >
         <Toaster />
         <NextProvider>
-          <UserProvider>{children}</UserProvider>
+          <UserProvider>
+            <UsersProvider>{children}</UsersProvider>
+          </UserProvider>
         </NextProvider>
       </body>
     </html>
