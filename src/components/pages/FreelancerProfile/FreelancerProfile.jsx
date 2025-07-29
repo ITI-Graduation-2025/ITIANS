@@ -60,6 +60,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
   }
 
   // Dynamic fields from user object
+  const id = user.id;
   const profileImage = user.profileImage || "https://i.pravatar.cc/100?img=5";
   const fullName = user.name || user.fullName || "No Name";
   const email = user.email || "No Email";
@@ -74,6 +75,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
   const bio = user.bio || "";
   const status = user.status || user.verificationStatus || "";
   const rating = user.rating || null;
+  
 
   return (
     <div className="min-h-screen font-sans bg-gray-50">
@@ -81,6 +83,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
       <div className="h-48 bg-gradient-to-r from-[#B71C1C] to-red-300" />
       <main className="-mt-20 max-w-3xl mx-auto px-4 space-y-8">
         <PersonalInfo
+          id={id}
           profileImage={profileImage}
           fullName={fullName}
           jobTitle={jobTitle}

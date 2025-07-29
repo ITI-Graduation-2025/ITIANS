@@ -1,8 +1,15 @@
 "use client";
 import { FaEnvelope } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
+import { HiChatBubbleOvalLeft } from "react-icons/hi2";
+
+import { db } from "@/config/firebase";
+import useCurrentUser from "@/hooks/useCurrentUser";
+import { generateChatId } from "@/lib/chatFunctions";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 
 export const PersonalInfo = ({
+  id,
   profileImage,
   fullName,
   jobTitle,
@@ -19,6 +26,29 @@ export const PersonalInfo = ({
   isOwner,
   setIsModalOpen,
 }) => {
+  const currentUser = useCurrentUser();
+  const handleStartChat = async (otherUserId) => {
+    if (!currentUser) return;
+
+    try {
+      const chatId = generateChatId(currentUser.uid, otherUserId);
+      const chatRef = doc(db, "chats", chatId);
+      const chatSnap = await getDoc(chatRef);
+
+      if (!chatSnap.exists()) {
+        await setDoc(chatRef, {
+          participants: [currentUser.uid, otherUserId],
+          createdAt: serverTimestamp(),
+          lastMessage: "",
+        });
+      }
+      window.location.href = `/chat/${chatId}`;
+    } catch (e) {
+      console.error("Error starting chat:", e);
+      setError("Failed to start chat. Please try again.");
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 relative">
       <div className="flex items-center gap-4">
@@ -27,18 +57,28 @@ export const PersonalInfo = ({
           alt={fullName}
           className="w-20 h-20 rounded-full border-2 border-gray-200 shadow-sm"
         />
-        <div>
-          <h1 className="text-xl font-bold text-[#B71C1C]">{fullName}</h1>
-          <p className="text-black text-sm">{jobTitle}</p>
-          <p className="text-black flex items-center gap-1 text-sm">
-            <FaEnvelope /> {email}
-          </p>
-          {status && (
-            <p className="text-xs text-gray-500 mt-1">Status: {status}</p>
-          )}
-          {rating && (
-            <p className="text-xs text-gray-500 mt-1">Rating: {rating}</p>
-          )}
+        <div className="flex justify-between gap-4 w-full items-start">
+          <div>
+            <h1 className="text-xl font-bold text-[#B71C1C]">{fullName}</h1>
+            <p className="text-black text-sm">{jobTitle}</p>
+            <p className="text-black flex items-center gap-1 text-sm">
+              <FaEnvelope /> {email}
+            </p>
+            {status && (
+              <p className="text-xs text-gray-500 mt-1">Status: {status}</p>
+            )}
+            {rating && (
+              <p className="text-xs text-gray-500 mt-1">Rating: {rating}</p>
+            )}
+          </div>
+          {!isOwner ? (
+            <button
+              onClick={() => handleStartChat(id)}
+              className="flex gap-2 items-center text-[#B71C1C]"
+            >
+              <HiChatBubbleOvalLeft /> Chat
+            </button>
+          ) : null}
         </div>
       </div>
 

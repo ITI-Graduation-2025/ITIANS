@@ -10,8 +10,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { PaperAirplaneIcon, FaceSmileIcon } from "@heroicons/react/24/outline";
-import data from "@emoji-mart/data";
-import Picker from "@emoji-mart/react";
+// import Picker from "@emoji-mart/react";
+// import data from "@emoji-mart/data";
 
 export default function SendBox({ chatId, senderId, senderName }) {
   const [text, setText] = useState("");
@@ -70,7 +70,7 @@ export default function SendBox({ chatId, senderId, senderName }) {
       </button>
       {showEmojiPicker && (
         <div className="absolute bottom-14 left-2 z-10">
-          <Picker data={data} onEmojiSelect={handleEmojiSelect} theme="auto" />
+          {/* <Picker data={data} onEmojiSelect={handleEmojiSelect} theme="auto" /> */}
         </div>
       )}
       <input
