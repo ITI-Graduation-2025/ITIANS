@@ -1,10 +1,10 @@
 import NextProvider from "@/components/providers/nextProvider";
-import { UserProvider } from "@/context/userContext";
 import { UsersProvider } from "@/context/usersContext";
+import { UserProvider } from "@/context/userContext";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-// import { getPath } from "recharts/types/shape/Curve";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +28,7 @@ export default async function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased debug-screens`}
         cz-shortcut-listen="true"
         data-gr-ext-installed=""
-        data-new-gr-c-s-check-loaded="14.1245.0"
+        data-new-gr-c-s-check-loaded="14.1246.0"
       >
         <Toaster />
         <NextProvider>

@@ -3,27 +3,33 @@ import OurImpactSection from "@/components/componentts/OurImpactSection";
 import JobSlider from "@/components/componentts/JobSlider";
 import ContactUs from "@/components/componentts/ContactUs";
 import TracksMarquee from "@/components/componentts/TracksMarquee";
-import Footer from "@/components/componentts/Footer";
 import QuoteSection from "@/components/componentts/QuoteSection";
 import LandingSection from "@/components/componentts/LandingSection";
 import AboutUsSection from "@/components/componentts/AboutUsSection";
 import CompaniesTicker from "@/components/componentts/CompaniesTicker";
-import Navbar from "@/components/componentts/Navbar";
+import Link from "next/link";
+import { BsChatDots } from "react-icons/bs";
 
 export default function Home() {
   return (
     <>
-      <Navbar />
       <LandingSection />
-      <JobSlider />
-      <TopRatedMentors />
+      <section id="jobs">
+        <JobSlider />
+      </section>
+      <section id="mentors">
+        <TopRatedMentors />
+      </section>
       <TracksMarquee />
-      <AboutUsSection />
+      <section id="about">
+        <AboutUsSection />
+      </section>
       <QuoteSection />
       <CompaniesTicker />
       <OurImpactSection />
-      <ContactUs />
-      <Footer />
+      <section id="contact">
+        <ContactUs />
+      </section>
     </>
   );
 }

@@ -12,6 +12,15 @@ export function UserProvider({ children, initialUser }) {
   const fetchUser = async () => {
     if (session?.user?.id) {
       const fetchedUser = await getUser(session.user.id);
+      // تحويل createdAt لـ string باستخدام toISOString إذا كان Timestamp
+      if (
+        fetchedUser &&
+        fetchedUser.createdAt &&
+        typeof fetchedUser.createdAt.toDate === "function"
+      ) {
+        fetchedUser.createdAt = fetchedUser.createdAt.toDate().toISOString();
+      }
+      // لو فيه حاجات تانية معقدة، زي مصفوفات أو كائنات فرعية، نحولها كمان
       setUser(fetchedUser);
     }
   };

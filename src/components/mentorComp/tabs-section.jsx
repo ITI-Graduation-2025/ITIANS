@@ -1,26 +1,24 @@
 "use client";
 
-import { useUserContext } from "@/context/userContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-
-import { DashboardTab } from "./(tabs)/dashboard-tab";
 import { ReviewsTab } from "./(tabs)/reviews-tap";
 import { AchievementsTab } from "./achievements-tab";
 import { GroupSessionsTab } from "./(tabs)/group-sessions-tab";
 import { OverviewTab } from "./(tabs)/overview-tab";
+import { DashboardTab } from "./(tabs)/dashboard-tab";
 
-export function TabsSection() {
-  const { user } = useUserContext();
-
-  if (!user) {
-    return <div>User not found</div>;
+export function TabsSection({ mentor, isOwner }) {
+  if (!mentor) {
+    return <div>Mentor not found</div>;
   }
 
   return (
     <div className="border-t border-[var(--border)]">
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 bg-[var(--card)] border-b border-[var(--border)] rounded-none h-auto p-0">
+        <TabsList
+          className={`grid w-full grid-cols-2 ${isOwner ? "sm:grid-cols-5" : "sm:grid-cols-4"} bg-[var(--card)] border-b border-[var(--border)] rounded-none h-auto p-0`}
+        >
           <TabsTrigger
             value="overview"
             className="border-b-2 border-transparent data-[state=active]:bg-sidebar-primary rounded-none py-3 sm:py-4 data-[state=active]:text-white text-xs sm:text-sm"
@@ -29,7 +27,7 @@ export function TabsSection() {
           </TabsTrigger>
           <TabsTrigger
             value="reviews"
-            className="border-b-2 border-transparent data-[state=active]:bg-secondary rounded-none py-3 sm:py-4 text-[var(--foreground)] text-xs sm:text-sm"
+            className="border-b-2 border-transparent data-[state=active]:bg-sidebar-primary rounded-none py-3 sm:py-4 data-[state=active]:text-white text-xs sm:text-sm"
           >
             Reviews
           </TabsTrigger>
@@ -48,7 +46,7 @@ export function TabsSection() {
           >
             Group sessions
           </TabsTrigger>
-          {user.role === "mentor" && (
+          {isOwner && mentor.role === "mentor" && (
             <TabsTrigger
               value="dashboard"
               className="border-b-2 border-transparent data-[state=active]:bg-sidebar-primary rounded-none py-3 sm:py-4 data-[state=active]:text-white text-xs sm:text-sm"
@@ -58,11 +56,13 @@ export function TabsSection() {
           )}
         </TabsList>
 
-        <OverviewTab />
-        <ReviewsTab />
-        <AchievementsTab />
-        <GroupSessionsTab />
-        {user.role === "mentor" && <DashboardTab />}
+        <OverviewTab mentor={mentor} />
+        <ReviewsTab mentorId={mentor.id} />
+        <AchievementsTab mentorId={mentor.id} />
+        <GroupSessionsTab mentorId={mentor.id} />
+        {isOwner && mentor.role === "mentor" && (
+          <DashboardTab mentor={mentor} isOwner={isOwner} />
+        )}
       </Tabs>
     </div>
   );

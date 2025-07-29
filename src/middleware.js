@@ -8,7 +8,7 @@ export default withAuth(
   async function middleware(request) {
     const pathname = request.nextUrl.pathname;
     const isAuth = await getToken({ req: request });
-    const protectedRoutes = ["/dashboard", "/mentor", "/profile"];
+    const protectedRoutes = ["/dashboard", "/mentor", "/profile", "/mentors"];
     const isAuthRoute = pathname.startsWith("/login");
     const isProtectedRoute = protectedRoutes.some(
       (route) => pathname.startsWith(route) || pathname === "/",
@@ -58,5 +58,6 @@ export const config = {
     "/pending",
     "/rejected",
     "/mentorData",
+    "/mentors",
   ],
 };
