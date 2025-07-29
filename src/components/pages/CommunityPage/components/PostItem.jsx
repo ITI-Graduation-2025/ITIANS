@@ -1,21 +1,22 @@
-import { useState } from "react";
+import { createPost, deletePost, updatePost } from "@/services/firebase";
 import Link from "next/link";
+import { useState } from "react";
 import {
-  HiOutlineHandThumbUp,
-  HiOutlineChatBubbleLeftRight,
   HiOutlineArrowPath,
+  HiOutlineChatBubbleLeftRight,
   HiOutlineEllipsisHorizontal,
+  HiOutlineHandThumbUp,
+  HiOutlinePaperClip,
   HiOutlinePencil,
   HiOutlineTrash,
-  HiOutlinePaperClip,
 } from "react-icons/hi2";
-import { updatePost, deletePost, createPost } from "@/services/firebase";
 import PostComments from "./PostComments";
 
 export default function PostItem({ post, currentUser }) {
   if (!currentUser) {
     return <div>Loading user...</div>;
   }
+
   const [openComments, setOpenComments] = useState(false);
   const [commentInputs, setCommentInputs] = useState({});
   const [editingPost, setEditingPost] = useState(false);
@@ -52,6 +53,7 @@ export default function PostItem({ post, currentUser }) {
         attachment: post.attachment || null,
         repostOf: {
           author: post.author || "Unknown",
+          authorId: post.authorId || "",
           role: post.role || "Unknown",
           content: post.content,
           timestamp: post.createdAt,
@@ -139,9 +141,7 @@ export default function PostItem({ post, currentUser }) {
     <div className="bg-card rounded-xl shadow-md overflow-hidden">
       {post.repostOf && (
         <div className="bg-muted border-b border-border px-4 py-2 flex items-center gap-2 text-sm text-primary">
-          <span className="font-semibold">
-            {post.author} reposted
-          </span>
+          <span className="font-semibold">{post.author} reposted</span>
         </div>
       )}
 
@@ -160,12 +160,10 @@ export default function PostItem({ post, currentUser }) {
                     {post.author}
                   </h4>
                 </Link>
-                <p className="text-sm text-muted-foreground">
-                  {post.role}
-                </p>
+                <p className="text-sm text-muted-foreground">{post.role}</p>
               </div>
               {/* Edit/Delete options for current user's posts */}
-              {(post.authorId === (currentUser?.uid || currentUser?.id)) && (
+              {post.authorId === (currentUser?.uid || currentUser?.id) && (
                 <div className="relative group">
                   <button className="text-muted-foreground hover:text-foreground">
                     <HiOutlineEllipsisHorizontal className="w-5 h-5" />
@@ -195,12 +193,12 @@ export default function PostItem({ post, currentUser }) {
         {post.repostOf && (
           <div className="mt-3 bg-muted border border-border rounded-lg p-3">
             <div className="flex items-start space-x-3">
-              <Link href={`/profile/${post.authorId}`}>
+              <Link href={`/profile/${post.repostOf?.authorId}`}>
                 <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold cursor-pointer">
                   {post.repostOf.author.charAt(0)}
                 </div>
               </Link>
-              <Link href={`/profile/${post.authorId}`}>
+              <Link href={`/profile/${post.repostOf?.authorId}`}>
                 <h5 className="font-semibold text-sm cursor-pointer hover:underline">
                   {post.repostOf.author}
                 </h5>
@@ -218,9 +216,7 @@ export default function PostItem({ post, currentUser }) {
             {post.repostOf.attachment && (
               <div className="mt-2">
                 {post.repostOf.attachment.type &&
-                post.repostOf.attachment.type.startsWith(
-                  "image",
-                ) ? (
+                post.repostOf.attachment.type.startsWith("image") ? (
                   <img
                     src={post.repostOf.attachment.url}
                     alt="Attachment"
@@ -267,9 +263,7 @@ export default function PostItem({ post, currentUser }) {
                 </div>
               </div>
             ) : (
-              <p className="mt-3 text-foreground">
-                {post.content}
-              </p>
+              <p className="mt-3 text-foreground">{post.content}</p>
             )}
             {post.attachment && (
               <div className="mt-3">
@@ -312,8 +306,7 @@ export default function PostItem({ post, currentUser }) {
         >
           <HiOutlineChatBubbleLeftRight className="w-5 h-5" />
           <span>
-            Comment (
-            {Array.isArray(post.comments) ? post.comments.length : 0})
+            Comment ({Array.isArray(post.comments) ? post.comments.length : 0})
           </span>
         </button>
         <button
@@ -326,8 +319,8 @@ export default function PostItem({ post, currentUser }) {
       </div>
 
       {openComments && (
-        <PostComments 
-          post={post} 
+        <PostComments
+          post={post}
           currentUser={currentUser}
           commentInputs={commentInputs}
           setCommentInputs={setCommentInputs}
@@ -336,4 +329,4 @@ export default function PostItem({ post, currentUser }) {
       )}
     </div>
   );
-} 
+}
