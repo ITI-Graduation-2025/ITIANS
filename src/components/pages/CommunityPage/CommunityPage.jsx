@@ -17,21 +17,9 @@ export default function CommunityPage() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
 
-  const [freelancers] = useState([
-    { name: "Ahmed Mohamed", role: "Web Developer" },
-    { name: "Amira Mostafa", role: "UI/UX Designer" },
-    { name: "jihan Mohammed ", role: "Mobile Developer" },
-    { name: "Islam Mohamed", role: "Backend Developer" },
-    { name: "Wafaa Samir", role: "Full Stack Developer" },
-  ]);
   const { users } = useContext(UsersContext);
 
-
-  // Get current user dynamically
-  //   const { data: session } = useSession();
   const { user: currentUser } = useContext(UserContext);
-  //   console.log(data);
-  // console.log(user);
 
   // Load posts from Firebase
   useEffect(() => {
@@ -76,7 +64,7 @@ export default function CommunityPage() {
   const filteredFreelancers = useMemo(() => {
     const freelancers = users
       .filter((user) => user?.role === "freelancer")
-      .sort((a, b) => (a.rating || 0) - (b.rating || 0))
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
       .slice(0, 5);
 
     return freelancers;
