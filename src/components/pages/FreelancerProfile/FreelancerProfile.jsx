@@ -1,27 +1,25 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
 
-import { updateUser } from "@/services/firebase";
-import { getAllPosts } from "@/services/firebase";
-import { useUserContext } from "@/context/userContext";
+import { getAllPosts, updateUser } from "@/services/firebase";
 import {
   Certificates,
   EditModal,
   FinishedJobs,
+  Header,
   PersonalInfo,
   Posts,
-  Header,
   ResumeSection,
 } from "./components";
 
-const FreelancerProfile = ({user, refetchUser}) => {
-  
+const FreelancerProfile = ({ user, refetchUser }) => {
   const { data: session } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(null);
   const fileInputRef = useRef();
   const [userPosts, setUserPosts] = useState([]);
+  const [resumeUrl, setResumeUrl] = useState();
 
   useEffect(() => {
     async function fetchPosts() {
@@ -31,13 +29,13 @@ const FreelancerProfile = ({user, refetchUser}) => {
       }
     }
     fetchPosts();
+    setResumeUrl(user?.resumeUrl);
   }, [user]);
 
   if (!user) {
     return <div className="text-center mt-10">Loading profile...</div>;
   }
 
-  const resumeUrl = user.resumeUrl || "";
   const certificates = user.certificates || [];
   const isOwner = session?.user?.id === user.id;
 
@@ -50,6 +48,7 @@ const FreelancerProfile = ({user, refetchUser}) => {
     reader.onloadend = async () => {
       await updateUser(user.id, { resumeUrl: reader.result });
       await refetchUser();
+      setResumeUrl(reader.result);
     };
     reader.readAsDataURL(file);
   }
@@ -57,6 +56,7 @@ const FreelancerProfile = ({user, refetchUser}) => {
   async function handleResumeDelete() {
     await updateUser(user.id, { resumeUrl: "" });
     await refetchUser();
+    setResumeUrl();
   }
 
   // Dynamic fields from user object
@@ -98,6 +98,7 @@ const FreelancerProfile = ({user, refetchUser}) => {
           setIsModalOpen={setIsModalOpen}
         />
         <ResumeSection
+          userName={fullName}
           resumeUrl={resumeUrl}
           isOwner={isOwner}
           handleResumeUpload={handleResumeUpload}

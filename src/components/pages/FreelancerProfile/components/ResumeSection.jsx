@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export const ResumeSection = ({
+  userName,
   isOwner,
   resumeUrl,
   handleResumeUpload,
@@ -37,6 +38,37 @@ export const ResumeSection = ({
     }
   };
 
+  const downloadResume = async () => {
+    try {
+      const response = await fetch(resumeUrl);
+      const blob = await response.blob();
+      
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from URL or use default
+      const filename = userName || 'resume.pdf';
+      link.download = filename;
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("Resume downloaded successfully!");
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error("Failed to download resume.");
+    }
+  };
+
   return (
     <SectionCard
       icon={<FaBriefcase className="text-[#B71C1C] text-xl" />}
@@ -46,7 +78,7 @@ export const ResumeSection = ({
           <div className="flex flex-col gap-2">
             <button
               className="bg-[#B71C1C] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#B71C1C]/90 transition-colors flex items-center gap-2"
-              onClick={() => window.open(resumeUrl, "_blank")}
+              onClick={downloadResume}
               disabled={uploading}
             >
               Download Resume
