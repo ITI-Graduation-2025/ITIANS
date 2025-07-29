@@ -20,7 +20,6 @@ import {
   deleteDoc,
   onSnapshot,
   arrayUnion,
-  increment,
 } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
 import JobForm from "./JobForm";
@@ -30,7 +29,8 @@ export default function CompanyJobs() {
   const [jobs, setJobs] = useState([]);
   const [editJob, setEditJob] = useState(null);
   const { data: session } = useSession();
-  const companyId = session?.user?.id;
+
+ const companyId = session?.user?.id;
   const companyRef = companyId ? doc(db, "users", companyId) : null;
 
   useEffect(() => {
@@ -59,9 +59,7 @@ export default function CompanyJobs() {
 
       if (companyRef) {
         const activeCount = jobsData.filter((j) => j.status === "Active").length;
-        await updateDoc(companyRef, {
-          "stats.activeJobs": activeCount,
-        });
+        await updateDoc(companyRef, { activeJobs: activeCount });
       }
     });
 
@@ -105,20 +103,15 @@ export default function CompanyJobs() {
 
         <div className="flex flex-wrap gap-2 mb-4">
           <StatusBadge label="All Jobs" count={jobs.length} color="red" />
-          <StatusBadge label="Active" count={jobs.filter(j => j.status === "Active").length} color="green" />
-          <StatusBadge label="Paused" count={jobs.filter(j => j.status === "Paused").length} color="yellow" />
-          <StatusBadge label="Closed" count={jobs.filter(j => j.status === "Closed").length} color="gray" />
+          <StatusBadge label="Active" count={jobs.filter((j) => j.status === "Active").length} color="green" />
+          <StatusBadge label="Paused" count={jobs.filter((j) => j.status === "Paused").length} color="yellow" />
+          <StatusBadge label="Closed" count={jobs.filter((j) => j.status === "Closed").length} color="gray" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {jobs.length > 0 ? (
             jobs.map((job) => (
-              <JobCard
-                key={job.id}
-                {...job}
-                companyRef={companyRef}
-                onEdit={() => setEditJob(job)}
-              />
+              <JobCard key={job.id} {...job} companyRef={companyRef} onEdit={() => setEditJob(job)} />
             ))
           ) : (
             <div className="bg-white shadow-sm rounded p-6 text-center text-gray-600 col-span-full">
@@ -136,9 +129,7 @@ export default function CompanyJobs() {
         </div>
       </main>
 
-      {editJob && (
-        <JobForm mode="edit" job={editJob} onClose={() => setEditJob(null)} />
-      )}
+      {editJob && <JobForm mode="edit" job={editJob} onClose={() => setEditJob(null)} />}
     </div>
   );
 }
@@ -151,16 +142,7 @@ function StatusBadge({ label, count, color }) {
     gray: "bg-gray-100 text-gray-600",
   }[color];
 
-  return (
-    <span className={`px-2 py-1 rounded text-xs ${bg}`}>
-      {label} ({count})
-    </span>
-  );
-}
-
-function formatTimestamp(ts) {
-  if (!ts || !ts.seconds) return "-";
-  return new Date(ts.seconds * 1000).toLocaleDateString();
+  return <span className={`px-2 py-1 rounded text-xs ${bg}`}>{label} ({count})</span>;
 }
 
 function JobCard({
@@ -179,6 +161,12 @@ function JobCard({
 }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const formatDate = (timestamp) => {
+    if (!timestamp) return "N/A";
+    const date = timestamp.toDate?.() || new Date(timestamp.seconds * 1000);
+    return date.toLocaleDateString();
+  };
+
   const addActivity = async (activity) => {
     if (!companyRef) return;
     await updateDoc(companyRef, {
@@ -195,9 +183,6 @@ function JobCard({
     try {
       await updateDoc(doc(db, "jobs", id), { status: "Paused" });
       await addActivity({ type: "status", text: `Paused job: ${title}`, detail: "" });
-      await updateDoc(companyRef, {
-        "stats.activeJobs": increment(-1),
-      });
       toast.success("Job paused successfully");
     } catch {
       toast.error("Error pausing job");
@@ -208,9 +193,6 @@ function JobCard({
     try {
       await updateDoc(doc(db, "jobs", id), { status: "Active" });
       await addActivity({ type: "status", text: `Resumed job: ${title}`, detail: "" });
-      await updateDoc(companyRef, {
-        "stats.activeJobs": increment(1),
-      });
       toast.success("Job resumed successfully");
     } catch {
       toast.error("Error resuming job");
@@ -221,13 +203,6 @@ function JobCard({
     try {
       await deleteDoc(doc(db, "jobs", id));
       await addActivity({ type: "delete", text: `Deleted job: ${title}`, detail: "" });
-
-      if (status === "Active") {
-        await updateDoc(companyRef, {
-          "stats.activeJobs": increment(-1),
-        });
-      }
-
       toast.success("Job deleted successfully");
     } catch {
       toast.error("Error deleting job");
@@ -239,19 +214,13 @@ function JobCard({
       <div className="flex justify-between items-start">
         <div>
           <h3 className="font-semibold text-gray-800">{title}</h3>
-          <p className="text-xs text-gray-500">
-            {location} • {type} • {salary}
-          </p>
+          <p className="text-xs text-gray-500">{location} • {type} • {salary}</p>
         </div>
-        <span
-          className={`text-xs px-2 py-1 rounded ${
-            status === "Active"
-              ? "bg-green-100 text-green-700"
-              : status === "Paused"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-gray-100 text-gray-600"
-          }`}
-        >
+        <span className={`text-xs px-2 py-1 rounded ${
+          status === "Active" ? "bg-green-100 text-green-700"
+          : status === "Paused" ? "bg-yellow-100 text-yellow-700"
+          : "bg-gray-100 text-gray-600"
+        }`}>
           {status}
         </span>
       </div>
@@ -259,17 +228,14 @@ function JobCard({
       <div className="flex gap-2 flex-wrap mt-3 text-xs">
         <div className="bg-blue-50 px-2 py-1 rounded">{applicationsCount || 0} Applications</div>
         <div className="bg-green-50 px-2 py-1 rounded">{views || 0} Views</div>
-        <div className="bg-yellow-50 px-2 py-1 rounded">Posted: {formatTimestamp(postedAt)}</div>
-        <div className="bg-red-50 px-2 py-1 rounded">Deadline: {formatTimestamp(deadline)}</div>
+        <div className="bg-yellow-50 px-2 py-1 rounded">Posted: {formatDate(postedAt)}</div>
+        <div className="bg-red-50 px-2 py-1 rounded">Deadline: {formatDate(deadline)}</div>
       </div>
 
       <div className="flex flex-wrap gap-2 mt-3">
-        <Link href={`/Applicationjob/${id}`}>
-  <button className="bg-red-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
-    View Applications
-  </button>
-</Link>
-
+        <button className="bg-red-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+          View Applications
+        </button>
 
         {status === "Active" && (
           <button onClick={handlePause} className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs flex items-center gap-1">
@@ -295,23 +261,12 @@ function JobCard({
       {showConfirm && (
         <div className="absolute inset-0 bg-black/50 flex justify-center items-center animate-fade-in">
           <div className="bg-white/30 backdrop-blur-md border border-white/20 p-4 rounded shadow w-64 transition">
-            <p className="text-sm text-gray-700">
-              Are you sure you want to delete this job?
-            </p>
+            <p className="text-sm text-gray-700">Are you sure you want to delete this job?</p>
             <div className="mt-3 flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  handleDelete();
-                  setShowConfirm(false);
-                }}
-                className="bg-red-600 text-white px-3 py-1 rounded text-xs"
-              >
+              <button onClick={() => { handleDelete(); setShowConfirm(false); }} className="bg-red-600 text-white px-3 py-1 rounded text-xs">
                 Yes, Delete
               </button>
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="bg-gray-300 px-3 py-1 rounded text-xs"
-              >
+              <button onClick={() => setShowConfirm(false)} className="bg-gray-300 px-3 py-1 rounded text-xs">
                 Cancel
               </button>
             </div>
@@ -321,6 +276,3 @@ function JobCard({
     </div>
   );
 }
-
-
-
