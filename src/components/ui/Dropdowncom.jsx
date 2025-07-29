@@ -30,7 +30,7 @@ export default function Dropdowncom() {
           aria-label="User menu"
         >
           <Link
-            href="/profile"
+            href="/ProfileViewCom"
             role="menuitem"
             className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100"
           >
