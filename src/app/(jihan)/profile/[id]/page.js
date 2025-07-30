@@ -1,6 +1,6 @@
 "use client";
 import FreelancerProfile from "@/components/pages/FreelancerProfile/FreelancerProfile";
-import { getUser } from "@/services/firebase";
+import { getUser } from "@/services/userServices";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 

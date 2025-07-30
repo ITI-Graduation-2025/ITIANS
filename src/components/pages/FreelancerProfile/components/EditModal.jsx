@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { updateUser } from "@/services/firebase";
+import { updateUser } from "@/services/userServices";
 import { toast } from "sonner";
 import { FiX } from "react-icons/fi";
 
@@ -89,7 +89,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
               className="w-full border-2 border-[#B71C1C] px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
               placeholder="GitHub Profile"
               value={tempValue.github || ""}
-              onChange={(e) => setTempValue({ ...tempValue, github: e.target.value })}
+              onChange={(e) =>
+                setTempValue({ ...tempValue, github: e.target.value })
+              }
               disabled={loading}
             />
             <input
@@ -97,7 +99,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
               className="w-full border-2 border-[#B71C1C] px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
               placeholder="LinkedIn Profile"
               value={tempValue.linkedIn || ""}
-              onChange={(e) => setTempValue({ ...tempValue, linkedIn: e.target.value })}
+              onChange={(e) =>
+                setTempValue({ ...tempValue, linkedIn: e.target.value })
+              }
               disabled={loading}
             />
           </div>
@@ -108,7 +112,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
               type="text"
               placeholder="School / University"
               value={tempValue.school || ""}
-              onChange={(e) => setTempValue({ ...tempValue, school: e.target.value })}
+              onChange={(e) =>
+                setTempValue({ ...tempValue, school: e.target.value })
+              }
               className="w-full border-2 border-[#B71C1C] px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
               disabled={loading}
             />
@@ -116,7 +122,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
               type="text"
               placeholder="Degree / Major"
               value={tempValue.degree || ""}
-              onChange={(e) => setTempValue({ ...tempValue, degree: e.target.value })}
+              onChange={(e) =>
+                setTempValue({ ...tempValue, degree: e.target.value })
+              }
               className="w-full border-2 border-[#B71C1C] px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
               disabled={loading}
             />
@@ -124,7 +132,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
               type="number"
               placeholder="Year of Graduation"
               value={tempValue.year || ""}
-              onChange={(e) => setTempValue({ ...tempValue, year: e.target.value })}
+              onChange={(e) =>
+                setTempValue({ ...tempValue, year: e.target.value })
+              }
               className="w-full border-2 border-[#B71C1C] px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
               disabled={loading}
             />
@@ -159,7 +169,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
                   disabled={loading}
                 />
                 <button
-                  onClick={() => setTempValue(tempValue.filter((_, idx) => idx !== i))}
+                  onClick={() =>
+                    setTempValue(tempValue.filter((_, idx) => idx !== i))
+                  }
                   className="text-red-500 hover:text-red-700 px-2 py-1 rounded-lg"
                   disabled={loading}
                 >
@@ -168,7 +180,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
               </div>
             ))}
             <button
-              onClick={() => setTempValue([...(tempValue || []), { title: "", year: "" }])}
+              onClick={() =>
+                setTempValue([...(tempValue || []), { title: "", year: "" }])
+              }
               className="text-[#B71C1C] underline hover:text-[#B71C1C]/80"
               disabled={loading}
             >
@@ -177,7 +191,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
           </div>
         )}
         <div className="flex justify-end gap-2 mt-8">
-          {error && <div className="text-red-500 text-sm mb-2 w-full">{error}</div>}
+          {error && (
+            <div className="text-red-500 text-sm mb-2 w-full">{error}</div>
+          )}
           <button
             onClick={onClose}
             className="px-4 py-2 border-2 border-[#B71C1C] rounded-lg text-[#B71C1C] font-semibold bg-white hover:bg-[#B71C1C]/10 transition-colors text-lg"

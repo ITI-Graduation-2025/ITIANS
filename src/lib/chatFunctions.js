@@ -1,3 +1,5 @@
+//src/lib/chatFunctions.js
+
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/config/firebase";
 

@@ -3,46 +3,80 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { FaMapMarkerAlt, FaBriefcase, FaClock } from "react-icons/fa";
-
-const jobsData = [
-  {
-    id: 1,
-    title: "Frontend Developer",
-    company: "TechNova Inc.",
-    location: "Cairo, Egypt",
-    type: "Full-time",
-    experience: "2+ years",
-    description: "Build modern UIs using React, Tailwind & modern tooling.",
-  },
-  {
-    id: 2,
-    title: "AI Research Assistant",
-    company: "DeepCore Labs",
-    location: "Alexandria, Egypt",
-    type: "Internship",
-    experience: "Students / Fresh grads",
-    description: "Assist in AI research and TensorFlow model training.",
-  },
-  {
-    id: 3,
-    title: "Cybersecurity Analyst",
-    company: "SecureNet",
-    location: "Remote",
-    type: "Full-time",
-    experience: "1+ year",
-    description: "Monitor systems and protect data from threats.",
-  },
-  // ... كمل باقي الداتا لو عاوز
-];
+import { FaMapMarkerAlt, FaBriefcase, FaClock, FaSearch } from "react-icons/fa";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "@/config/firebase";
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState([]);
+  const [filteredJobs, setFilteredJobs] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const jobsPerPage = 6;
 
   useEffect(() => {
-    // هنا المفروض نبدل بـ fetch من firebase بعدين
-    setJobs(jobsData);
+    const fetchJobs = async () => {
+      const q = query(collection(db, "jobs"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const jobsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setJobs(jobsData);
+      setFilteredJobs(jobsData);
+    };
+
+    fetchJobs();
   }, []);
+
+  const truncateDescription = (text, maxLength = 120) => {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength).trim() + "...";
+  };
+
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+    const filtered = jobs.filter(
+      (job) =>
+        job.title.toLowerCase().includes(term) ||
+        (job.company && job.company.toLowerCase().includes(term)) ||
+        (job.description && job.description.toLowerCase().includes(term)),
+    );
+    setFilteredJobs(filtered);
+    setCurrentPage(1);
+  };
+
+  const indexOfLastJob = currentPage * jobsPerPage;
+  const indexOfFirstJob = indexOfLastJob - jobsPerPage;
+  const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
+  const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const getPaginationNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 3;
+    let startPage = Math.max(1, currentPage - 1);
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1 && startPage > 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
+  const handlePrev = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
 
   return (
     <section className="min-h-screen bg-[#FFFBF5] py-12 px-4 md:px-12">
@@ -50,45 +84,90 @@ export default function JobsPage() {
         Job Opportunities
       </h2>
 
-      <div className="space-y-6 max-w-4xl mx-auto">
-        {jobs.map((job, i) => (
+      <div className="mb-6 flex justify-center">
+        <div className="relative w-full md:w-1/2">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearch}
+            placeholder="Search jobs by title, company, or description..."
+            className="w-full p-2 pl-10 rounded border border-[#E8D8C4] focus:outline-none focus:ring-2 focus:ring-[#B71C1C]"
+          />
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {currentJobs.map((job, i) => (
           <motion.div
             key={job.id}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: i * 0.1 }}
-            className="bg-white p-6 rounded-xl border border-[#E8D8C4] shadow hover:shadow-lg transition"
+            className="bg-white p-6 rounded-xl border border-[#E8D8C4] shadow hover:shadow-lg transition h-full"
           >
-            <div className="flex flex-col md:flex-row justify-between md:items-center mb-2">
-              <h3 className="text-2xl font-semibold text-[#B71C1C]">
-                {job.title}
-              </h3>
-              <span className="text-[#6D2932] mt-2 md:mt-0">{job.company}</span>
+            <div className="flex flex-col h-full">
+              <div className="mb-2">
+                <h3 className="text-2xl font-semibold text-[#B71C1C]">
+                  {job.title.charAt(0).toUpperCase() + job.title.slice(1)}
+                </h3>
+                <span className="text-[#6D2932] mt-2">
+                  {job.company.charAt(0).toUpperCase() + job.company.slice(1)}
+                </span>
+              </div>
+
+              <p className="text-gray-700 mb-4 line-clamp-2 max-h-[4rem] overflow-hidden">
+                {truncateDescription(job.description || "")}
+              </p>
+
+              <div className="flex flex-wrap gap-4 text-sm text-[#6D2932] mb-4 flex-grow">
+                <div className="flex items-center gap-2">
+                  <FaMapMarkerAlt /> {job.location || "N/A"}
+                </div>
+                <div className="flex items-center gap-2">
+                  <FaBriefcase /> {job.type || "N/A"}
+                </div>
+                <div className="flex items-center gap-2">
+                  <FaClock /> {job.experience || "N/A"}
+                </div>
+              </div>
+
+              <Link
+                href={`/jobs/${job.id}`}
+                className="inline-block bg-[#B71C1C] text-white px-4 py-2 rounded hover:bg-[#8B0000] transition mt-auto text-center"
+              >
+                Read More
+              </Link>
             </div>
-
-            <p className="text-gray-700 mb-4">{job.description}</p>
-
-            <div className="flex flex-wrap gap-4 text-sm text-[#6D2932] mb-4">
-              <div className="flex items-center gap-2">
-                <FaMapMarkerAlt /> {job.location}
-              </div>
-              <div className="flex items-center gap-2">
-                <FaBriefcase /> {job.type}
-              </div>
-              <div className="flex items-center gap-2">
-                <FaClock /> {job.experience}
-              </div>
-            </div>
-
-            <Link
-              href={`/jobs/${job.id}`}
-              className="inline-block bg-[#B71C1C] text-white px-4 py-2 rounded hover:bg-[#8B0000] transition"
-            >
-              View Details
-            </Link>
           </motion.div>
         ))}
+      </div>
+
+      <div className="mt-6 flex justify-center gap-2 items-center">
+        <button
+          onClick={handlePrev}
+          className="px-3 py-1 rounded bg-gray-200 text-[#6D2932] hover:bg-gray-300 disabled:opacity-50"
+          disabled={currentPage === 1}
+        >
+          Prev
+        </button>
+        {getPaginationNumbers().map((number) => (
+          <button
+            key={number}
+            onClick={() => paginate(number)}
+            className={`px-3 py-1 rounded ${currentPage === number ? "bg-[#B71C1C] text-white" : "bg-gray-200 text-[#6D2932]"} hover:bg-gray-300`}
+          >
+            {number}
+          </button>
+        ))}
+        <button
+          onClick={handleNext}
+          className="px-3 py-1 rounded bg-gray-200 text-[#6D2932] hover:bg-gray-300 disabled:opacity-50"
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
       </div>
     </section>
   );

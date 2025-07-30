@@ -1,3 +1,4 @@
+//src/app/chat/ChatScreen.jsx
 import Messages from "./Messages";
 import SendBox from "./SendBox";
 import { useEffect, useState } from "react";

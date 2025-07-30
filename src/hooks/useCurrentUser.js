@@ -1,3 +1,5 @@
+//src/hooks/useCurrentUser.js
+
 "use client";
 
 import { onAuthStateChanged } from "firebase/auth";

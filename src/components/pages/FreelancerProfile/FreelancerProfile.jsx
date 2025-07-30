@@ -3,7 +3,8 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 
-import { getAllPosts, updateUser } from "@/services/firebase";
+import { updateUser } from "@/services/userServices";
+import { getAllPosts } from "@/services/postServices";
 import {
   Certificates,
   EditModal,
@@ -75,7 +76,6 @@ const FreelancerProfile = ({ user, refetchUser }) => {
   const bio = user.bio || "";
   const status = user.status || user.verificationStatus || "";
   const rating = user.rating || null;
-  
 
   return (
     <div className="min-h-screen font-sans bg-gray-50">

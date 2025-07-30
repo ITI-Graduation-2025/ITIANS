@@ -1,3 +1,4 @@
+//src/app/chat/SendBox.jsx
 "use client";
 
 import { useState, useEffect } from "react";

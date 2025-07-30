@@ -1,3 +1,4 @@
+//src/app/chat/[chatId]/page.jsx
 "use client";
 
 import { useParams } from "next/navigation";

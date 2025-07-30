@@ -2,7 +2,13 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import { FaUserCircle, FaSignOutAlt, FaRegUser } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaSignOutAlt,
+  FaRegUser,
+  FaUsers,
+  FaComments,
+} from "react-icons/fa";
 import { Loader2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -61,6 +67,26 @@ export default function UserInfo() {
             >
               <FaRegUser className="text-[#B71C1C] group-hover:text-white" />
               <span>Profile</span>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            asChild
+            className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
+          >
+            <Link href="/users" className="flex items-center gap-3">
+              <FaUsers className="text-[#B71C1C] group-hover:text-white" />
+              <span>Users</span>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            asChild
+            className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
+          >
+            <Link href="/chat" className="flex items-center gap-3">
+              <FaComments className="text-[#B71C1C] group-hover:text-white" />
+              <span>Messages</span>
             </Link>
           </DropdownMenuItem>
 
