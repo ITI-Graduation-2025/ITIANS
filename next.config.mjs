@@ -14,6 +14,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "www.creativefabrica.com",
       },
+      {
+        protocol: "https",
+       hostname: "res.cloudinary.com",
+      }
     ],
     domains: [
       "picsum.photos",

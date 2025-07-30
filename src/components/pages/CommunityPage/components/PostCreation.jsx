@@ -1,5 +1,6 @@
 import { createPost } from "@/services/firebase";
 import { upload } from "@/utils/upload";
+import Image from "next/image";
 import { useState } from "react";
 import { HiOutlinePaperClip } from "react-icons/hi2";
 export default function PostCreation({ currentUser }) {
@@ -30,6 +31,7 @@ export default function PostCreation({ currentUser }) {
         };
       }
       const newPostData = {
+        authorProfileImage: currentUser.profileImage,
         author: currentUser.name || "Unknown",
         role: currentUser.role || "Unknown",
         content: postContent,
@@ -39,6 +41,8 @@ export default function PostCreation({ currentUser }) {
         attachment: attachmentData,
         authorId: userId,
       };
+      console.log(newPostData);
+      
       await createPost(newPostData);
       setPostContent("");
       setPostAttachment(null);
@@ -63,9 +67,19 @@ export default function PostCreation({ currentUser }) {
         {error && <div className="text-red-500 mb-2">{error}</div>}
         <form onSubmit={handleAddPost}>
           <div className="flex items-start space-x-3">
-            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-              {currentUser?.avatar}
-            </div>
+            {currentUser.profileImage ? (
+              <Image
+                src={currentUser?.profileImage}
+                className="h-12 w-12 rounded-full object-cover"
+                width={100}
+                height={100}
+                alt={currentUser.fullName}
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                {currentUser?.profileImage}
+              </div>
+            )}
             <div className="flex-1">
               <textarea
                 value={postContent}

@@ -1,4 +1,5 @@
 import { createPost, deletePost, updatePost } from "@/services/firebase";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -44,6 +45,7 @@ export default function PostItem({ post, currentUser }) {
     }
     try {
       const newPostData = {
+        authorProfileImage: currentUser.profileImage,
         author: currentUser.name || "Unknown",
         role: currentUser.role || "Unknown",
         content: post.content,
@@ -52,6 +54,7 @@ export default function PostItem({ post, currentUser }) {
         isLiked: false,
         attachment: post.attachment || null,
         repostOf: {
+          authorProfileImage: post.authorProfileImage || "",
           author: post.author || "Unknown",
           authorId: post.authorId || "",
           role: post.role || "Unknown",
@@ -61,19 +64,22 @@ export default function PostItem({ post, currentUser }) {
         },
         authorId: userId,
       };
+      console.log(newPostData);
+      // console.log(post);
+
       await createPost(newPostData);
     } catch (err) {
       console.error("Error reposting:", err);
     }
   };
-
+  console.log(post);
   const handleAddComment = async (comment) => {
     if (!comment.trim()) return;
     try {
       const newComment = {
+        authorProfileImage: currentUser.profileImage,
         authorId: currentUser.id || currentUser.uid,
         authorName: currentUser.name || "Unknown",
-        authorAvatar: currentUser.avatar || "",
         content: comment,
         createdAt: new Date().toISOString(),
       };
@@ -148,9 +154,19 @@ export default function PostItem({ post, currentUser }) {
       <div className="p-4">
         <div className="flex items-start space-x-3">
           <Link href={`/profile/${post.authorId}`}>
-            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold cursor-pointer">
-              {post.author.charAt(0)}
-            </div>
+            {post.authorProfileImage ? (
+              <Image
+                src={post.authorProfileImage || ""}
+                alt={post.author}
+                className="h-12 w-12 rounded-full cursor-pointer"
+                width={100}
+                height={100}
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold cursor-pointer">
+                {post.author.charAt(0)}
+              </div>
+            )}
           </Link>
           <div className="flex-1">
             <div className="flex justify-between items-start">
@@ -194,9 +210,19 @@ export default function PostItem({ post, currentUser }) {
           <div className="mt-3 bg-muted border border-border rounded-lg p-3">
             <div className="flex items-start space-x-3">
               <Link href={`/profile/${post.repostOf?.authorId}`}>
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold cursor-pointer">
-                  {post.repostOf.author.charAt(0)}
-                </div>
+                {post.repostOf.authorProfileImage ? (
+                  <Image
+                    src={post.repostOf.authorProfileImage || ""}
+                    alt={post.repostOf.author}
+                    className="h-12 w-12 rounded-full cursor-pointer"
+                    width={100}
+                    height={100}
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold cursor-pointer">
+                    {post.repostOf.author.charAt(0)}
+                  </div>
+                )}
               </Link>
               <Link href={`/profile/${post.repostOf?.authorId}`}>
                 <h5 className="font-semibold text-sm cursor-pointer hover:underline">
