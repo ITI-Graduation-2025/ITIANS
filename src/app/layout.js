@@ -1,16 +1,14 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
 import NextProvider from "@/components/providers/nextProvider";
-import LayoutWrapper from "@/components/componentts/LayoutWrapper";
 import { UsersProvider } from "@/context/usersContext";
 import { AuthProvider } from "@/context/AuthContext";
 // import { getAllUsers, getUser } from "@/services/firebase";
 import { authOptions } from "@/lib/nextAuth";
 import { getServerSession } from "next-auth";
 import { UserProvider } from "@/context/userContext";
-import { redirect } from "next/navigation";
-// import { getPath } from "recharts/types/shape/Curve";
+import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
+import "./globals.css";
+import LayoutWrapper from "@/components/componentts/LayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,11 +35,13 @@ export default async function RootLayout({ children }) {
         data-new-gr-c-s-check-loaded="14.1246.0"
       >
         <Toaster />
-        {/* <AuthProvider> */}
         <NextProvider>
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <UserProvider>
+            <UsersProvider>
+              <LayoutWrapper>{children}</LayoutWrapper>
+            </UsersProvider>
+          </UserProvider>
         </NextProvider>
-        {/* </AuthProvider> */}
       </body>
     </html>
   );
