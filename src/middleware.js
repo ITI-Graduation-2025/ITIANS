@@ -52,25 +52,19 @@ import { withAuth } from "next-auth/middleware";
 export default withAuth(
   async function middleware(request) {
     const pathname = request.nextUrl.pathname;
-    const isAuth = await getToken({ req: request });
-    const protectedRoutes = [
-      "/dashboard",
-      "/mentor",
-      "/profile",
-      "/users",
-      "/chat/:path*",
-    ];
+    const token = await getToken({ req: request });
+    const protectedRoutes = ["/dashboard", "/mentor", "/profile", "/chat"];
     const isAuthRoute =
       pathname.startsWith("/login") || pathname.startsWith("/register");
     const isProtectedRoute = protectedRoutes.some(
       (route) => pathname.startsWith(route) || pathname === "/",
     );
 
-    if (!isAuth && isProtectedRoute) {
+    if (!token && isProtectedRoute) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (isAuthRoute && isAuth) {
+    if (isAuthRoute && token) {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
@@ -78,8 +72,8 @@ export default withAuth(
   },
   {
     callbacks: {
-      async authorized() {
-        return true;
+      async authorized({ token }) {
+        return !!token;
       },
     },
   },
@@ -93,7 +87,6 @@ export const config = {
     "/mentor",
     "/",
     "/profile",
-    "/users",
     "/chat/:path*",
   ],
 };

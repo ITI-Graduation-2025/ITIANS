@@ -10,7 +10,7 @@ export default function MentorsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("None");
   const [currentPage, setCurrentPage] = useState(1);
-  const mentorsPerPage = 9;
+  const mentorsPerPage = 6;
 
   useEffect(() => {
     fetchMentors();
@@ -52,6 +52,32 @@ export default function MentorsPage() {
   );
 
   const totalPages = Math.ceil(filteredMentors.length / mentorsPerPage);
+
+  const getPaginationNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 3;
+    let startPage = Math.max(1, currentPage - 1);
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1 && startPage > 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
+
+  const handlePageChange = (page) => setCurrentPage(page);
+
+  const handlePrev = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -114,21 +140,33 @@ export default function MentorsPage() {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-center mt-8 space-x-2">
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-8 space-x-2 items-center">
           <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
-            className={`px-3 py-1 rounded shadow ${
-              currentPage === page
-                ? "bg-[#B71C1C] text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            } transition`}
+            onClick={handlePrev}
+            className="px-3 py-1 rounded bg-gray-200 text-[#B71C1C] hover:bg-gray-300 disabled:opacity-50"
+            disabled={currentPage === 1}
           >
-            {page}
+            Prev
           </button>
-        ))}
-      </div>
+          {getPaginationNumbers().map((number) => (
+            <button
+              key={number}
+              onClick={() => handlePageChange(number)}
+              className={`px-3 py-1 rounded ${currentPage === number ? "bg-[#B71C1C] text-white" : "bg-gray-200 text-[#B71C1C] border border-[#B71C1C]"} hover:bg-gray-300`}
+            >
+              {number}
+            </button>
+          ))}
+          <button
+            onClick={handleNext}
+            className="px-3 py-1 rounded bg-gray-200 text-[#B71C1C] hover:bg-gray-300 disabled:opacity-50"
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Animations CSS */}
       <style jsx>{`

@@ -32,11 +32,6 @@ export default function JobsSection() {
     fetchJobs();
   }, []);
 
-  const truncateDescription = (text, maxLength = 120) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength).trim() + "...";
-  };
-
   return (
     <section className="py-20 px-4 bg-[#fffbf5]">
       <motion.h2
@@ -76,12 +71,11 @@ export default function JobsSection() {
             >
               <div className="flex flex-col justify-between flex-grow">
                 <h3 className="text-xl md:text-2xl font-bold text-[#B71C1C] text-center mb-4">
-                  {/* {job.title} */}
                   {job.title.charAt(0).toUpperCase() + job.title.slice(1)}
                 </h3>
                 <p className="text-gray-600 text-md mb-4">{job.company}</p>
-                <p className="text-black text-lg mb-6">
-                  {truncateDescription(job.description)}
+                <p className="text-black text-lg mb-6 line-clamp-2">
+                  {job.description}
                 </p>
 
                 <Link
@@ -121,6 +115,14 @@ export default function JobsSection() {
         .swiper-pagination-bullet-active {
           background: #e57373;
           opacity: 1;
+        }
+
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2; /* Limits to 2 lines */
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       `}</style>
     </section>

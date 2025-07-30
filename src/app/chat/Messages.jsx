@@ -43,6 +43,8 @@ export default function Messages({ chatId, currentUserId }) {
   const [editText, setEditText] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
   const messagesContainerRef = useRef(null);
+  const menuTimeoutRef = useRef(null);
+  const messageRefs = useRef({});
 
   useEffect(() => {
     const q = query(
@@ -54,7 +56,6 @@ export default function Messages({ chatId, currentUserId }) {
       const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setMessages(msgs);
 
-      // Fetch profile images and display names for unique senderIds
       const senderIds = [...new Set(msgs.map((msg) => msg.senderId))];
       const profiles = {};
       for (const senderId of senderIds) {
@@ -62,7 +63,6 @@ export default function Messages({ chatId, currentUserId }) {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const userData = userSnap.data();
-          console.log(`User ${senderId} data:`, userData);
           const displayName =
             userData.displayName ||
             userData.name ||
@@ -76,7 +76,6 @@ export default function Messages({ chatId, currentUserId }) {
             bgColor: generateBackgroundColor(senderId),
           };
         } else {
-          console.log(`User ${senderId} document does not exist`);
           profiles[senderId] = {
             profileImage: null,
             displayName: senderId || "Unknown",
@@ -92,7 +91,6 @@ export default function Messages({ chatId, currentUserId }) {
   }, [chatId]);
 
   useEffect(() => {
-    // Scroll to bottom when messages update
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTo({
         top: messagesContainerRef.current.scrollHeight,
@@ -102,7 +100,6 @@ export default function Messages({ chatId, currentUserId }) {
   }, [messages]);
 
   useEffect(() => {
-    // Show/hide scroll-to-bottom button
     const handleScroll = () => {
       if (messagesContainerRef.current) {
         const { scrollTop, scrollHeight, clientHeight } =
@@ -116,6 +113,37 @@ export default function Messages({ chatId, currentUserId }) {
     return () => container?.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest(".message-menu")) {
+        if (showMenu) {
+          menuTimeoutRef.current = setTimeout(() => {
+            setShowMenu(null);
+          }, 300);
+        }
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      if (menuTimeoutRef.current) {
+        clearTimeout(menuTimeoutRef.current);
+      }
+    };
+  }, [showMenu]);
+
+  const isNearHeader = (msgId) => {
+    const messageElement = messageRefs.current[msgId];
+    if (messageElement && messagesContainerRef.current) {
+      const containerRect =
+        messagesContainerRef.current.getBoundingClientRect();
+      const messageRect = messageElement.getBoundingClientRect();
+      return messageRect.top - containerRect.top < 100;
+    }
+    return false;
+  };
+
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTo({
@@ -125,7 +153,11 @@ export default function Messages({ chatId, currentUserId }) {
     }
   };
 
-  const handleMenuClick = (messageId) => {
+  const handleMenuClick = (messageId) => (event) => {
+    event.stopPropagation();
+    if (menuTimeoutRef.current) {
+      clearTimeout(menuTimeoutRef.current);
+    }
     setShowMenu(showMenu === messageId ? null : messageId);
   };
 
@@ -228,7 +260,7 @@ export default function Messages({ chatId, currentUserId }) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative overflow-visible">
       <style jsx>{`
         @keyframes fade-in {
           from {
@@ -248,12 +280,13 @@ export default function Messages({ chatId, currentUserId }) {
         ref={messagesContainerRef}
         className="space-y-4 p-4 max-h-[calc(80vh-120px)] overflow-y-auto"
       >
-        {messages.map((msg) => (
+        {messages.map((msg, index) => (
           <div
             key={msg.id}
+            ref={(el) => (messageRefs.current[msg.id] = el)}
             className={`flex ${
               msg.senderId === currentUserId ? "justify-end" : "justify-start"
-            } items-start gap-2 relative`}
+            } items-start gap-2 relative ${index === messages.length - 1 ? "mb-6" : ""}`}
           >
             {msg.senderId !== currentUserId &&
               (userProfiles[msg.senderId]?.profileImage ? (
@@ -305,13 +338,19 @@ export default function Messages({ chatId, currentUserId }) {
               !msg.deletedForEveryone && (
                 <div className="relative">
                   <button
-                    onClick={() => handleMenuClick(msg.id)}
+                    onClick={handleMenuClick(msg.id)}
                     className="p-1 text-gray-500 hover:text-gray-600"
                   >
                     <EllipsisVerticalIcon className="h-5 w-5" />
                   </button>
                   {showMenu === msg.id && (
-                    <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-10 w-48 animate-fade-in">
+                    <div
+                      className={`message-menu absolute ${
+                        isNearHeader(msg.id)
+                          ? "top-0 right-[calc(100%+1rem)]"
+                          : "top-[-1.5rem] right-8"
+                      } bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-[100] w-48 animate-fade-in`}
+                    >
                       <button
                         onClick={() => {
                           setEditMessage(msg);
@@ -376,7 +415,7 @@ export default function Messages({ chatId, currentUserId }) {
         </button>
       )}
       {editMessage && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 animate-fade-in">
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-80 max-w-full shadow-xl">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Edit Your Message
@@ -408,7 +447,7 @@ export default function Messages({ chatId, currentUserId }) {
         </div>
       )}
       {confirmDelete && (
-        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 animate-fade-in">
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-80 max-w-full shadow-xl">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               {confirmDelete.forEveryone
