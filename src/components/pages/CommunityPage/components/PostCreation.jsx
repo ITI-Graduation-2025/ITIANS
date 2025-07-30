@@ -1,8 +1,7 @@
+import { createPost } from "@/services/firebase";
+import { upload } from "@/utils/upload";
 import { useState } from "react";
 import { HiOutlinePaperClip } from "react-icons/hi2";
-import { createPost } from "@/services/firebase";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
 export default function PostCreation({ currentUser }) {
   const [postContent, setPostContent] = useState("");
   const [postAttachment, setPostAttachment] = useState(null);
@@ -22,13 +21,11 @@ export default function PostCreation({ currentUser }) {
     try {
       setUploading(true);
       if (postAttachment) {
-        const storage = getStorage();
-        const storageRef = ref(storage, `attachments/${userId}_${Date.now()}_${postAttachment.name}`);
-        await uploadBytes(storageRef, postAttachment);
-        const url = await getDownloadURL(storageRef);
+        const url = await upload(postAttachment);
+        const file = postAttachment.target.files[0];
         attachmentData = {
-          name: postAttachment.name,
-          type: postAttachment.type,
+          name: file.name,
+          type: file.type,
           url,
         };
       }
@@ -106,9 +103,7 @@ export default function PostCreation({ currentUser }) {
                     className="text-destructive hover:text-destructive/80"
                     onClick={() => setPostAttachment(null)}
                     disabled={uploading}
-                  >
-                    
-                  </button>
+                  ></button>
                 </div>
               )}
               <div className="flex justify-between items-center mt-3">
@@ -118,7 +113,7 @@ export default function PostCreation({ currentUser }) {
                     <input
                       type="file"
                       className="hidden"
-                      onChange={(e) => setPostAttachment(e.target.files[0])}
+                      onChange={(e) => setPostAttachment(e)}
                       disabled={uploading}
                     />
                   </label>
@@ -126,7 +121,9 @@ export default function PostCreation({ currentUser }) {
                 <button
                   type="submit"
                   className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50"
-                  disabled={uploading || (!postContent.trim() && !postAttachment)}
+                  disabled={
+                    uploading || (!postContent.trim() && !postAttachment)
+                  }
                 >
                   {uploading ? "Posting..." : "Post"}
                 </button>
@@ -137,4 +134,4 @@ export default function PostCreation({ currentUser }) {
       </div>
     </div>
   );
-} 
+}
