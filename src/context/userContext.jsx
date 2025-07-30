@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from "react";
-import { getUser } from "@/services/firebase";
+// import { getUser } from "@/services/firebase";
+import { getUser } from "@/services/userServices";
 import { useSession } from "next-auth/react";
 
 export const UserContext = createContext();

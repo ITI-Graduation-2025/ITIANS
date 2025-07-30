@@ -5,7 +5,7 @@ import NextProvider from "@/components/providers/nextProvider";
 import LayoutWrapper from "@/components/componentts/LayoutWrapper";
 import { UsersProvider } from "@/context/usersContext";
 import { AuthProvider } from "@/context/AuthContext";
-import { getAllUsers, getUser } from "@/services/firebase";
+// import { getAllUsers, getUser } from "@/services/firebase";
 import { authOptions } from "@/lib/nextAuth";
 import { getServerSession } from "next-auth";
 import { UserProvider } from "@/context/userContext";

@@ -1,7 +1,8 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse, NextRequest } from "next/server";
 import { withAuth } from "next-auth/middleware";
-import { getAllUsers } from "./services/firebase";
+// import { getAllUsers } from "./services/firebase";
+import { getAllUsers } from "./services/userServices";
 // This function can be marked `async` if using `await` inside
 
 export default withAuth(

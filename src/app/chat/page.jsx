@@ -12,13 +12,15 @@ import {
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import Link from "next/link";
+// import useCurrentUser from "@/hooks/useCurrentUser";
+import { generateChatId } from "@/lib/chatFunctions";
 import useCurrentUser from "@/hooks/useCurrentUser";
-import { generateChatId } from "@/lib/chatFunctions"; 
 
 export default function ChatsList() {
   const currentUser = useCurrentUser();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
+  console.log(chats);
 
   useEffect(() => {
     if (!currentUser) return;

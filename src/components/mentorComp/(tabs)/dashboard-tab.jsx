@@ -41,7 +41,8 @@ import {
   acceptSessionRequest,
   rejectSessionRequest,
   getPendingRequestsCountForSession,
-} from "@/services/firebase";
+} from "@/services/sessionServices";
+
 import {
   Dialog,
   DialogClose,
@@ -75,6 +76,8 @@ export function DashboardTab() {
   } = useForm();
   const { user } = useUserContext();
   const mentorId = user.id;
+  // console.log(applicantsForSelectedSession);
+  // console.log(sessionRequests);
 
   useEffect(() => {
     if (!mentorId) return;
@@ -99,7 +102,6 @@ export function DashboardTab() {
           return true;
         });
 
-        console.log(available, booked);
         setSessions(available);
         setBookedSessions(validBookedSessions);
       } catch (error) {
@@ -467,7 +469,7 @@ export function DashboardTab() {
                                 });
                               setIsApplicantsDialogOpen(true);
                             }}
-                            disabled={pendingRequestsCount === 0} // تعطيل الزر إذا مفيش طلبات
+                            disabled={pendingRequestsCount === 0}
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             View Applicants
@@ -482,10 +484,10 @@ export function DashboardTab() {
                               applicantsForSelectedSession
                                 .filter(
                                   (applicant) => applicant.status === "pending",
-                                ) // عرض المعلقة بس
+                                )
                                 .map((applicant) => (
                                   <Card key={applicant.id} className="mb-3">
-                                    <CardContent className="p-4">
+                                    <CardContent className="p-4 flex items-center justify-between">
                                       <div className="flex items-start">
                                         <User className="w-5 h-5 mt-0.5 mr-2 text-gray-500" />
                                         <div className="flex-1">
@@ -493,14 +495,20 @@ export function DashboardTab() {
                                             {applicant.menteeName}
                                           </h4>
                                           <p className="text-xs text-gray-500 truncate">
-                                            {applicant.menteeBio}
+                                            {/* {applicant.menteeId} */}
                                           </p>
                                         </div>
                                       </div>
                                       <div className="flex justify-end space-x-2 mt-2">
                                         {/* زر عرض البروفايل - محتاج رابط */}
                                         <Button size="sm" variant="outline">
-                                          View Profile
+                                          <a
+                                            href={`/profile/${applicant.menteeId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            View Profile
+                                          </a>
                                         </Button>
                                         <Button
                                           size="sm"
@@ -510,7 +518,6 @@ export function DashboardTab() {
                                                 applicant.id,
                                                 session.id,
                                               );
-                                              // تحديث الحالات المحلية
                                               setSessionRequests((prev) =>
                                                 prev.map((req) =>
                                                   req.id === applicant.id
@@ -539,7 +546,7 @@ export function DashboardTab() {
                                               toast.success(
                                                 "Session request accepted!",
                                               );
-                                              setIsApplicantsDialogOpen(false); // إغلاق الـ Dialog
+                                              setIsApplicantsDialogOpen(false);
                                             } catch (err) {
                                               console.error(
                                                 "Failed to accept request:",

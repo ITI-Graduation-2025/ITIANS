@@ -1,6 +1,7 @@
 // islam/layout.js
 import { getServerSession } from "next-auth/next";
-import { getUser } from "@/services/firebase";
+// import { getUser } from "@/services/firebase";
+import { getUser } from "@/services/userServices";
 import { UserProvider } from "@/context/userContext";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/nextAuth";

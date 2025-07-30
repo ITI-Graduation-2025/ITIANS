@@ -1,7 +1,8 @@
 // app/mentors/[id]/page.jsx
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { getUser } from "@/services/firebase";
+// import { getUser } from "@/services/firebase";
+import { getUser } from "@/services/userServices";
 
 import { Header } from "@/components/mentorComp/header";
 import { Sidebar } from "@/components/mentorComp/sidebar";

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useState, useEffect } from "react";
-import { getAllUsers, subscribeToUsers } from "@/services/firebase";
+// import { getAllUsers, subscribeToUsers } from "@/services/firebase";
+import { getAllUsers, subscribeToUsers } from "@/services/userServices";
 
 export const UsersContext = createContext();
 

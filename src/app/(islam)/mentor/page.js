@@ -1,7 +1,8 @@
 // app/(islam)/mentor/page.js
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/nextAuth";
-import { getUser } from "@/services/firebase";
+// import { getUser } from "@/services/firebase";
+import { getUser } from "@/services/userServices";
 import { notFound } from "next/navigation";
 
 import { Header } from "@/components/mentorComp/header";

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { signIn, getSession } from "next-auth/react";
 import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/config/firebase";
+import { auth, initializeFCM } from "@/config/firebase";
 import { toast } from "sonner";
 
 export default function LoginForm() {
@@ -58,6 +58,11 @@ export default function LoginForm() {
         console.log("SignIn error:", result.error);
       } else {
         const session = await getSession();
+
+        const userId = session?.user?.id; // تأكد إن الـ ID موجود في session
+        if (userId) {
+          await initializeFCM(userId); // استدعاء initializeFCM بـ userId
+        }
         // console.log(session.user.role)
         const userRole = session?.user?.role;
         if (userRole === "admin") {

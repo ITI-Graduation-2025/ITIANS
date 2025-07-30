@@ -11,10 +11,10 @@ export default function useCurrentUser() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Firebase Current User:", user);
+      // console.log("Firebase Current User:", user);
 
       if (session?.user) {
-        console.log("NextAuth session user:", session.user);
+        // console.log("NextAuth session user:", session.user);
         setCurrentUser({
           uid: session.user.id || user?.uid,
           email: session.user.email || user?.email,
