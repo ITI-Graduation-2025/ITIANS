@@ -10,3 +10,15 @@
 export const getUniqueValues = (array, key) => {
   return Array.from(new Set(array.map((item) => item[key])));
 };
+
+// get all values  from object inside array
+
+export const getAllSpecificValueInsideArray = (array, key) => {
+  return array.map((item) => item[key]);
+};
+
+// get array from value in object
+
+export const getArrayFromValue = (array, key, value) => {
+  return array.filter((item) => item[key] === value);
+};

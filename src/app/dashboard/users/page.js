@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -36,15 +36,38 @@ import {
 import { Search, MoreHorizontal, Check, X, Eye, Ban } from "lucide-react";
 import { mockUsers } from "@/lib/mock-data";
 import Image from "next/image";
+import { getAllUsers } from "@/services/firebase";
+import { UsersContext } from "@/context/usersContext";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState(mockUsers);
+  // const [users, setUsers] = useState(mockUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  console.log(users);
+  const { users, setUsers } = useContext(UsersContext);
+
+  // console.log(users);
+
+  const router = useRouter();
+
   // console.log(...mockUsers);
 
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const totalUsersData = await getAllUsers();
+  //       setUsers(totalUsersData);
+  //     } catch (error) {
+  //       console.log("خطأ في جلب البيانات:", error);
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, []);
+
+  // search
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,34 +107,64 @@ export default function UsersPage() {
     }
   };
 
-  // const handleSuspend = (userId) => {
+  const handleSuspend = (userId) => {
+    setUsers(
+      users.map((user) =>
+        user.id === userId
+          ? (user.verificationStatus === "Suspended" ?? {
+              ...user,
+              verificationStatus: "Approved",
+            })
+          : user,
+      ),
+    );
+  };
+
+  // const handleUnsuspend = (userId) => {
   //   setUsers(
   //     users.map((user) =>
   //       user.id === userId
-  //         ? (user.verificationStatus === "Suspended" ?? {
+  //         ? (user.verificationStatus === "Approved" ?? {
   //             ...user,
-  //             verificationStatus: "Approved",
+  //             verificationStatus: "Suspended",
   //           })
   //         : user,
   //     ),
   //   );
   // };
 
+  const handleViewProfile = (userRole) => {
+    switch (userRole) {
+      case "freelancer":
+        router.push("/profile");
+        break;
+      case "company":
+        router.push("/companyprofile");
+        break;
+      case "mentor":
+        router.push("/mentor");
+        break;
+      default:
+        router.push("/");
+        break;
+    }
+  };
   const getRoleBadge = (role) => {
+    // console.log(role.toLowerCase());
     switch (role) {
-      case "Freelancer":
+      case "freelancer":
         return (
           <Badge variant="outline" className="bg-blue-50 text-blue-700">
             Freelancer
           </Badge>
         );
-      case "Company":
+      case "company":
         return (
           <Badge variant="outline" className="bg-purple-50 text-purple-700">
             Company
           </Badge>
         );
-      case "Mentor":
+      case "mentor":
         return (
           <Badge variant="outline" className="bg-green-50 text-green-700">
             Mentor
@@ -215,7 +268,7 @@ export default function UsersPage() {
                       <TableCell>
                         {getStatusBadge(user.verificationStatus)}
                       </TableCell>
-                      <TableCell>{user.createdAt}</TableCell>
+                      <TableCell>{user.createdAt.split("T")[0]}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -224,7 +277,9 @@ export default function UsersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleViewProfile(user.role)}
+                            >
                               <Eye className="mr-2 h-4 w-4" />
                               View Profile
                             </DropdownMenuItem>

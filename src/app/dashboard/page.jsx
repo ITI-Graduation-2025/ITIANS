@@ -12,6 +12,15 @@ import { Button } from "@/components/ui/button";
 import { Users, Briefcase, GraduationCap, TrendingUp } from "lucide-react";
 import { mockAnalytics } from "@/lib/mock-data";
 import Link from "next/link";
+import { getAllUsers } from "@/services/firebase";
+import {
+  getAllSpecificValueInsideArray,
+  getAllValueInsideArray,
+  getArrayFromValue,
+  getUniqueValues,
+} from "@/utils/arrayUtils";
+import { array } from "zod";
+import { useContext, useEffect, useState } from "react";
 
 export default function Dashboard() {
   const {
@@ -22,6 +31,43 @@ export default function Dashboard() {
     userGrowth,
   } = mockAnalytics;
 
+  const [users, setUsers] = useState([]);
+  // const [users, setUsers] = useContext();
+  const [roles, setRoles] = useState([]);
+  const [freelancers, setFreelancers] = useState([]);
+  const [mentor, setMentor] = useState([]);
+  const [company, setCompany] = useState([]);
+  // console.log(users);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const totalUsersData = await getAllUsers();
+        setUsers(totalUsersData);
+        const roles = await getAllSpecificValueInsideArray(
+          totalUsersData,
+          "role",
+        );
+        setRoles(roles);
+        const freelancers = getArrayFromValue(
+          totalUsersData,
+          "role",
+          "freelancer",
+        );
+        setFreelancers(freelancers);
+        const mentor = getArrayFromValue(totalUsersData, "role", "mentor");
+        setMentor(mentor);
+        const company = getArrayFromValue(totalUsersData, "role", "company");
+        setCompany(company);
+      } catch (error) {
+        console.log("خطأ في جلب البيانات:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // console.log(users, roles, freelancers, mentor, company);
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1 space-y-4 p-4 pt-6">
@@ -42,7 +88,7 @@ export default function Dashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalUsers.freelancers}</div>
+              <div className="text-2xl font-bold">{freelancers.length}</div>
               <p className="text-xs text-muted-foreground">
                 +12% from last month
               </p>
@@ -57,7 +103,7 @@ export default function Dashboard() {
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalUsers.companies}</div>
+              <div className="text-2xl font-bold">{company.length}</div>
               <p className="text-xs text-muted-foreground">
                 +8% from last month
               </p>
@@ -67,14 +113,14 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Active Mentors
+                Total Mentors
               </CardTitle>
               <GraduationCap className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalUsers.mentors}</div>
+              <div className="text-2xl font-bold">{mentor.length}</div>
               <p className="text-xs text-muted-foreground">
-                +15% from last month
+                +3% from last month
               </p>
             </CardContent>
           </Card>

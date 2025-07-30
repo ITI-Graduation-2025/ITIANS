@@ -1,4 +1,5 @@
 "use client";
+import { UsersProvider } from "@/context/usersContext";
 import { SessionProvider } from "next-auth/react";
 import React from "react";
 

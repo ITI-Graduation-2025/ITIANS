@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Card,
@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Users } from "lucide-react";
+import { UsersContext } from "@/context/usersContext";
+import { useSession } from "next-auth/react";
 
 const mockSessions = [
   { id: 1, date: "2025-07-15", time: "10:00 AM", duration: "1h" },
@@ -55,6 +57,9 @@ export function TabsSection() {
     duration: "",
   });
 
+  const { users } = useContext(UsersContext);
+  const { data, status } = useSession();
+
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("New session:", newSession);
@@ -64,7 +69,7 @@ export function TabsSection() {
   return (
     <div className="border-t border-[var(--border)]">
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-[var(--card)] border-b border-[var(--border)] rounded-none h-auto p-0">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 bg-[var(--card)] border-b border-[var(--border)] rounded-none h-auto p-0">
           <TabsTrigger
             value="overview"
             className="border-b-2 border-transparent  data-[state=active]:bg-sidebar-primary rounded-none py-3 sm:py-4  data-[state=active]:text-white text-xs sm:text-sm"
@@ -92,6 +97,14 @@ export function TabsSection() {
           >
             Group sessions
           </TabsTrigger>
+          {data?.user?.role === "mentor" && (
+            <TabsTrigger
+              value="dashboard"
+              className="border-b-2 border-transparent  data-[state=active]:bg-sidebar-primary rounded-none py-3 sm:py-4  data-[state=active]:text-white text-xs sm:text-sm"
+            >
+              Dashboard
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="p-4 sm:p-6">

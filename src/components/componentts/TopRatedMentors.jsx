@@ -4,29 +4,75 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { FaEye } from "react-icons/fa";
-
-const mentors = [
-  {
-    id: 1,
-    name: "Mahmoud Sameh",
-    title: "Frontend Engineer",
-    image: "/mentors/mentor2.jpg",
-  },
-  {
-    id: 3,
-    name: "Ahmed Nasser",
-    title: "Graphic Designer",
-    image: "/mentors/mentor3.jpg",
-  },
-  {
-    id: 2,
-    name: "Amira Mostafa",
-    title: "AI Researcher",
-    image: "/mentors/mentor1.jpg",
-  },
-];
+import { useEffect, useState } from "react";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+} from "firebase/firestore";
+import { db } from "@/config/firebase";
 
 export default function TopRatedMentors() {
+  const [mentors, setMentors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchMentors = async () => {
+      try {
+        setLoading(true);
+        const q = query(
+          collection(db, "users"),
+          where("role", "==", "mentor"),
+          orderBy("createdAt", "desc"),
+          limit(3),
+        );
+        const querySnapshot = await getDocs(q);
+        const mentorsData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          profileImage: doc.data().profileImage || "/default-avatar.avif",
+        }));
+        console.log("Fetched mentors:", mentorsData); // Debugging
+        setMentors(mentorsData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching mentors:", error);
+        setError("Failed to load mentors. Please try again later.");
+        setLoading(false);
+      }
+    };
+
+    fetchMentors();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-20 px-4 bg-[#B71C1C]">
+        <p className="text-white text-center">Loading mentors...</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-20 px-4 bg-[#B71C1C]">
+        <p className="text-white text-center">{error}</p>
+      </section>
+    );
+  }
+
+  if (mentors.length === 0) {
+    return (
+      <section className="py-20 px-4 bg-[#B71C1C]">
+        <p className="text-white text-center">No mentors found.</p>
+      </section>
+    );
+  }
+
   return (
     <section className="py-20 px-4 bg-[#B71C1C]">
       <motion.h2
@@ -36,7 +82,7 @@ export default function TopRatedMentors() {
         viewport={{ once: true, amount: 0.3 }}
         className="text-3xl md:text-4xl font-bold text-white text-center mb-12"
       >
-        Top Rated Mentors
+        Our Mentors
       </motion.h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -51,7 +97,7 @@ export default function TopRatedMentors() {
           >
             {/* Mentor Image */}
             <Image
-              src={mentor.image}
+              src={mentor.profileImage}
               alt={mentor.name}
               width={500}
               height={500}
@@ -65,7 +111,7 @@ export default function TopRatedMentors() {
                   {mentor.name}
                 </h3>
                 <p className="text-base md:text-lg text-[#FCE4EC]">
-                  {mentor.title}
+                  {mentor.jobTitle}
                 </p>
               </div>
 
