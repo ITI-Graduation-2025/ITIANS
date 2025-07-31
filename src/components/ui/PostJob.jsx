@@ -1,4 +1,4 @@
-"use client";
+"use client";  
 
 import React, { useState } from "react";
 import { ArrowLeft, Send } from "lucide-react";
@@ -162,7 +162,6 @@ export default function PostJob() {
   return (
     <div className="min-h-screen bg-[#fff7f2]">
       <Toaster position="top-right" />
-
       <main className="p-6 max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold text-gray-800">Post a New Job</h1>
@@ -215,6 +214,33 @@ export default function PostJob() {
     </div>
   );
 }
+
+// 🔧 دالة لتحديث حالة المتقدم (قبول/رفض) داخل الوظيفة
+export async function updateApplicantStatus(jobId, applicantId, status) {
+  try {
+    const jobRef = doc(db, "jobs", jobId);
+    const jobSnap = await getDoc(jobRef);
+
+    if (!jobSnap.exists()) {
+      toast.error("Job not found");
+      return;
+    }
+
+    const jobData = jobSnap.data();
+    const updatedApplicants = jobData.applicants.map((app) =>
+      app.applicantId === applicantId ? { ...app, status } : app
+    );
+
+    await updateDoc(jobRef, { applicants: updatedApplicants });
+    toast.success(`Applicant ${status} successfully`);
+  } catch (error) {
+    console.error("Failed to update applicant status:", error);
+    toast.error("Update failed");
+  }
+}
+
+// ✅ مثال استخدام الدالة:
+// updateApplicantStatus("job123", "applicant456", "accepted");
 
 function InputField({ label, name, value, onChange, type = "text" }) {
   return (

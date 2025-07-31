@@ -1,278 +1,297 @@
-"use client";
+//post job 
 
-import { useEffect, useState } from "react";
-import CompanyNavbar from "./CompanyNavbar";
-import {
-  LayoutDashboard,
-  FileText,
-  Building2,
-  Edit,
-  Trash2,
-  PauseCircle,
-  PlayCircle,
-} from "lucide-react";
+import React, { useState } from "react";
+import { ArrowLeft, Send } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/config/firebase";
 import {
   collection,
+  addDoc,
   doc,
+  getDoc,
+  setDoc,
   updateDoc,
-  deleteDoc,
-  onSnapshot,
+  serverTimestamp,
   arrayUnion,
+  Timestamp,
 } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
-import JobForm from "./JobForm";
 import { useSession } from "next-auth/react";
 
-export default function CompanyJobs() {
-  const [jobs, setJobs] = useState([]);
-  const [editJob, setEditJob] = useState(null);
+export default function PostJob() {
   const { data: session } = useSession();
+  const [formData, setFormData] = useState({
+    title: "",
+    company: "",
+    location: "",
+    type: "Full Time",
+    level: "Entry Level (0-2 years)",
+    salary: "",
+    skills: "",
+    description: "",
+    requirements: "",
+    email: "",
+    deadline: "",
+  });
 
- const companyId = session?.user?.id;
-  const companyRef = companyId ? doc(db, "users", companyId) : null;
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!companyId) return;
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
-    const unsubscribe = onSnapshot(collection(db, "jobs"), async (snapshot) => {
-      const now = new Date();
-      const jobsData = [];
+  const validateForm = () => {
+    const requiredFields = [
+      "title",
+      "company",
+      "location",
+      "salary",
+      "skills",
+      "description",
+      "requirements",
+      "email",
+      "deadline",
+    ];
 
-      snapshot.forEach((docSnap) => {
-        const job = { id: docSnap.id, ...docSnap.data() };
-        const deadlineDate = job.deadline?.seconds
-          ? new Date(job.deadline.seconds * 1000)
-          : null;
+    for (let field of requiredFields) {
+      if (!formData[field]?.trim()) {
+        toast.error(`Please fill out the ${field} field.`);
+        return false;
+      }
+    }
 
-        if (job.status !== "Closed" && deadlineDate && deadlineDate < now) {
-          job.status = "Closed";
-        }
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(formData.email)) {
+      toast.error("Please enter a valid email address.");
+      return false;
+    }
 
-        if (job.companyId === companyId) {
-          jobsData.push(job);
-        }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setLoading(true);
+
+    try {
+      const userId = session?.user?.id;
+      if (!userId) {
+        toast.error("You must be logged in to post a job.");
+        setLoading(false);
+        return;
+      }
+
+      const deadlineDate = new Date(formData.deadline);
+      const deadlineTimestamp = Timestamp.fromDate(deadlineDate);
+
+      // إنشاء الوظيفة
+      await addDoc(collection(db, "jobs"), {
+        ...formData,
+        deadline: deadlineTimestamp,
+        createdAt: serverTimestamp(),
+        status: "Active",
+        applicationsCount: 0,
+        views: 0,
+        postedBy: userId,
+        companyId: userId,
+        applicants: [],
       });
 
-      setJobs(jobsData);
+      toast.success("Job posted successfully!");
 
-      if (companyRef) {
-        const activeCount = jobsData.filter((j) => j.status === "Active").length;
-        await updateDoc(companyRef, { activeJobs: activeCount });
+      const companyRef = doc(db, "users", userId);
+      const companySnap = await getDoc(companyRef);
+
+      if (companySnap.exists()) {
+        const companyData = companySnap.data();
+        const currentActiveJobs = companyData?.stats?.activeJobs || 0;
+        const currentTotalJobs = companyData?.stats?.totalJobs || 0;
+
+        await updateDoc(companyRef, {
+          "stats.activeJobs": currentActiveJobs + 1,
+          "stats.totalJobs": currentTotalJobs + 1,
+          recentActivities: arrayUnion({
+            type: "job_posted",
+            text: `Posted a new job: ${formData.title}`,
+            detail: new Date().toLocaleDateString(),
+          }),
+        });
+      } else {
+        await setDoc(companyRef, {
+          stats: {
+            activeJobs: 1,
+            totalJobs: 1,
+            totalHires: 0,
+            successRate: "0%",
+          },
+          recentActivities: [
+            {
+              type: "job_posted",
+              text: `Posted a new job: ${formData.title}`,
+              detail: new Date().toLocaleDateString(),
+            },
+          ],
+        });
       }
-    });
 
-    return () => unsubscribe();
-  }, [companyId]);
+      setFormData({
+        title: "",
+        company: "",
+        location: "",
+        type: "Full Time",
+        level: "Entry Level (0-2 years)",
+        salary: "",
+        skills: "",
+        description: "",
+        requirements: "",
+        email: "",
+        deadline: "",
+      });
+    } catch (err) {
+      console.error("Error posting job:", err);
+      toast.error("Failed to post job.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fff7f2] to-[#ffe8e0]">
-      <Toaster position="bottom-right" />
-      <CompanyNavbar />
-
-      <main className="p-6 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-1">Company Dashboard</h1>
+    <div className="min-h-screen bg-[#fff7f2]">
+      <Toaster position="top-right" />
+      <main className="p-6 max-w-5xl mx-auto">
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-2xl font-bold text-gray-800">Post a New Job</h1>
+          <Link
+            href="/companyjobs"
+            className="flex items-center gap-1 text-red-600 border border-red-600 px-3 py-1 rounded hover:bg-red-100 text-sm font-medium"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to My Jobs
+          </Link>
+        </div>
         <p className="text-gray-600 mb-6">
-          Manage your job postings and find the best ITI talent
+          Connect with skilled ITI graduates for your projects
         </p>
 
-        <div className="flex gap-4 border-b mb-6">
-          <Link href="/dashboardCompany" className="px-4 py-2 flex items-center gap-1 text-gray-600 font-medium hover:text-red-600 transition">
-            <LayoutDashboard className="w-4 h-4" /> Overview
-          </Link>
-          <Link href="/companyjobs" className="border-b-2 border-red-500 px-4 py-2 flex items-center gap-1 text-red-600 font-medium">
-            <FileText className="w-4 h-4" /> My Jobs
-          </Link>
-          <Link href="/Applicationjob" className="text-gray-600 hover:text-red-600 px-4 py-2 flex items-center gap-1 transition">
-            <FileText className="w-4 h-4" /> Applications
-          </Link>
-          <Link href="/companyprofile" className="text-gray-600 px-4 py-2 font-medium flex items-center gap-1 hover:text-red-600 transition">
-            <Building2 className="w-4 h-4" /> Company Profile
-          </Link>
-        </div>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-6 rounded-xl shadow-md space-y-6"
+        >
+          <div className="grid md:grid-cols-2 gap-4">
+            <InputField label="Job Title" name="title" value={formData.title} onChange={handleChange} />
+            <InputField label="Company Name" name="company" value={formData.company} onChange={handleChange} />
+            <InputField label="Location" name="location" value={formData.location} onChange={handleChange} />
+            <SelectField label="Job Type" name="type" value={formData.type} onChange={handleChange} options={["Full Time", "Part Time", "Contract"]} />
+            <SelectField label="Experience Level" name="level" value={formData.level} onChange={handleChange} options={["Entry Level (0-2 years)", "Mid Level (2-5 years)", "Senior Level (5+ years)"]} />
+            <InputField label="Salary Range" name="salary" value={formData.salary} onChange={handleChange} />
+          </div>
 
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">My Job Postings</h2>
-          <Link href="/PostJob">
-            <button className="bg-red-600 text-white px-4 py-2 rounded text-sm shadow hover:bg-red-700 transition">
-              + Post New Job
+          <InputField label="Required Skills" name="skills" value={formData.skills} onChange={handleChange} />
+          <TextAreaField label="Job Description" name="description" value={formData.description} onChange={handleChange} max={500} />
+          <TextAreaField label="Requirements" name="requirements" value={formData.requirements} onChange={handleChange} max={500} />
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <InputField label="Contact Email" name="email" value={formData.email} onChange={handleChange} type="email" />
+            <InputField label="Application Deadline" name="deadline" value={formData.deadline} onChange={handleChange} type="date" />
+          </div>
+
+          <div className="pt-4 text-center">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 flex items-center justify-center gap-2 mx-auto"
+            >
+              <Send className="w-4 h-4" />
+              {loading ? "Posting..." : "Post Job"}
             </button>
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          <StatusBadge label="All Jobs" count={jobs.length} color="red" />
-          <StatusBadge label="Active" count={jobs.filter((j) => j.status === "Active").length} color="green" />
-          <StatusBadge label="Paused" count={jobs.filter((j) => j.status === "Paused").length} color="yellow" />
-          <StatusBadge label="Closed" count={jobs.filter((j) => j.status === "Closed").length} color="gray" />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs.length > 0 ? (
-            jobs.map((job) => (
-              <JobCard key={job.id} {...job} companyRef={companyRef} onEdit={() => setEditJob(job)} />
-            ))
-          ) : (
-            <div className="bg-white shadow-sm rounded p-6 text-center text-gray-600 col-span-full">
-              <p className="mb-4 text-lg">You haven't posted any jobs yet.</p>
-              <p className="text-sm mb-4">
-                Start attracting top ITI talents by posting your first job now.
-              </p>
-              <Link href="/PostJob">
-                <button className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition">
-                  + Post Your First Job
-                </button>
-              </Link>
-            </div>
-          )}
-        </div>
+          </div>
+        </form>
       </main>
-
-      {editJob && <JobForm mode="edit" job={editJob} onClose={() => setEditJob(null)} />}
     </div>
   );
 }
 
-function StatusBadge({ label, count, color }) {
-  const bg = {
-    red: "bg-red-100 text-red-600",
-    green: "bg-green-100 text-green-600",
-    yellow: "bg-yellow-100 text-yellow-600",
-    gray: "bg-gray-100 text-gray-600",
-  }[color];
+// 🔧 دالة لتحديث حالة المتقدم (قبول/رفض) داخل الوظيفة
+export async function updateApplicantStatus(jobId, applicantId, status) {
+  try {
+    const jobRef = doc(db, "jobs", jobId);
+    const jobSnap = await getDoc(jobRef);
 
-  return <span className={`px-2 py-1 rounded text-xs ${bg}`}>{label} ({count})</span>;
+    if (!jobSnap.exists()) {
+      toast.error("Job not found");
+      return;
+    }
+
+    const jobData = jobSnap.data();
+    const updatedApplicants = jobData.applicants.map((app) =>
+      app.applicantId === applicantId ? { ...app, status } : app
+    );
+
+    await updateDoc(jobRef, { applicants: updatedApplicants });
+    toast.success(`Applicant ${status} successfully`);
+  } catch (error) {
+    console.error("Failed to update applicant status:", error);
+    toast.error("Update failed");
+  }
 }
 
-function JobCard({
-  id,
-  title,
-  location,
-  type,
-  salary,
-  status,
-  companyRef,
-  applicationsCount,
-  views,
-  postedAt,
-  deadline,
-  onEdit,
-}) {
-  const [showConfirm, setShowConfirm] = useState(false);
+// ✅ مثال استخدام الدالة:
+// updateApplicantStatus("job123", "applicant456", "accepted");
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "N/A";
-    const date = timestamp.toDate?.() || new Date(timestamp.seconds * 1000);
-    return date.toLocaleDateString();
-  };
-
-  const addActivity = async (activity) => {
-    if (!companyRef) return;
-    await updateDoc(companyRef, {
-      recentActivities: arrayUnion({
-        type: activity.type,
-        text: activity.text,
-        detail: activity.detail,
-        timestamp: new Date().toISOString(),
-      }),
-    });
-  };
-
-  const handlePause = async () => {
-    try {
-      await updateDoc(doc(db, "jobs", id), { status: "Paused" });
-      await addActivity({ type: "status", text: `Paused job: ${title}`, detail: "" });
-      toast.success("Job paused successfully");
-    } catch {
-      toast.error("Error pausing job");
-    }
-  };
-
-  const handleResume = async () => {
-    try {
-      await updateDoc(doc(db, "jobs", id), { status: "Active" });
-      await addActivity({ type: "status", text: `Resumed job: ${title}`, detail: "" });
-      toast.success("Job resumed successfully");
-    } catch {
-      toast.error("Error resuming job");
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      await deleteDoc(doc(db, "jobs", id));
-      await addActivity({ type: "delete", text: `Deleted job: ${title}`, detail: "" });
-      toast.success("Job deleted successfully");
-    } catch {
-      toast.error("Error deleting job");
-    }
-  };
-
+function InputField({ label, name, value, onChange, type = "text" }) {
   return (
-    <div className="bg-white shadow rounded p-4 relative transition-transform hover:scale-105 hover:shadow-lg">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-semibold text-gray-800">{title}</h3>
-          <p className="text-xs text-gray-500">{location} • {type} • {salary}</p>
-        </div>
-        <span className={`text-xs px-2 py-1 rounded ${
-          status === "Active" ? "bg-green-100 text-green-700"
-          : status === "Paused" ? "bg-yellow-100 text-yellow-700"
-          : "bg-gray-100 text-gray-600"
-        }`}>
-          {status}
-        </span>
-      </div>
+    <div>
+      <label className="text-sm text-gray-500">{label} *</label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={label}
+        className="w-full border rounded px-3 py-2 mt-1"
+      />
+    </div>
+  );
+}
 
-      <div className="flex gap-2 flex-wrap mt-3 text-xs">
-        <div className="bg-blue-50 px-2 py-1 rounded">{applicationsCount || 0} Applications</div>
-        <div className="bg-green-50 px-2 py-1 rounded">{views || 0} Views</div>
-        <div className="bg-yellow-50 px-2 py-1 rounded">Posted: {formatDate(postedAt)}</div>
-        <div className="bg-red-50 px-2 py-1 rounded">Deadline: {formatDate(deadline)}</div>
-      </div>
+function SelectField({ label, name, value, onChange, options }) {
+  return (
+    <div>
+      <label className="text-sm text-gray-500">{label} *</label>
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full border rounded px-3 py-2 mt-1"
+      >
+        {options.map((opt) => (
+          <option key={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
-      <div className="flex flex-wrap gap-2 mt-3">
-        <button className="bg-red-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
-          View Applications
-        </button>
-
-        {status === "Active" && (
-          <button onClick={handlePause} className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs flex items-center gap-1">
-            <PauseCircle size={12} /> Pause
-          </button>
-        )}
-
-        {status === "Paused" && (
-          <button onClick={handleResume} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex items-center gap-1">
-            <PlayCircle size={12} /> Resume
-          </button>
-        )}
-
-        <button onClick={onEdit} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs flex items-center gap-1">
-          <Edit size={12} /> Edit
-        </button>
-
-        <button onClick={() => setShowConfirm(true)} className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs flex items-center gap-1">
-          <Trash2 size={12} /> Delete
-        </button>
-      </div>
-
-      {showConfirm && (
-        <div className="absolute inset-0 bg-black/50 flex justify-center items-center animate-fade-in">
-          <div className="bg-white/30 backdrop-blur-md border border-white/20 p-4 rounded shadow w-64 transition">
-            <p className="text-sm text-gray-700">Are you sure you want to delete this job?</p>
-            <div className="mt-3 flex justify-end gap-2">
-              <button onClick={() => { handleDelete(); setShowConfirm(false); }} className="bg-red-600 text-white px-3 py-1 rounded text-xs">
-                Yes, Delete
-              </button>
-              <button onClick={() => setShowConfirm(false)} className="bg-gray-300 px-3 py-1 rounded text-xs">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+function TextAreaField({ label, name, value, onChange, max = 500 }) {
+  return (
+    <div>
+      <label className="text-sm text-gray-500">{label} *</label>
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        rows={4}
+        maxLength={max}
+        placeholder={`Write up to ${max} characters...`}
+        className="w-full border rounded px-3 py-2 mt-1"
+      />
+      <p className="text-xs text-gray-400 text-right mt-1">
+        {value.length}/{max} characters
+      </p>
     </div>
   );
 }

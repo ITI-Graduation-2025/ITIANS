@@ -36,23 +36,26 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
     <div className="flex items-start space-x-4">
       <Image
         src={applicant.image || "/default-avatar.png"}
-        alt={applicant.name}
+        alt={applicant.name || "Applicant"}
         width={48}
         height={48}
-        className="rounded-full"
-        loading="lazy"
+        className="rounded-full object-cover"
       />
       <div>
-        <h3 className="font-semibold text-lg">{applicant.name}</h3>
-        <p className="text-gray-600 text-sm">Applied for: {applicant.role}</p>
+        <h3 className="font-semibold text-lg">{applicant.name || "Unnamed Applicant"}</h3>
+        <p className="text-gray-600 text-sm">Applied for: {applicant.role || "Not specified"}</p>
         <p className="text-xs text-gray-500">Status: {applicant.status}</p>
         <div className="text-sm text-gray-500 mt-1 flex items-center gap-4">
-          <span className="flex items-center gap-1">
-            <Clock className="w-4 h-4 text-red-600" /> {applicant.experience}
-          </span>
-          <span className="flex items-center gap-1">
-            <MapPin className="w-4 h-4 text-red-600" /> {applicant.location}
-          </span>
+          {applicant.experience && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4 text-red-600" /> {applicant.experience}
+            </span>
+          )}
+          {applicant.location && (
+            <span className="flex items-center gap-1">
+              <MapPin className="w-4 h-4 text-red-600" /> {applicant.location}
+            </span>
+          )}
         </div>
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           {applicant.skills?.map((skill) => (
@@ -61,14 +64,23 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
             </span>
           ))}
         </div>
-        <p className="text-xs text-gray-400 mt-2">Applied on {applicant.date}</p>
+        {applicant.date && (
+          <p className="text-xs text-gray-400 mt-2">Applied on {applicant.date}</p>
+        )}
       </div>
     </div>
     <div className="flex flex-col md:flex-row items-center gap-2 mt-4 md:mt-0">
-      <span className="text-yellow-600 text-sm font-medium flex items-center gap-1">
-        <Star className="w-4 h-4" /> {applicant.rating}/5
-      </span>
-      <button onClick={() => onViewProfile(applicant)} className="bg-red-600 text-white px-4 py-2 rounded">View Profile</button>
+      {applicant.rating && (
+        <span className="text-yellow-600 text-sm font-medium flex items-center gap-1">
+          <Star className="w-4 h-4" /> {applicant.rating}/5
+        </span>
+      )}
+      <button
+        onClick={() => onViewProfile(applicant)}
+        className="bg-red-600 text-white px-4 py-2 rounded"
+      >
+        View Profile
+      </button>
       <button
         onClick={() => onUpdateStatus(applicant.id, "shortlisted", applicant.name)}
         className="bg-green-600 text-white px-4 py-2 rounded"
@@ -102,7 +114,6 @@ export default function CompanyApplications() {
   const { jobId } = useParams();
   const { data: session } = useSession();
 
-  // ✅ تحقق من ملكية الوظيفة
   useEffect(() => {
     const checkJobOwnership = async () => {
       const jobRef = doc(db, "jobs", jobId);
@@ -122,17 +133,39 @@ export default function CompanyApplications() {
 
   useEffect(() => {
     if (!jobId || !jobAllowed) return;
-    const q = query(
-      collection(db, "applications"),
-      where("status", "==", tab),
-      where("jobId", "==", jobId)
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setApplications(data);
-    });
-    return () => unsubscribe();
-  }, [tab, jobId, jobAllowed]);
+
+    const fetchApplicants = async () => {
+      const jobRef = doc(db, "jobs", jobId);
+      const jobSnap = await getDoc(jobRef);
+
+      if (!jobSnap.exists()) return;
+
+      const jobData = jobSnap.data();
+      const applicantIds = jobData.applicants || [];
+
+      const data = await Promise.all(
+        applicantIds.map(async (userId) => {
+          const userRef = doc(db, "users", userId);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            return {
+              id: userId,
+              ...userData,
+              status: "pending",
+            };
+          }
+
+          return null;
+        })
+      );
+
+      setApplications(data.filter(Boolean));
+    };
+
+    fetchApplicants();
+  }, [jobId, jobAllowed]);
 
   useEffect(() => {
     if (!jobId || !jobAllowed) return;
@@ -243,11 +276,11 @@ export default function CompanyApplications() {
             </button>
             <div className="flex items-center space-x-4">
               <Image
-                src={selectedApplicant.image}
+                src={selectedApplicant.image || "/default-avatar.png"}
                 alt={selectedApplicant.name}
                 width={64}
                 height={64}
-                className="rounded-full"
+                className="rounded-full object-cover"
               />
               <div>
                 <h2 className="text-xl font-semibold">{selectedApplicant.name}</h2>
@@ -262,4 +295,5 @@ export default function CompanyApplications() {
     </div>
   );
 }
+
 

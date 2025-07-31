@@ -1,5 +1,10 @@
-import Applications from "@/components/ui/Applications";
+"use client";
 
-export default function CompanyApplications() {
-  return <Applications />;
+import Applications from "@/components/ui/Applications";
+import { useParams } from "next/navigation";
+
+export default function Page() {
+  const { jobId } = useParams();
+
+  return <Applications jobId={jobId} />;
 }
