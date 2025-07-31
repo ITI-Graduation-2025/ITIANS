@@ -35,28 +35,36 @@ export default function CompanyJobs() {
 
   useEffect(() => {
     if (!companyId) return;
-
+  
     const unsubscribe = onSnapshot(collection(db, "jobs"), async (snapshot) => {
       const now = new Date();
       const jobsData = [];
-
-      snapshot.forEach((docSnap) => {
+  
+      for (const docSnap of snapshot.docs) {
         const job = { id: docSnap.id, ...docSnap.data() };
         const deadlineDate = job.deadline?.seconds
           ? new Date(job.deadline.seconds * 1000)
           : null;
-
+  
+        if (job.companyId !== companyId) continue;
+  
+        // حالة الإغلاق التلقائي
         if (job.status !== "Closed" && deadlineDate && deadlineDate < now) {
+          await updateDoc(doc(db, "jobs", job.id), { status: "Closed" });
           job.status = "Closed";
         }
-
-        if (job.companyId === companyId) {
-          jobsData.push(job);
+  
+        // حالة إعادة التفعيل التلقائي لو التاريخ اتعدل
+        if (job.status === "Closed" && deadlineDate && deadlineDate > now) {
+          await updateDoc(doc(db, "jobs", job.id), { status: "Active" });
+          job.status = "Active";
         }
-      });
-
+  
+        jobsData.push(job);
+      }
+  
       setJobs(jobsData);
-
+  
       if (companyRef) {
         const activeCount = jobsData.filter((j) => j.status === "Active").length;
         await updateDoc(companyRef, {
@@ -64,9 +72,10 @@ export default function CompanyJobs() {
         });
       }
     });
-
+  
     return () => unsubscribe();
   }, [companyId]);
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff7f2] to-[#ffe8e0]">

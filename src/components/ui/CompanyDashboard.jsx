@@ -45,6 +45,12 @@ export default function DashboardPage() {
   if (loading) return <div className="p-6">Loading...</div>;
   if (!user) return <div className="p-6 text-red-500">Please log in to view your dashboard.</div>;
 
+  // تنقية أحدث 5 نشاطات فقط وبشكل آمن
+  const recentActivities =
+    companyStats?.recentActivities
+      ?.filter((activity) => activity?.text && activity?.type)
+      ?.slice(0, 5) || [];
+
   return (
     <div className="min-h-screen bg-[#fff7f2]">
       <CompanyNavbar />
@@ -96,9 +102,9 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white shadow p-4 rounded">
             <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-            {companyStats?.recentActivities?.length > 0 ? (
+            {recentActivities.length > 0 ? (
               <ul className="space-y-2 text-sm text-gray-700">
-                {companyStats.recentActivities.map((activity, idx) => (
+                {recentActivities.map((activity, idx) => (
                   <Activity
                     key={idx}
                     icon={getActivityIcon(activity.type)}
@@ -146,7 +152,7 @@ function Activity({ icon, text, detail }) {
     <li className="flex items-center gap-2">
       {icon}
       <span className="font-medium">{text}</span>
-      {detail}
+      {detail && <span className="text-gray-500 text-xs"> – {detail}</span>}
     </li>
   );
 }
