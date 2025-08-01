@@ -5,124 +5,51 @@ import {
   MapPin,
   Users,
   Briefcase,
+  TrendingUp,
+  DollarSign,
+  Calendar,
+  Eye,
+  BadgeCheck,
+  ListChecks,
   Clock,
   CheckCircle,
   Mail,
   Linkedin,
   Globe,
-  Home,
   MessageCircle,
-  ChevronDown,
-  User,
-  Settings,
-  LogOut,
+  ClipboardCopy,
+  Phone,
+  X,
 } from "lucide-react";
+
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { db } from "@/config/firebase";
+import { useSession } from "next-auth/react";
 import {
   doc,
-  onSnapshot,
+  getDoc,
   collection,
   query,
   where,
   getDocs,
 } from "firebase/firestore";
-import { useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
+import { db } from "@/config/firebase";
+import toast from "react-hot-toast";
+import { FaFacebook, FaLinkedin, FaGlobe, FaEnvelope } from "react-icons/fa";
+import NavbarProfileCom from "./NavbarProfileCom";
 
-const tabs = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Messages", href: "/messages", icon: MessageCircle },
-];
 
-function Dropdowncom() {
-  const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to log out?")) {
-      window.location.href = "/login";
-    }
-  };
 
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-2 bg-transparent border-none cursor-pointer focus:outline-none"
-      >
-        <User size={20} className="text-gray-700" />
-        <span className="text-gray-800 font-medium">Admin</span>
-        <ChevronDown size={16} />
-      </button>
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-md border border-gray-200 z-50 w-48">
-          <Link
-            href="/dashboardCompany"
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100"
-          >
-            <User size={16} />
-            My dashboard
-          </Link>
-          <Link
-            href="/settingsform"
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100"
-          >
-            <Settings size={16} />
-            Settings
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-100"
-          >
-            <LogOut size={16} />
-            Logout
-          </button>
-        </div>
-      )}
-    </div>
-  );
+function formatRelativeTime(date) {
+  const now = new Date();
+  const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return `${diff} days ago`;
 }
-
-function Navbar() {
-  const pathname = usePathname();
-  return (
-    <nav className="bg-white shadow-sm px-6 py-3 flex justify-between items-center border-b border-gray-100">
-      <div className="flex items-center gap-2">
-        <Image
-          src="data:image/png;base64,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"
-          alt="ITI Logo"
-          width={30}
-          height={30}
-        />
-      </div>
-
-      <div className="flex space-x-4 items-center text-sm font-medium">
-        {tabs.map(({ name, href, icon: Icon }) => {
-          const isActive = pathname === href;
-          return (
-            <Link
-              key={name}
-              href={href}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 ${
-                isActive
-                  ? "bg-[#E30613]/10 text-[#E30613] font-semibold ring-1 ring-[#E30613]"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-[#E30613]"
-              }`}
-            >
-              <Icon size={18} />
-              {name}
-            </Link>
-          );
-        })}
-      </div>
-
-      <Dropdowncom />
-    </nav>
-  );
-}
+const result = formatRelativeTime(new Date("2025-07-29"));
 
 export default function ProfileViewCom() {
   const { data: session } = useSession();
@@ -130,198 +57,497 @@ export default function ProfileViewCom() {
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const jobsPerPage = 5;
+
+  
+  const {
+    logo,
+    name,
+    location,
+    rating,
+    reviewsCount,
+    description,
+    services,
+    technologies,
+    website,
+    email,
+    linkedin,
+    stats = {},
+    industry,
+    founded,
+    phone,
+    facebook,
+  } = company || {};
+
+  // حساب عرض الوظائف في الصفحة الحالية
+  const indexOfLastJob = currentPage * jobsPerPage;
+  const indexOfFirstJob = indexOfLastJob - jobsPerPage;
+  const currentJobs = jobs.slice(indexOfFirstJob, indexOfLastJob);
+  const totalPages = Math.ceil(jobs.length / jobsPerPage);
+
+  function goToPage(pageNumber) {
+    setCurrentPage(pageNumber);
+  }
+
+  function goNext() {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  }
+
+  function goPrev() {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  }
 
   useEffect(() => {
-    if (!companyId) return;
+    async function fetchCompanyAndJobs() {
+      if (!companyId) return;
 
-    const unsub = onSnapshot(doc(db, "users", companyId), (snap) => {
-      if (snap.exists()) setCompany(snap.data());
-    });
+      const companyRef = doc(db, "users", companyId);
+      const companySnap = await getDoc(companyRef);
+      const companyData = companySnap.exists() ? companySnap.data() : {};
 
-    const fetchJobs = async () => {
-      const q = query(collection(db, "jobs"), where("companyId", "==", companyId));
-      const snap = await getDocs(q);
-      const jobList = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setJobs(jobList);
-    };
+      const jobsQuery = query(
+        collection(db, "jobs"),
+        where("companyId", "==", companyId)
+      );
+      const jobsSnapshot = await getDocs(jobsQuery);
+      const jobsData = jobsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setJobs(jobsData);
 
-    fetchJobs();
-    return () => unsub();
+      
+      const activeProjects = jobsData.filter(
+        (job) =>
+          job.status?.toLowerCase() === "active" ||
+          job.status?.toLowerCase() === "open"
+      ).length;
+      const totalHired = jobsData.reduce((sum, job) => {
+        if (!Array.isArray(job.applicants)) return sum;
+        const hiredCount = job.applicants.filter(
+          (applicant) => applicant.status === "shortlisted"
+        ).length;
+        return sum + hiredCount;
+      }, 0);
+
+      const closedJobs = jobsData.filter(
+        (job) => job.status?.toLowerCase() === "closed"
+      ).length;
+      const successfulJobs = jobsData.filter(
+        (job) =>
+          Array.isArray(job.applicants) &&
+          job.applicants.some((applicant) => applicant.status === "shortlisted")
+      ).length;
+
+      const totalJobs = jobsData.length;
+      const successRate =
+        totalJobs > 0 ? `${Math.round((successfulJobs / totalJobs) * 100)}%` : "N/A";
+
+      setCompany({
+        ...companyData,
+        stats: {
+          activeProjects,
+          totalHired,
+          successRate,
+        },
+      });
+
+      setLoading(false);
+    }
+
+    fetchCompanyAndJobs();
   }, [companyId]);
 
+  const handleCopyLink = (id) => {
+    const link = `${window.location.origin}/jobs/${id}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Job link copied to clipboard!");
+  };
+
   return (
+    
     <main className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      {company && (
-        <div
-          className="text-white p-6 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url('https://img.freepik.com/free-photo/business-people-working-office_23-2148902353.jpg')",
-          }}
-        >
-          <div className="max-w-6xl mx-auto flex justify-between items-center">
-            <div className="flex gap-4 items-center">
-              <Image
-                src={company.logo || "/default-logo.png"}
-                alt="Company Logo"
-                width={48}
-                height={48}
-                className="rounded-md shadow bg-white"
-              />
-              <div>
-                <h1 className="text-2xl font-bold">{company.name}</h1>
-                <p>{company.industry}</p>
-                <div className="flex space-x-2 text-sm mt-1 items-center">
-                  <MapPin className="w-4 h-4" />
-                  {company.location}
-                  <span>
-                    • {company.size} employees • Founded {company.founded}
-                  </span>
-                </div>
+       <NavbarProfileCom />
+      {/* Header */}
+      <div
+        className="text-white p-6 bg-cover bg-center"
+        style={{
+          backgroundImage:
+            "url('https://img.freepik.com/free-photo/business-people-working-office_23-2148902353.jpg')",
+        }}
+      >
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <div className="flex gap-4 items-center">
+            <Image
+              src={logo || "/default-logo.png"}
+              alt={`${name || "Company"} Logo`}
+              width={48}
+              height={48}
+              className="rounded-md shadow bg-white"
+            />
+            <div>
+              <h1 className="text-2xl font-bold">{name}</h1>
+              <p className="text-sm text-gray-300">{description}</p>{" "}
+              {/* الوصف */}
+              <div className="flex flex-wrap gap-4 text-xs mt-1 text-gray-200">
+                {industry && (
+                  <div className="flex items-center gap-1">
+                    <Briefcase className="w-4 h-4" />
+                    <span>{industry}</span>
+                  </div>
+                )}
+                {founded && (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    <span>Founded: {founded}</span>
+                  </div>
+                )}
+                {location && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    <span>{location}</span>
+                  </div>
+                )}
+                {phone && (
+                  <div className="flex items-center gap-1">
+                    <Phone className="w-4 h-4" />
+                    <span>{phone}</span>
+                  </div>
+                )}
               </div>
-            </div>
-
-            <div className="text-right">
-              <div className="flex items-center justify-end gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < company.rating ? "text-yellow-300" : "text-gray-300"
-                    }`}
-                  />
-                ))}
-              </div>
-              <p className="text-sm">{company.reviews || 0} reviews</p>
-              {session?.user?.id === companyId && (
-                <Link
-                  href="/edit-company"
-                  className="mt-2 inline-block px-4 py-1 bg-white text-blue-700 rounded shadow text-sm"
-                >
-                  Edit Profile
-                </Link>
-              )}
             </div>
           </div>
-        </div>
-      )}
+          <div className="text-right">
+            <p className="flex items-center justify-end gap-1">
+              <Star className="w-4 h-4 text-yellow-300" /> {rating}
+            </p>
+            <p className="text-sm">{reviewsCount} reviews</p>
+            {session?.user?.id !== companyId && (
+  <button className="mt-2 px-4 py-1 bg-white text-blue-700 rounded shadow">
+    Follow Company
+  </button>
+)}
 
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+        {/* Jobs List */}
         <div className="md:col-span-2">
           <h2 className="text-xl font-semibold mb-2">
             Active Job Postings{" "}
             <span className="text-sm text-gray-500">
-              ({jobs.length} open position{jobs.length !== 1 ? "s" : ""})
+              ({jobs.length} open positions)
             </span>
           </h2>
-          <div className="space-y-2">
-            {jobs.map((job) => (
-              <div key={job.id} className="bg-white shadow rounded p-3">
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="font-medium">{job.title}</h3>
-                    <p className="text-sm text-gray-600 flex gap-2">
-                      {job.salary || "N/A"} • {job.duration || "N/A"} •{" "}
-                      {job.proposals?.length || 0} proposals
-                    </p>
-                    <div className="space-x-2 mt-1">
-                      {Array.isArray(job.skills) &&
-                        job.skills.map((tag, i) => (
-                          <span
-                            key={i}
-                            className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    {job.postedDate || "Just now"}
-                  </div>
+          <div className="space-y-4">
+            {currentJobs.map((job) => (
+              <div
+                key={job.id}
+                className="bg-white shadow rounded p-4 flex justify-between items-start"
+              >
+                <div>
+                  <h3 className="text-lg font-semibold">{job.title}</h3>
+                  <p className="text-sm text-gray-500">
+                    <strong>Type:</strong> {job.type}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    <strong>Level:</strong> {job.level}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    <strong>Applications:</strong> {job.applicants?.length || 0}
+                  </p>
+                  <button
+                    className="mt-2 px-4 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    onClick={() => setSelectedJob(job)}
+                  >
+                    View Details
+                  </button>
                 </div>
-                <button className="text-blue-600 text-sm mt-2 hover:underline">
-                  View Details →
-                </button>
+                <div className="text-xs text-gray-400">
+                  {job.createdAt?.toDate().toLocaleString()}
+                </div>
               </div>
             ))}
           </div>
+
+          {/* Pagination Controls */}
+          <div className="flex justify-center items-center mt-4 gap-2">
+            <button
+              onClick={goPrev}
+              disabled={currentPage === 1}
+              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Prev
+            </button>
+
+            {[...Array(totalPages).keys()].map((num) => (
+              <button
+                key={num + 1}
+                onClick={() => goToPage(num + 1)}
+                className={`px-3 py-1 rounded ${
+                  currentPage === num + 1
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200"
+                }`}
+              >
+                {num + 1}
+              </button>
+            ))}
+
+            <button
+              onClick={goNext}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
 
+        {/* Sidebar */}
         <div className="space-y-4">
           <div className="bg-white shadow rounded p-3">
             <h2 className="font-semibold">Company Statistics</h2>
             <ul className="text-sm mt-2 space-y-1">
               <li className="flex gap-2 items-center">
-                <Briefcase className="w-4 h-4" /> {jobs.length} Active Jobs
+                <Briefcase className="w-4 h-4" /> {stats.activeProjects} Active Jobs
               </li>
               <li className="flex gap-2 items-center">
-                <Users className="w-4 h-4" /> {company?.size || "N/A"} Employees
+                <Users className="w-4 h-4" /> {stats.totalHired}+ Total Hired
               </li>
               <li className="flex gap-2 items-center">
-                <CheckCircle className="w-4 h-4" /> 98% Success Rate
-              </li>
-              <li className="flex gap-2 items-center">
-                <Clock className="w-4 h-4" /> 2 hours Avg Response
+                <CheckCircle className="w-4 h-4" /> {stats.successRate} Success Rate
               </li>
             </ul>
           </div>
 
           <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold">About {company?.name}</h2>
-            <p className="text-sm mt-1">
-              {company?.description || "No description available."}
-            </p>
+            <h2 className="font-semibold">About {name}</h2>
+            <p className="text-sm mt-1">{description}</p>
           </div>
 
           <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold">Contact Information</h2>
-            <div className="text-sm mt-1 space-y-1">
-              {company?.website && (
-                <p>
-                  <Globe className="inline w-4 h-4 mr-1" />
-                  <a
-                    href={company.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {company.website}
-                  </a>
-                </p>
-              )}
-              {company?.email && (
-                <p>
-                  <Mail className="inline w-4 h-4 mr-1" />
-                  <a
-                    href={`mailto:${company.email}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    {company.email}
-                  </a>
-                </p>
-              )}
-              {company?.linkedin && (
-                <p>
-                  <Linkedin className="inline w-4 h-4 mr-1" />
-                  <a
-                    href={company.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {company.linkedin}
-                  </a>
-                </p>
-              )}
+            <h2 className="font-semibold">Core Services</h2>
+            <ul className="text-sm mt-1 space-y-1 columns-2">
+              {(services || []).map((service) => (
+                <li key={service}>{service}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-white shadow rounded p-3">
+            <h2 className="font-semibold mb-2">Technologies We Use</h2>
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              {(technologies || []).map((tech) => (
+                <div
+                  key={tech}
+                  className="px-2 py-1 bg-gray-100 rounded text-center"
+                >
+                  {tech}
+                </div>
+              ))}
             </div>
           </div>
+
+          <div className="bg-white shadow rounded p-3">
+  <h2 className="font-semibold">Contact Information</h2>
+  <div className="text-sm mt-1 space-y-1">
+    {website && (
+      <p>
+        <FaGlobe className="inline w-4 h-4 mr-1 text-blue-600" />
+        <a
+          href={website}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          {website}
+        </a>
+      </p>
+    )}
+
+    {email && (
+      <p>
+        <FaEnvelope className="inline w-4 h-4 mr-1 text-blue-600" />
+        <a
+          href={`mailto:${email}`}
+          className="text-blue-600 hover:underline"
+        >
+          {email}
+        </a>
+      </p>
+    )}
+
+    {linkedin && (
+      <p>
+        <FaLinkedin className="inline w-4 h-4 mr-1 text-blue-600" />
+        <a
+          href={linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          {linkedin}
+        </a>
+      </p>
+    )}
+
+    {facebook && (
+      <p>
+        <FaFacebook className="inline w-4 h-4 mr-1 text-blue-600" />
+        <a
+          href={facebook}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          {facebook}
+        </a>
+      </p>
+    )}
+  </div>
+</div>
+
         </div>
       </div>
+
+      {/* Modal for Job Details & Comments */}
+      {selectedJob && (
+        <div className="fixed inset-0 z-50  bg-white/30 flex justify-center items-center px-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative overflow-y-auto max-h-[90vh]">
+            {/* Close Button */}
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-red-600"
+              onClick={() => setSelectedJob(null)}
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Job Title */}
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">
+              {selectedJob.title}
+            </h2>
+
+            {/* Job Details */}
+            <div className="grid grid-cols-2 gap-4 text-sm text-gray-700 mb-4">
+              <p>
+                <Briefcase className="inline w-4 h-4 mr-1" /> Type:{" "}
+                {selectedJob.type}
+              </p>
+              <p>
+                <BadgeCheck className="inline w-4 h-4 mr-1" /> Level:{" "}
+                {selectedJob.level}
+              </p>
+              <p>
+                <DollarSign className="inline w-4 h-4 mr-1" /> Salary:{" "}
+                {selectedJob.salary}
+              </p>
+              <p>
+                <MapPin className="inline w-4 h-4 mr-1" /> Location:{" "}
+                {selectedJob.location}
+              </p>
+              <p>
+                <Calendar className="inline w-4 h-4 mr-1" /> Deadline:{" "}
+                {selectedJob.deadline?.toDate().toLocaleDateString()}
+              </p>
+              <p>
+                <Eye className="inline w-4 h-4 mr-1" /> Views:{" "}
+                {selectedJob.views || 0}
+              </p>
+            </div>
+
+            {/* Description */}
+            <p className="text-gray-700 leading-relaxed mb-6">
+              {selectedJob.description}
+            </p>
+
+            {/* Skills */}
+            {selectedJob.skills && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1">
+                  <Star className="w-4 h-4" /> Skills Required:
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedJob.skills.split(",").map((skill, index) => (
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium"
+                    >
+                      {skill.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Comments Section */}
+            <div className="mt-6">
+              <h3 className="text-md font-semibold mb-2 flex items-center gap-1">
+                <MessageCircle className="w-4 h-4" /> Comments
+              </h3>
+
+              {selectedJob?.comments?.length > 0 ? (
+                <ul className="space-y-2 max-h-40 overflow-y-auto text-sm">
+                  {selectedJob.comments.map((comment, index) => (
+                    <li
+                      key={index}
+                      className="border p-3 rounded bg-gray-50 flex gap-3 items-start"
+                    >
+                      <img
+                        src={comment.avatar || "/default-user.png"}
+                        alt={comment.userName}
+                        className="w-8 h-8 rounded-full object-cover mt-1"
+                      />
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          {comment.userName}
+                        </p>
+                        <p className="text-gray-600 text-xs mb-1">
+                          {comment.timestamp?.seconds
+                            ? new Date(
+                                comment.timestamp.seconds * 1000
+                              ).toLocaleString()
+                            : ""}
+                        </p>
+                        <p className="text-gray-700">{comment.text}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">No comments yet.</p>
+              )}
+            </div>
+
+            {/* Copy Job Link */}
+            <button
+              className="mt-6 text-blue-600 flex items-center gap-1 text-sm"
+              onClick={() => handleCopyLink(selectedJob.id)}
+            >
+              <ClipboardCopy className="w-4 h-4" /> Copy Job Link
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
+
+
+
+
+
+
+
+
 
 

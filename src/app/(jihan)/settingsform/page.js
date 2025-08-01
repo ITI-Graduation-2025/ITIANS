@@ -2,6 +2,6 @@
 
 import SettingsForm from "@/components/ui/settings";
 
-export default function SettingsForm() {
+export default function SettingsFormPage() {
   return <SettingsForm />;
 }

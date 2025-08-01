@@ -12,33 +12,45 @@ import {
   Home,
   ChevronRight,
   User,
+  Layers,
+  Code,
+  Image as ImageIcon,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
-
-// Firebase
+import { useSession } from "next-auth/react";
 import { db } from "@/config/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function CompanySettings() {
+  const { data: session } = useSession();
+  const companyId = session?.user?.id;
+
   const [activeTab, setActiveTab] = useState("password");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [formData, setFormData] = useState(null);
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const companyId = "company_123"; // افتراضي
-
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (companyId) fetchData();
+  }, [companyId]);
 
-  const fetchData = async () => {
+ const fetchData = async () => {
     setLoading(true);
-    const docRef = doc(db, "companies", companyId);
+    const docRef = doc(db, "users", companyId);
     const docSnap = await getDoc(docRef);
     let data;
     if (docSnap.exists()) {
       data = docSnap.data();
+      data = {
+        ...data,
+        coreServices: Array.isArray(data.services)
+          ? data.services.join(", ")
+          : data.coreServices || "",
+        technologies: Array.isArray(data.technologies)
+          ? data.technologies.join(", ")
+          : data.technologies || "",
+      };
     } else {
       data = {
         currentPassword: "",
@@ -52,12 +64,19 @@ export default function CompanySettings() {
         linkedin: "",
         facebook: "",
         companyName: "My Company",
+        coreServices: "",
+        technologies: "",
       };
     }
     setFormData(data);
     setInitialData(data);
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!companyId) return;
+    fetchData();
+  }, [companyId]);
 
   useEffect(() => {
     if (!formData) return;
@@ -87,43 +106,66 @@ export default function CompanySettings() {
     e.preventDefault();
     try {
       const dataToSave = { ...formData };
+
+      dataToSave.services = dataToSave.coreServices
+        ? dataToSave.coreServices
+            .split(",")
+            .map((item) => item.trim())
+            .filter((item) => item !== "")
+        : [];
+
+      dataToSave.technologies = dataToSave.technologies
+        ? dataToSave.technologies
+            .split(",")
+            .map((item) => item.trim())
+            .filter((item) => item !== "")
+        : [];
+
+      delete dataToSave.coreServices;
+
       if (dataToSave.logo instanceof File) {
-        dataToSave.logo = null; 
+        dataToSave.logo = null;
       }
-      await setDoc(doc(db, "companies", companyId), dataToSave);
+
+      await setDoc(doc(db, "users", companyId), dataToSave);
       toast.success("Settings saved successfully!");
-      setInitialData(dataToSave); 
+      setInitialData(dataToSave);
     } catch (err) {
       toast.error("Error saving settings");
       console.error(err);
     }
   };
 
+
   const handleCancelTab = () => {
-    setFormData((prev) => {
-      return {
-        ...prev,
-        ...(activeTab === "password" && {
-          currentPassword: initialData.currentPassword,
-          newPassword: initialData.newPassword,
-          confirmPassword: initialData.confirmPassword,
-        }),
-        ...(activeTab === "notifications" && {
-          notifications: initialData.notifications,
-        }),
-        ...(activeTab === "language" && {
-          language: initialData.language,
-          currency: initialData.currency,
-        }),
-        ...(activeTab === "logo" && {
-          logo: initialData.logo,
-        }),
-        ...(activeTab === "social" && {
-          linkedin: initialData.linkedin,
-          facebook: initialData.facebook,
-        }),
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      ...(activeTab === "password" && {
+        currentPassword: initialData.currentPassword,
+        newPassword: initialData.newPassword,
+        confirmPassword: initialData.confirmPassword,
+      }),
+      ...(activeTab === "notifications" && {
+        notifications: initialData.notifications,
+      }),
+      ...(activeTab === "language" && {
+        language: initialData.language,
+        currency: initialData.currency,
+      }),
+      ...(activeTab === "logo" && {
+        logo: initialData.logo,
+      }),
+      ...(activeTab === "social" && {
+        linkedin: initialData.linkedin,
+        facebook: initialData.facebook,
+      }),
+      ...(activeTab === "coreServices" && {
+        coreServices: initialData.coreServices,
+      }),
+      ...(activeTab === "technologies" && {
+        technologies: initialData.technologies,
+      }),
+    }));
     toast("Changes cancelled");
   };
 
@@ -134,7 +176,6 @@ export default function CompanySettings() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Toaster />
-      {/* Navbar */}
       <nav className="bg-white dark:bg-gray-800 shadow px-6 py-3 flex justify-between items-center relative">
         <div className="flex items-center gap-2 text-xl font-bold text-red-600">
           <img
@@ -181,7 +222,6 @@ export default function CompanySettings() {
         </div>
       </nav>
 
-      {/* Breadcrumb */}
       <div className="px-8 py-2 flex items-center text-sm text-gray-600 gap-1">
         <Home size={14} /> <ChevronRight size={14} /> Settings
       </div>
@@ -211,11 +251,7 @@ export default function CompanySettings() {
 
         <section className="flex-1 pl-4">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {renderTabContent(
-              { ...formData, activeTab },
-              handleChange,
-              toggleTheme
-            )}
+            {renderTabContent({ ...formData, activeTab }, handleChange, toggleTheme)}
             <div className="flex gap-4">
               <button
                 type="submit"
@@ -244,6 +280,8 @@ const tabs = [
   { id: "language", label: "Language & Currency", Icon: Globe },
   { id: "logo", label: "Logo", Icon: UploadCloud },
   { id: "social", label: "Social Media", Icon: Linkedin },
+  { id: "coreServices", label: "Core Services", Icon: Layers },
+  { id: "technologies", label: "Technologies We Use", Icon: Code },
 ];
 
 const tabBtn =
@@ -257,63 +295,57 @@ function renderTabContent(formData, handleChange, toggleTheme) {
     case "password":
       return (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Lock className="text-red-500" /> Change Password
-          </h2>
+          <h2 className="text-xl font-semibold">Change Password</h2>
           <input
             type="password"
             name="currentPassword"
-            placeholder="Current Password"
+            placeholder="Current password"
+            className={input}
             value={formData.currentPassword}
             onChange={handleChange}
-            className={input}
           />
           <input
             type="password"
             name="newPassword"
-            placeholder="New Password"
+            placeholder="New password"
+            className={input}
             value={formData.newPassword}
             onChange={handleChange}
-            className={input}
           />
           <input
             type="password"
             name="confirmPassword"
-            placeholder="Confirm Password"
+            placeholder="Confirm new password"
+            className={input}
             value={formData.confirmPassword}
             onChange={handleChange}
-            className={input}
           />
         </div>
       );
     case "notifications":
       return (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Bell className="text-red-500" /> Notifications
-          </h2>
-          <label className="inline-flex gap-2 items-center">
+          <h2 className="text-xl font-semibold">Notifications</h2>
+          <label className="flex items-center gap-2">
             <input
               type="checkbox"
               name="notifications"
               checked={formData.notifications}
               onChange={handleChange}
             />
-            Enable email notifications
+            Receive email notifications
           </label>
         </div>
       );
     case "language":
       return (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Globe className="text-red-500" /> Language & Currency
-          </h2>
+          <h2 className="text-xl font-semibold">Language & Currency</h2>
           <select
             name="language"
+            className={input}
             value={formData.language}
             onChange={handleChange}
-            className={input}
           >
             <option>English</option>
             <option>Arabic</option>
@@ -321,9 +353,9 @@ function renderTabContent(formData, handleChange, toggleTheme) {
           </select>
           <select
             name="currency"
+            className={input}
             value={formData.currency}
             onChange={handleChange}
-            className={input}
           >
             <option>USD</option>
             <option>EGP</option>
@@ -334,33 +366,62 @@ function renderTabContent(formData, handleChange, toggleTheme) {
     case "logo":
       return (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <UploadCloud className="text-red-500" /> Company Logo
-          </h2>
+          <h2 className="text-xl font-semibold">Company Logo</h2>
           <input type="file" name="logo" onChange={handleChange} />
         </div>
       );
     case "social":
       return (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Linkedin className="text-red-500" /> Social Media
-          </h2>
+          <h2 className="text-xl font-semibold">Social Media</h2>
           <input
-            type="text"
+            type="url"
             name="linkedin"
             placeholder="LinkedIn URL"
+            className={input}
             value={formData.linkedin}
             onChange={handleChange}
-            className={input}
           />
           <input
-            type="text"
+            type="url"
             name="facebook"
             placeholder="Facebook URL"
+            className={input}
             value={formData.facebook}
             onChange={handleChange}
+          />
+        </div>
+      );
+    case "coreServices":
+      return (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Layers className="text-red-500" /> Core Services
+          </h2>
+          <textarea
+  name="coreServices"
+  value={formData.coreServices}
+  onChange={handleChange}
+  placeholder=" Web Design, Mobile App Development, SEO"
+  className={input}
+  rows={6}
+/>
+
+        </div>
+      );
+    case "technologies":
+      return (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Code className="text-red-500" /> Technologies We Use
+          </h2>
+          <textarea
+            name="technologies"
+            value={formData.technologies}
+            onChange={handleChange}
+            placeholder="List the technologies you use..."
             className={input}
+            rows={6}
           />
         </div>
       );
@@ -368,3 +429,4 @@ function renderTabContent(formData, handleChange, toggleTheme) {
       return null;
   }
 }
+

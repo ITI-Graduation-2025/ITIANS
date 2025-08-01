@@ -17,13 +17,9 @@ import {
 import Link from "next/link";
 import { db } from "@/config/firebase";
 import {
-  collection,
   doc,
-  onSnapshot,
-  updateDoc,
-  query,
-  where,
   getDoc,
+  updateDoc,
 } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
 import { useParams } from "next/navigation";
@@ -75,29 +71,37 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
           <Star className="w-4 h-4" /> {applicant.rating}/5
         </span>
       )}
+
       <button
         onClick={() => onViewProfile(applicant)}
         className="bg-red-600 text-white px-4 py-2 rounded"
       >
         View Profile
       </button>
-      <button
-        onClick={() => onUpdateStatus(applicant.id, "shortlisted", applicant.name)}
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
-        Shortlist
-      </button>
-      <button
-        onClick={() => {
-          if (confirm("Are you sure you want to reject this applicant?")) {
-            onUpdateStatus(applicant.id, "rejected", applicant.name);
-          }
-        }}
-        className="bg-gray-300 text-black px-4 py-2 rounded"
-      >
-        Reject
-      </button>
-      <button className="border px-4 py-2 rounded flex items-center gap-1">
+
+      {applicant.status !== "shortlisted" && (
+        <button
+          onClick={() => onUpdateStatus(applicant.id, "shortlisted", applicant.name)}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          Shortlist
+        </button>
+      )}
+
+      {applicant.status !== "rejected" && (
+        <button
+          onClick={() => {
+            if (confirm("Are you sure you want to reject this applicant?")) {
+              onUpdateStatus(applicant.id, "rejected", applicant.name);
+            }
+          }}
+          className="bg-gray-300 text-black px-4 py-2 rounded"
+        >
+          Reject
+        </button>
+      )}
+
+      <button disabled className="border px-4 py-2 rounded text-gray-400 cursor-not-allowed">
         <MessageCircle className="w-4 h-4" /> Message
       </button>
     </div>
@@ -107,81 +111,103 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
 export default function CompanyApplications() {
   const [tab, setTab] = useState("pending");
   const [applications, setApplications] = useState([]);
-  const [statusCounts, setStatusCounts] = useState({});
   const [selectedApplicant, setSelectedApplicant] = useState(null);
-  const [jobAllowed, setJobAllowed] = useState(true);
+  const [hasAccessToJob, setHasAccessToJob] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const modalRef = useRef(null);
   const { jobId } = useParams();
   const { data: session } = useSession();
 
   useEffect(() => {
-    const checkJobOwnership = async () => {
-      const jobRef = doc(db, "jobs", jobId);
-      const jobSnap = await getDoc(jobRef);
-      if (jobSnap.exists()) {
-        const jobData = jobSnap.data();
-        if (jobData.companyId !== session?.user?.id) {
-          toast.error("You do not have access to this job's applications.");
-          setJobAllowed(false);
-        }
-      }
-    };
-    if (jobId && session?.user?.id) {
-      checkJobOwnership();
-    }
-  }, [jobId, session]);
-
-  useEffect(() => {
-    if (!jobId || !jobAllowed) return;
-
     const fetchApplicants = async () => {
-      const jobRef = doc(db, "jobs", jobId);
-      const jobSnap = await getDoc(jobRef);
+      if (!jobId) return;
 
-      if (!jobSnap.exists()) return;
+      try {
+        const jobRef = doc(db, "jobs", jobId);
+        const jobSnap = await getDoc(jobRef);
 
-      const jobData = jobSnap.data();
-      const applicantIds = jobData.applicants || [];
+        if (!jobSnap.exists()) {
+          toast.error("Job not found.");
+          return;
+        }
 
-      const data = await Promise.all(
-        applicantIds.map(async (userId) => {
-          const userRef = doc(db, "users", userId);
-          const userSnap = await getDoc(userRef);
+        const jobData = jobSnap.data();
+        const applicantEntries = jobData.applicants || [];
 
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
+        const applicantData = await Promise.all(
+          applicantEntries.map(async (entry) => {
+            const userId = typeof entry === "string" ? entry : entry.userId;
+            const status = typeof entry === "object" && entry.status ? entry.status : "pending";
+
+            const userRef = doc(db, "users", userId);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+              console.log("User not found:", userId);
+              return null;
+            }
+
             return {
               id: userId,
-              ...userData,
-              status: "pending",
+              status,
+              ...userSnap.data(),
             };
-          }
+          })
+        );
 
-          return null;
-        })
-      );
-
-      setApplications(data.filter(Boolean));
+        const filtered = applicantData.filter(Boolean);
+        setApplications(filtered);
+        console.log("Loaded applicants with status:", filtered);
+      } catch (error) {
+        console.error("Error fetching applicants:", error);
+        toast.error("Failed to load applicants.");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchApplicants();
-  }, [jobId, jobAllowed]);
+  }, [jobId]);
 
-  useEffect(() => {
-    if (!jobId || !jobAllowed) return;
-    const unsubscribers = STATUS_LIST.map((status) => {
-      const q = query(
-        collection(db, "applications"),
-        where("status", "==", status),
-        where("jobId", "==", jobId)
-      );
-      return onSnapshot(q, (snapshot) => {
-        setStatusCounts((prev) => ({ ...prev, [status]: snapshot.size }));
+  const handleUpdateStatus = async (userId, newStatus, name) => {
+    try {
+      const jobRef = doc(db, "jobs", jobId);
+      const jobSnap = await getDoc(jobRef);
+      if (!jobSnap.exists()) return;
+
+      const jobData = jobSnap.data();
+
+      const updatedApplicants = jobData.applicants.map((applicant) => {
+        if (typeof applicant === "string") {
+          return applicant === userId
+            ? { userId, status: newStatus }
+            : { userId: applicant, status: "pending" };
+        }
+        if (applicant.userId === userId) {
+          return { ...applicant, status: newStatus };
+        }
+        return applicant;
       });
-    });
 
-    return () => unsubscribers.forEach((unsub) => unsub());
-  }, [jobId, jobAllowed]);
+      await updateDoc(jobRef, { applicants: updatedApplicants });
+
+      toast.success(`${name} has been ${newStatus}`);
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === userId ? { ...app, status: newStatus } : app
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update status:", err);
+      toast.error("Failed to update applicant status.");
+    }
+  };
+
+  const handleOutsideClick = (e) => {
+    if (modalRef.current && !modalRef.current.contains(e.target)) {
+      setSelectedApplicant(null);
+    }
+  };
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -193,19 +219,7 @@ export default function CompanyApplications() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
-  const handleOutsideClick = (e) => {
-    if (modalRef.current && !modalRef.current.contains(e.target)) {
-      setSelectedApplicant(null);
-    }
-  };
-
-  const handleUpdateStatus = async (id, newStatus, name) => {
-    const docRef = doc(db, "applications", id);
-    await updateDoc(docRef, { status: newStatus });
-    toast.success(`${name} has been ${newStatus}`);
-  };
-
-  if (!jobAllowed) {
+  if (!hasAccessToJob) {
     return (
       <div className="min-h-screen flex items-center justify-center text-red-600 text-lg">
         Access Denied
@@ -243,29 +257,37 @@ export default function CompanyApplications() {
             <button
               key={status}
               onClick={() => setTab(status)}
-              className={`px-3 py-1 rounded text-sm ${
-                tab === status ? "bg-red-600 text-white" : "bg-gray-200 text-gray-700"
-              }`}
+              className={`px-3 py-1 rounded text-sm ${tab === status ? "bg-red-600 text-white" : "bg-gray-200 text-gray-700"}`}
             >
-              {status.charAt(0).toUpperCase() + status.slice(1)} ({statusCounts[status] || 0})
+              {status.charAt(0).toUpperCase() + status.slice(1)} ({applications.filter(a => a.status === status).length})
             </button>
           ))}
         </div>
 
-        <div>
-          {applications.length > 0 ? (
-            applications.map((applicant) => (
-              <ApplicantCard
-                key={applicant.id}
-                applicant={applicant}
-                onUpdateStatus={handleUpdateStatus}
-                onViewProfile={setSelectedApplicant}
-              />
-            ))
-          ) : (
-            <p className="text-gray-500">No applications in this category.</p>
-          )}
-        </div>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, idx) => (
+              <div key={idx} className="h-24 bg-gray-200 animate-pulse rounded-xl"></div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            {applications.filter((a) => a.status === tab).length > 0 ? (
+              applications
+                .filter((a) => a.status === tab)
+                .map((applicant) => (
+                  <ApplicantCard
+                    key={applicant.id}
+                    applicant={applicant}
+                    onUpdateStatus={handleUpdateStatus}
+                    onViewProfile={setSelectedApplicant}
+                  />
+                ))
+            ) : (
+              <p className="text-gray-500">No applications in this category.</p>
+            )}
+          </div>
+        )}
       </main>
 
       {selectedApplicant && (
@@ -295,5 +317,6 @@ export default function CompanyApplications() {
     </div>
   );
 }
+
 
 
