@@ -35,9 +35,8 @@ export default function PostCreation({ currentUser }) {
         author: currentUser.name || "Unknown",
         role: currentUser.role || "Unknown",
         content: postContent,
-        likes: 0,
+        likes: [],
         comments: [],
-        isLiked: false,
         attachment: attachmentData,
         authorId: userId,
       };

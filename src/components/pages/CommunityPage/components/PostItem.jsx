@@ -25,12 +25,27 @@ export default function PostItem({ post, currentUser }) {
 
   const handleLikePost = async () => {
     try {
-      const updatedLikes = post.isLiked ? post.likes - 1 : post.likes + 1;
-      const updatedIsLiked = !post.isLiked;
+      const userId = currentUser?.uid || currentUser?.id;
+      if (!userId) {
+        console.error("User ID not found");
+        return;
+      }
+
+      // Initialize likes as array if it doesn't exist
+      const currentLikes = Array.isArray(post.likes) ? post.likes : [];
+      const isCurrentlyLiked = currentLikes.includes(userId);
+
+      let updatedLikes;
+      if (isCurrentlyLiked) {
+        // Remove user from likes array
+        updatedLikes = currentLikes.filter(id => id !== userId);
+      } else {
+        // Add user to likes array
+        updatedLikes = [...currentLikes, userId];
+      }
 
       await updatePost(post.id, {
         likes: updatedLikes,
-        isLiked: updatedIsLiked,
       });
     } catch (err) {
       console.error("Error updating like:", err);
@@ -49,9 +64,8 @@ export default function PostItem({ post, currentUser }) {
         author: currentUser.name || "Unknown",
         role: currentUser.role || "Unknown",
         content: post.content,
-        likes: 0,
+        likes: [],
         comments: [],
-        isLiked: false,
         attachment: post.attachment || null,
         repostOf: {
           authorProfileImage: post.authorProfileImage || "",
@@ -321,10 +335,10 @@ export default function PostItem({ post, currentUser }) {
       <div className="border-t border-border px-4 py-2 flex justify-between">
         <button
           onClick={handleLikePost}
-          className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg ${post.isLiked ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"}`}
+          className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg ${Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"}`}
         >
           <HiOutlineHandThumbUp className="w-5 h-5" />
-          <span>Like ({post.likes || 0})</span>
+          <span>Like ({Array.isArray(post.likes) ? post.likes.length : 0})</span>
         </button>
         <button
           className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-muted"

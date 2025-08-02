@@ -15,17 +15,17 @@ export default function PostComments({ post, currentUser, commentInputs, setComm
               return (
                 <li key={idx} className="flex items-start space-x-2">
                   <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
-                  {currentUser.profileImage ? (
+                  {comment.authorProfileImage ? (
                      <Image
-                       src={currentUser?.profileImage}
-                       className="h-12 w-12 rounded-full object-cover"
-                       width={100}
-                       height={100}
-                       alt={currentUser.role}
+                       src={comment.authorProfileImage}
+                       className="h-8 w-8 rounded-full object-cover"
+                       width={32}
+                       height={32}
+                       alt={comment.authorName || 'Comment author'}
                      />
                    ) : (
-                     <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                       {currentUser?.profileImage}
+                     <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                       {(comment.authorName || 'U').charAt(0)}
                      </div>
                    )}
                   </div>
@@ -47,19 +47,9 @@ export default function PostComments({ post, currentUser, commentInputs, setComm
               return (
                 <li key={idx} className="flex items-start space-x-2">
                   <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
-                    {currentUser.profileImage ? (
-                     <Image
-                       src={currentUser?.profileImage}
-                       className="h-12 w-12 rounded-full object-cover"
-                       width={100}
-                       height={100}
-                       alt={currentUser.role}
-                     />
-                   ) : (
-                     <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                       {currentUser?.profileImage}
-                     </div>
-                   )}
+                    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                      U
+                    </div>
                   </div>
                   <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
                     <div className="font-medium text-sm">Unknown</div>
@@ -85,15 +75,15 @@ export default function PostComments({ post, currentUser, commentInputs, setComm
         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold flex-shrink-0">
         {currentUser.profileImage ? (
                      <Image
-                       src={currentUser?.profileImage}
-                       className="h-12 w-12 rounded-full object-cover"
-                       width={100}
-                       height={100}
-                       alt={currentUser.role}
+                       src={currentUser.profileImage}
+                       className="h-10 w-10 rounded-full object-cover"
+                       width={40}
+                       height={40}
+                       alt={currentUser.name || 'Current user'}
                      />
                    ) : (
-                     <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                       {currentUser?.profileImage}
+                     <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
+                       {(currentUser.name || 'U').charAt(0)}
                      </div>
                    )}
         </div>
