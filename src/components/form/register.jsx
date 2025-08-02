@@ -17,7 +17,7 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebase";
 import { toast } from "sonner";
-import { setUser } from "@/services/firebase";
+import { setUser } from "@/services/userServices";
 import { signIn } from "next-auth/react";
 
 export default function RegisterForm() {
