@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function CommunitySidebar({ currentUser, posts, companies = [] }) {
   if (!currentUser) {
@@ -60,15 +61,18 @@ export default function CommunitySidebar({ currentUser, posts, companies = [] })
           <ul className="space-y-3">
             {companies.length > 0 ? (
               companies.map((company) => (
-                <li
+                <Link
                   key={company.id || company.uid}
-                  className="flex items-center space-x-3 hover:text-primary cursor-pointer transition-colors"
+                  href={`/company/${company.id || company.uid}`}
+                  className="block"
                 >
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary">
-                    {(company.name || company.companyName || "C").charAt(0)}
-                  </div>
-                  <span>{company.name || company.companyName || "Company"}</span>
-                </li>
+                  <li className="flex items-center space-x-3 hover:text-primary cursor-pointer transition-colors">
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary">
+                      {(company.name || company.companyName || "C").charAt(0)}
+                    </div>
+                    <span>{company.name || company.companyName || "Company"}</span>
+                  </li>
+                </Link>
               ))
             ) : (
               <li className="text-muted-foreground text-sm">No companies available</li>
