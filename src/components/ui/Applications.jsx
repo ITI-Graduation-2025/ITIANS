@@ -39,7 +39,7 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
       />
       <div>
         <h3 className="font-semibold text-lg">{applicant.name || "Unnamed Applicant"}</h3>
-        <p className="text-gray-600 text-sm">Applied for: {applicant.role || "Not specified"}</p>
+        <p className="text-gray-600 text-sm">Applied for: {applicant.jobId || "Not specified"}</p>
         <p className="text-xs text-gray-500">Status: {applicant.status}</p>
         <div className="text-sm text-gray-500 mt-1 flex items-center gap-4">
           {applicant.experience && (
