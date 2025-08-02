@@ -64,7 +64,7 @@ export default function PostItem({ post, currentUser }) {
         },
         authorId: userId,
       };
-      console.log(newPostData);
+      // console.log(newPostData);
       // console.log(post);
 
       await createPost(newPostData);
@@ -72,7 +72,7 @@ export default function PostItem({ post, currentUser }) {
       console.error("Error reposting:", err);
     }
   };
-  console.log(post);
+  // console.log(post);
   const handleAddComment = async (comment) => {
     if (!comment.trim()) return;
     try {

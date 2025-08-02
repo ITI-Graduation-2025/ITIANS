@@ -70,6 +70,14 @@ export default function CommunityPage() {
     return freelancers;
   }, [users]);
 
+  const filteredCompanies = useMemo(() => {
+    const companies = users
+      .filter((user) => user?.role === "company")
+      .slice(0, 6); 
+
+    return companies;
+  }, [users]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
@@ -107,7 +115,7 @@ export default function CommunityPage() {
       />
 
       <main className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
-        <CommunitySidebar currentUser={currentUser} posts={posts} />
+        <CommunitySidebar currentUser={currentUser} posts={posts} companies={filteredCompanies} />
 
         <div className="w-full md:w-2/4 space-y-6">
           <PostCreation currentUser={currentUser} />
@@ -124,7 +132,7 @@ export default function CommunityPage() {
         />
       </main>
 
-      <CommunityFooter />
+      {/* <CommunityFooter /> */}
     </div>
   );
 }

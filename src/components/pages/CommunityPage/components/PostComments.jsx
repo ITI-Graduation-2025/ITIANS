@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function PostComments({ post, currentUser, commentInputs, setCommentInputs, onAddComment }) {
   return (
     <div className="bg-muted px-4 py-3 border-t border-border">
@@ -8,12 +10,24 @@ export default function PostComments({ post, currentUser, commentInputs, setComm
       post.comments.length > 0 ? (
         <ul className="space-y-3 mb-4">
           {post.comments.map((comment, idx) => {
-            // If comment is an object, show details; if string, fallback
+            
             if (typeof comment === 'object' && comment !== null) {
               return (
                 <li key={idx} className="flex items-start space-x-2">
                   <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
-                    {comment.authorAvatar ? comment.authorAvatar.charAt(0) : '?'}
+                  {currentUser.profileImage ? (
+                     <Image
+                       src={currentUser?.profileImage}
+                       className="h-12 w-12 rounded-full object-cover"
+                       width={100}
+                       height={100}
+                       alt={currentUser.role}
+                     />
+                   ) : (
+                     <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                       {currentUser?.profileImage}
+                     </div>
+                   )}
                   </div>
                   <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
                     <div className="font-medium text-sm">
@@ -33,7 +47,19 @@ export default function PostComments({ post, currentUser, commentInputs, setComm
               return (
                 <li key={idx} className="flex items-start space-x-2">
                   <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
-                    ?
+                    {currentUser.profileImage ? (
+                     <Image
+                       src={currentUser?.profileImage}
+                       className="h-12 w-12 rounded-full object-cover"
+                       width={100}
+                       height={100}
+                       alt={currentUser.role}
+                     />
+                   ) : (
+                     <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                       {currentUser?.profileImage}
+                     </div>
+                   )}
                   </div>
                   <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
                     <div className="font-medium text-sm">Unknown</div>
@@ -57,7 +83,19 @@ export default function PostComments({ post, currentUser, commentInputs, setComm
         }}
       >
         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold flex-shrink-0">
-          {currentUser?.avatar?.charAt(0) || '?'}
+        {currentUser.profileImage ? (
+                     <Image
+                       src={currentUser?.profileImage}
+                       className="h-12 w-12 rounded-full object-cover"
+                       width={100}
+                       height={100}
+                       alt={currentUser.role}
+                     />
+                   ) : (
+                     <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                       {currentUser?.profileImage}
+                     </div>
+                   )}
         </div>
         <input
           type="text"
@@ -81,7 +119,7 @@ export default function PostComments({ post, currentUser, commentInputs, setComm
             )
           }
         >
-          
+          ➤
         </button>
       </form>
     </div>

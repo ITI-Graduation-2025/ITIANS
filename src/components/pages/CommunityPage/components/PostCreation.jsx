@@ -64,7 +64,7 @@ export default function PostCreation({ currentUser }) {
         <h2 className="text-lg font-bold">Create a Post</h2>
       </div>
       <div className="p-4">
-        {error && <div className="text-red-500 mb-2">{error}</div>}
+        {error && <div className="text-destructive mb-2">{error}</div>}
         <form onSubmit={handleAddPost}>
           <div className="flex items-start space-x-3">
             {currentUser.profileImage ? (

@@ -1,4 +1,6 @@
-export default function CommunitySidebar({ currentUser, posts }) {
+import Image from "next/image";
+
+export default function CommunitySidebar({ currentUser, posts, companies = [] }) {
   if (!currentUser) {
     return <div>Loading user...</div>;
   }
@@ -7,8 +9,20 @@ export default function CommunitySidebar({ currentUser, posts }) {
       <div className="bg-card rounded-xl shadow-md overflow-hidden border-l-4 border-primary">
         <div className="p-4">
           <div className="flex items-center space-x-4">
-            <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-              {currentUser?.avatar}
+            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
+              {currentUser.profileImage ? (
+                                   <Image
+                                     src={currentUser?.profileImage}
+                                     className="h-12 w-12 rounded-full object-cover"
+                                     width={100}
+                                     height={100}
+                                     alt={currentUser.role}
+                                   />
+                                 ) : (
+                                   <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                                     {currentUser?.profileImage}
+                                   </div>
+                                 )}
             </div>
             <div>
               <h3 className="font-bold text-lg">{currentUser?.name}</h3>
@@ -44,63 +58,26 @@ export default function CommunitySidebar({ currentUser, posts }) {
         </div>
         <div className="p-4">
           <ul className="space-y-3">
-            {[
-              "Valeo",
-              "ITWorx",
-              "Orange Labs",
-              "Sumerge",
-              "IBM Egypt",
-              "Microsoft Egypt",
-            ].map((company) => (
-              <li
-                key={company}
-                className="flex items-center space-x-3 hover:text-primary cursor-pointer transition-colors"
-              >
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary">
-                  {company.charAt(0)}
-                </div>
-                <span>{company}</span>
-              </li>
-            ))}
+            {companies.length > 0 ? (
+              companies.map((company) => (
+                <li
+                  key={company.id || company.uid}
+                  className="flex items-center space-x-3 hover:text-primary cursor-pointer transition-colors"
+                >
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary">
+                    {(company.name || company.companyName || "C").charAt(0)}
+                  </div>
+                  <span>{company.name || company.companyName || "Company"}</span>
+                </li>
+              ))
+            ) : (
+              <li className="text-muted-foreground text-sm">No companies available</li>
+            )}
           </ul>
         </div>
       </div>
 
-      <div className="bg-card rounded-xl shadow-md overflow-hidden">
-        <div className="p-4 bg-primary text-primary-foreground">
-          <h3 className="font-bold text-lg">Upcoming Events</h3>
-        </div>
-        <div className="p-4">
-          <ul className="space-y-4">
-            <li className="hover:bg-muted p-2 rounded-lg cursor-pointer transition-colors">
-              <div className="flex items-start space-x-3">
-                <div className="min-w-12 h-12 bg-secondary rounded-lg flex items-center justify-center font-bold text-secondary-foreground">
-                  Jul
-                </div>
-                <div>
-                  <div className="font-medium">ITI Alumni Meetup</div>
-                  <div className="text-sm text-muted-foreground">
-                    July 15, 2023 • Cairo
-                  </div>
-                </div>
-              </div>
-            </li>
-            <li className="hover:bg-muted p-2 rounded-lg cursor-pointer transition-colors">
-              <div className="flex items-start space-x-3">
-                <div className="min-w-12 h-12 bg-secondary rounded-lg flex items-center justify-center font-bold text-secondary-foreground">
-                  Jul
-                </div>
-                <div>
-                  <div className="font-medium">Freelancing Workshop</div>
-                  <div className="text-sm text-muted-foreground">
-                    July 20, 2023 • Online
-                  </div>
-                </div>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
+      
     </aside>
   );
 } 
