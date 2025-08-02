@@ -1,19 +1,20 @@
 "use client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useUserContext } from "@/context/userContext";
+import { updateUser } from "@/services/userServices";
+import { upload } from "@/utils/upload";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
+import BioLanguagesStep from "./bioLanguagesStep";
+import EducationReviewStep from "./educationReviewStep";
 import PersonalInfoStep from "./personalInfoStep";
 import ProfessionalInfoStep from "./professionalInfoStep";
 import SpecializationStep from "./specializationStep";
-import BioLanguagesStep from "./bioLanguagesStep";
-import EducationReviewStep from "./educationReviewStep";
-import { setUser, updateUser } from "@/services/firebase";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { useSession } from "next-auth/react";
-import { useUserContext } from "@/context/userContext";
 
 const TOTAL_STEPS = 5;
 
@@ -135,6 +136,8 @@ export default function MentorProfileForm({
       }
 
       const uid = session.user.id;
+      const res = await upload({ target: { files: [data.photo] } });
+      data.photo = res;
 
       if (mode === "edit") {
         await updateUser(uid, data);
