@@ -1,4 +1,5 @@
 import { db } from "@/config/firebase";
+import { sendPushNotification } from "@/services/notificationService";
 import { createPost, deletePost, updatePost } from "@/services/postServices";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Image from "next/image";
@@ -80,40 +81,40 @@ export default function PostItem({ post, currentUser }) {
         },
         authorId: userId,
       };
-      
+
       await createPost(newPostData);
     } catch (err) {
       console.error("Error reposting:", err);
     }
   };
-  
+
   const handleAddComment = async (comment, mentions = []) => {
     if (!comment.trim()) return;
     try {
       const newComment = {
-        authorProfileImage: currentUser.profileImage,
+        authorProfileImage: currentUser.profileImage || "",
         authorId: currentUser.id || currentUser.uid,
         authorName: currentUser.name || "Unknown",
         content: comment,
         mentions,
         createdAt: new Date().toISOString(),
       };
-      
 
       const updatedComments = Array.isArray(post.comments)
         ? [...post.comments, newComment]
         : [newComment];
+
       await updatePost(post.id, {
         comments: updatedComments,
       });
       mentions.forEach(async (user) => {
-        if (user.fcmToken)
-          // await sendPushNotification({
-          //   token: user.fcmToken,
-          //   title: `${currentUser.name} mentioned you in a comment`,
-          //   body: comment,
-          //   // data: { url: `/session/${requestData.sessionId}` },
-          // });
+        if (user.fcmToken) {
+          await sendPushNotification({
+            token: user.fcmToken,
+            title: `${currentUser.name} mentioned you in a comment`,
+            body: comment,
+            data: { url: `/community/post.id` },
+          });
           var acceptedNotification = {
             recipientId: user.id,
             senderId: newComment.authorId,
@@ -123,7 +124,8 @@ export default function PostItem({ post, currentUser }) {
             read: false,
             createdAt: serverTimestamp(),
           };
-        await addDoc(collection(db, "notifications"), acceptedNotification);
+          await addDoc(collection(db, "notifications"), acceptedNotification);
+        }
       });
       setCommentInputs((inputs) => ({ ...inputs, [post.id]: "" }));
     } catch (err) {
