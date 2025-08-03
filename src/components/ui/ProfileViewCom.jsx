@@ -62,9 +62,10 @@ function formatRelativeTime(date) {
 const timestamp = new Date("2025-07-31T20:00:00Z");
 console.log(formatRelativeTime(timestamp));
   {/* هنا عدلنا export,const */}
-export default function ProfileViewCom({ companyIdFromProp, readonly = false }) {
-  const session = useSession();
-  const companyId = companyIdFromProp || session?.user?.id;
+export default function ProfileViewCom() {
+  const { data: session } = useSession();
+  const companyId = session?.user?.id;
+  
   const user = session?.user;
 
   
@@ -106,10 +107,11 @@ export default function ProfileViewCom({ companyIdFromProp, readonly = false }) 
   const totalPages = Math.ceil(jobs.length / jobsPerPage);
 
 
-  useEffect(() => {
-    async function fetchCompanyAndJobs() {
-      if (!companyId) return;
+ useEffect(() => {
+  async function fetchCompanyAndJobs() {
+    if (!companyId) return;
 
+    try {
       const companyRef = doc(db, "users", companyId);
       const companySnap = await getDoc(companyRef);
       const companyData = companySnap.exists() ? companySnap.data() : {};
@@ -117,23 +119,29 @@ export default function ProfileViewCom({ companyIdFromProp, readonly = false }) 
       const jobsQuery = query(
         collection(db, "jobs"),
         where("companyId", "==", companyId)
+        // يمكن إضافة orderBy("createdAt", "desc") هنا إذا كنت متأكدة أن جميع الوظائف تحتوي على createdAt
       );
-      const jobsSnapshot = await getDocs(jobsQuery);
-      const jobsData = jobsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setJobs(jobsData);
 
+      const jobsSnapshot = await getDocs(jobsQuery);
+
+      const jobsData = jobsSnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); // ← الترتيب من الأحدث إلى الأقدم
+
+      // إحصائيات الوظائف
       const activeProjects = jobsData.filter(
         (job) =>
           job.status?.toLowerCase() === "active" ||
           job.status?.toLowerCase() === "open"
       ).length;
+
       const totalHired = jobsData.reduce((sum, job) => {
         if (!Array.isArray(job.applicants)) return sum;
         const hiredCount = job.applicants.filter(
-          (applicant) => applicant.status === "shortlisted"
+          (applicant) => applicant.status === "Approved"
         ).length;
         return sum + hiredCount;
       }, 0);
@@ -141,7 +149,7 @@ export default function ProfileViewCom({ companyIdFromProp, readonly = false }) 
       const successfulJobs = jobsData.filter(
         (job) =>
           Array.isArray(job.applicants) &&
-          job.applicants.some((applicant) => applicant.status === "shortlisted")
+          job.applicants.some((applicant) => applicant.status === "Approved")
       ).length;
 
       const totalJobs = jobsData.length;
@@ -157,11 +165,17 @@ export default function ProfileViewCom({ companyIdFromProp, readonly = false }) 
         },
       });
 
+      setJobs(jobsData);
       setLoading(false);
+    } catch (error) {
+      console.error("Error fetching company and jobs:", error);
+      toast.error("Failed to load company data.");
     }
+  }
 
-    fetchCompanyAndJobs();
-  }, [companyId]);
+  fetchCompanyAndJobs();
+}, [companyId]);
+
 
   
 
@@ -294,7 +308,7 @@ export default function ProfileViewCom({ companyIdFromProp, readonly = false }) 
                 key={job.id}
                 className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
               >
-
+                 {/* View Details */}
                 <div>
                   <h3 className="text-lg font-semibold">{job.title}</h3>
                   <p className="text-sm text-gray-500">Type: {job.type}</p>
@@ -611,7 +625,7 @@ export default function ProfileViewCom({ companyIdFromProp, readonly = false }) 
           )}
 
 
-
+mm
 
         </div>
       </div>

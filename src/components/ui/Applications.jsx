@@ -20,12 +20,13 @@ import {
   doc,
   getDoc,
   updateDoc,
+  onSnapshot,  // استيراد onSnapshot
 } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
-const STATUS_LIST = ["pending", "shortlisted", "interviewed", "rejected"];
+const STATUS_LIST = ["pending", "Approved","rejected"];
 
 const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
   <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-xl mb-4 bg-white shadow-sm">
@@ -79,12 +80,12 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
         View Profile
       </button>
 
-      {applicant.status !== "shortlisted" && (
+      {applicant.status !== "Approved" && (
         <button
-          onClick={() => onUpdateStatus(applicant.id, "shortlisted", applicant.name)}
+          onClick={() => onUpdateStatus(applicant.id, "Approved", applicant.name)}
           className="bg-green-600 text-white px-4 py-2 rounded"
         >
-          Shortlist
+          Approve
         </button>
       )}
 
@@ -101,9 +102,6 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
         </button>
       )}
 
-      <button disabled className="border px-4 py-2 rounded text-gray-400 cursor-not-allowed">
-        <MessageCircle className="w-4 h-4" /> Message
-      </button>
     </div>
   </div>
 );
@@ -119,54 +117,49 @@ export default function CompanyApplications() {
   const { data: session } = useSession();
 
   useEffect(() => {
-    const fetchApplicants = async () => {
-      if (!jobId) return;
+    if (!jobId) return;
 
-      try {
-        const jobRef = doc(db, "jobs", jobId);
-        const jobSnap = await getDoc(jobRef);
+    setIsLoading(true);
 
-        if (!jobSnap.exists()) {
-          toast.error("Job not found.");
-          return;
-        }
+    const jobRef = doc(db, "jobs", jobId);
 
-        const jobData = jobSnap.data();
-        const applicantEntries = jobData.applicants || [];
-
-        const applicantData = await Promise.all(
-          applicantEntries.map(async (entry) => {
-            const userId = typeof entry === "string" ? entry : entry.userId;
-            const status = typeof entry === "object" && entry.status ? entry.status : "pending";
-
-            const userRef = doc(db, "users", userId);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-              console.log("User not found:", userId);
-              return null;
-            }
-
-            return {
-              id: userId,
-              status,
-              ...userSnap.data(),
-            };
-          })
-        );
-
-        const filtered = applicantData.filter(Boolean);
-        setApplications(filtered);
-        console.log("Loaded applicants with status:", filtered);
-      } catch (error) {
-        console.error("Error fetching applicants:", error);
-        toast.error("Failed to load applicants.");
-      } finally {
+    const unsubscribe = onSnapshot(jobRef, async (jobSnap) => {
+      if (!jobSnap.exists()) {
+        toast.error("Job not found.");
         setIsLoading(false);
+        return;
       }
-    };
 
-    fetchApplicants();
+      const jobData = jobSnap.data();
+      const applicantEntries = jobData.applicants || [];
+
+      const applicantData = await Promise.all(
+        applicantEntries.map(async (entry) => {
+          const userId = typeof entry === "string" ? entry : entry.userId;
+          const status = typeof entry === "object" && entry.status ? entry.status : "pending";
+
+          const userRef = doc(db, "users", userId);
+          const userSnap = await getDoc(userRef);
+
+          if (!userSnap.exists()) {
+            console.log("User not found:", userId);
+            return null;
+          }
+
+          return {
+            id: userId,
+            status,
+            ...userSnap.data(),
+          };
+        })
+      );
+
+      const filtered = applicantData.filter(Boolean);
+      setApplications(filtered);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe(); 
   }, [jobId]);
 
   const handleUpdateStatus = async (userId, newStatus, name) => {
@@ -192,11 +185,7 @@ export default function CompanyApplications() {
       await updateDoc(jobRef, { applicants: updatedApplicants });
 
       toast.success(`${name} has been ${newStatus}`);
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.id === userId ? { ...app, status: newStatus } : app
-        )
-      );
+    
     } catch (err) {
       console.error("Failed to update status:", err);
       toast.error("Failed to update applicant status.");
@@ -317,6 +306,7 @@ export default function CompanyApplications() {
     </div>
   );
 }
+
 
 
 

@@ -10,6 +10,8 @@ import {
   Trash2,
   PauseCircle,
   PlayCircle,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/config/firebase";
@@ -25,6 +27,7 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import JobForm from "./JobForm";
 import { useSession } from "next-auth/react";
+import ReactPaginate from "react-paginate";
 
 export default function CompanyJobs() {
   const [jobs, setJobs] = useState([]);
@@ -32,6 +35,12 @@ export default function CompanyJobs() {
   const { data: session } = useSession();
   const companyId = session?.user?.id;
   const companyRef = companyId ? doc(db, "users", companyId) : null;
+  const [currentPage, setCurrentPage] = useState(0);
+const itemsPerPage = 6; // عدد الوظائف لكل صفحة
+const offset = currentPage * itemsPerPage;
+const currentJobs = jobs.slice(offset, offset + itemsPerPage);
+const pageCount = Math.ceil(jobs.length / itemsPerPage);
+
 
   useEffect(() => {
     if (!companyId) return;
@@ -62,8 +71,14 @@ export default function CompanyJobs() {
   
         jobsData.push(job);
       }
-  
-      setJobs(jobsData);
+      {/**order new to old jobs */}
+      setJobs(
+        jobsData.sort((a, b) => {
+          const aTime = a.createdAt?.seconds || 0;
+          const bTime = b.createdAt?.seconds || 0;
+          return bTime - aTime;
+        })
+      );
   
       if (companyRef) {
         const activeCount = jobsData.filter((j) => j.status === "Active").length;
@@ -120,13 +135,14 @@ export default function CompanyJobs() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs.length > 0 ? (
-            jobs.map((job) => (
-              <JobCard
-                key={job.id}
-                {...job}
-                companyRef={companyRef}
-                onEdit={() => setEditJob(job)}
+          {currentJobs.length > 0 ? (
+  currentJobs.map((job) => (
+    <JobCard
+      key={job.id}
+      {...job}
+      companyRef={companyRef}
+      onEdit={() => setEditJob(job)}
+
               />
             ))
           ) : (
@@ -144,6 +160,25 @@ export default function CompanyJobs() {
           )}
         </div>
       </main>
+
+      <ReactPaginate
+  breakLabel="..."
+  nextLabel={<ChevronRight size={16} />}
+  previousLabel={<ChevronLeft size={16} />}
+  onPageChange={({ selected }) => setCurrentPage(selected)}
+  pageRangeDisplayed={3}
+  marginPagesDisplayed={1}
+  pageCount={pageCount}
+  forcePage={currentPage} // لو عندك تحكم بالصفحة الحالية
+  containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
+  pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+  activeClassName="bg-[#b30000] text-white border-[#b30000]"
+  previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+  nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+  breakClassName="px-2 py-1"
+/>
+
+
 
       {editJob && (
         <JobForm mode="edit" job={editJob} onClose={() => setEditJob(null)} />
