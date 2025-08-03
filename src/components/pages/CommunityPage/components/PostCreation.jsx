@@ -39,8 +39,8 @@ export default function PostCreation({ currentUser }) {
         comments: [],
         attachment: attachmentData,
         authorId: userId,
+        authorFcmToken: currentUser.fcmToken,
       };
-      console.log(newPostData);
 
       await createPost(newPostData);
       setPostContent("");

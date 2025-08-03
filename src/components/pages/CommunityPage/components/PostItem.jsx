@@ -107,13 +107,31 @@ export default function PostItem({ post, currentUser }) {
       await updatePost(post.id, {
         comments: updatedComments,
       });
+      if (post.authorFcmToken && post.authorId !== currentUser.id) {
+          await sendPushNotification({
+            token: post.authorFcmToken,
+            title: `${currentUser.name} commented on your post`,
+            body: comment,
+            data: { url: `/community` },
+          });
+          var acceptedNotification = {
+            recipientId: post.authorId,
+            senderId: newComment.authorId,
+            type: "comment",
+            message: `${currentUser.name} commented on your post`,
+            relatedId: post.id,
+            read: false,
+            createdAt: serverTimestamp(),
+          };
+          await addDoc(collection(db, "notifications"), acceptedNotification);
+        }
       mentions.forEach(async (user) => {
-        if (user.fcmToken) {
+        if (user.fcmToken && user.id !== currentUser.id) {
           await sendPushNotification({
             token: user.fcmToken,
             title: `${currentUser.name} mentioned you in a comment`,
             body: comment,
-            data: { url: `/community/post.id` },
+            data: { url: `/community` },
           });
           var acceptedNotification = {
             recipientId: user.id,
