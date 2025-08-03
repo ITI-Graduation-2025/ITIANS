@@ -9,13 +9,11 @@ export default function PostComments({
   setCommentInputs,
   onAddComment,
 }) {
-  console.log(commentInputs);
   const [mentions, setMentions] = useState([]);
   const [comment, setComment] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [cursorPosition, setCursorPosition] = useState();
   const { users } = useContext(UsersContext);
-  console.log(users);
 
   const renderCommentText = (text) => {
     const mentionRegex = /@[\w\s]+?(?=\s|$)/g;
@@ -79,9 +77,11 @@ export default function PostComments({
         {
           name: selectedUser.name,
           id: selectedUser.id,
-          fcmToken: selectedUser.fcmToken,
+          fcmToken: selectedUser.fcmToken||"",
         },
       ]);
+     
+      
       setComment(newComment);
       setCommentInputs((inputs) => ({
         ...inputs,
@@ -93,6 +93,7 @@ export default function PostComments({
       setCursorPosition(lastAtIndex + alias.length + 2);
     }
   };
+   console.log(mentions);
   const handleInputChange = (e) => {
     const value = e.target.value;
     setComment(value);
