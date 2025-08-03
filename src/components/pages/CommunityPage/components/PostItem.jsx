@@ -1,4 +1,6 @@
+import { db } from "@/config/firebase";
 import { createPost, deletePost, updatePost } from "@/services/postServices";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -38,7 +40,7 @@ export default function PostItem({ post, currentUser }) {
       let updatedLikes;
       if (isCurrentlyLiked) {
         // Remove user from likes array
-        updatedLikes = currentLikes.filter(id => id !== userId);
+        updatedLikes = currentLikes.filter((id) => id !== userId);
       } else {
         // Add user to likes array
         updatedLikes = [...currentLikes, userId];
@@ -78,16 +80,14 @@ export default function PostItem({ post, currentUser }) {
         },
         authorId: userId,
       };
-      // console.log(newPostData);
-      // console.log(post);
-
+      
       await createPost(newPostData);
     } catch (err) {
       console.error("Error reposting:", err);
     }
   };
-  // console.log(post);
-  const handleAddComment = async (comment) => {
+  
+  const handleAddComment = async (comment, mentions = []) => {
     if (!comment.trim()) return;
     try {
       const newComment = {
@@ -95,13 +95,35 @@ export default function PostItem({ post, currentUser }) {
         authorId: currentUser.id || currentUser.uid,
         authorName: currentUser.name || "Unknown",
         content: comment,
+        mentions,
         createdAt: new Date().toISOString(),
       };
+      
+
       const updatedComments = Array.isArray(post.comments)
         ? [...post.comments, newComment]
         : [newComment];
       await updatePost(post.id, {
         comments: updatedComments,
+      });
+      mentions.forEach(async (user) => {
+        if (user.fcmToken)
+          // await sendPushNotification({
+          //   token: user.fcmToken,
+          //   title: `${currentUser.name} mentioned you in a comment`,
+          //   body: comment,
+          //   // data: { url: `/session/${requestData.sessionId}` },
+          // });
+          var acceptedNotification = {
+            recipientId: user.id,
+            senderId: newComment.authorId,
+            type: "comment_mention",
+            message: `${newComment.authorName} mentioned you in a comment`,
+            relatedId: post.id,
+            read: false,
+            createdAt: serverTimestamp(),
+          };
+        await addDoc(collection(db, "notifications"), acceptedNotification);
       });
       setCommentInputs((inputs) => ({ ...inputs, [post.id]: "" }));
     } catch (err) {
@@ -338,7 +360,9 @@ export default function PostItem({ post, currentUser }) {
           className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg ${Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"}`}
         >
           <HiOutlineHandThumbUp className="w-5 h-5" />
-          <span>Like ({Array.isArray(post.likes) ? post.likes.length : 0})</span>
+          <span>
+            Like ({Array.isArray(post.likes) ? post.likes.length : 0})
+          </span>
         </button>
         <button
           className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-muted"
