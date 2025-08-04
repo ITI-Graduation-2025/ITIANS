@@ -113,7 +113,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
           isOwner={isOwner}
           setIsModalOpen={setIsModalOpen}
         />
-        <Posts userPosts={userPosts} />
+        <Posts userPosts={userPosts} currentUser={session?.user} isOwner={isOwner} />
         <FinishedJobs
           finishedJobs={finishedJobs}
           isOwner={isOwner}
