@@ -1,8 +1,9 @@
 import { UsersContext } from "@/context/usersContext";
 import { updatePost } from "@/services/postServices";
+import { upload } from "@/utils/upload";
 import Image from "next/image";
 import { useContext, useState, useRef } from "react";
-import { HiOutlinePencil, HiOutlineTrash, HiOutlineXMark } from "react-icons/hi2";
+import { HiOutlinePencil, HiOutlineTrash, HiOutlineXMark, HiOutlinePhoto, HiOutlinePaperClip } from "react-icons/hi2";
 
 export default function PostComments({
   post,
@@ -17,9 +18,14 @@ export default function PostComments({
   const [cursorPosition, setCursorPosition] = useState();
   const [editingComment, setEditingComment] = useState(null);
   const [editContent, setEditContent] = useState("");
+  const [editImage, setEditImage] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ show: false, commentIndex: null });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [commentImage, setCommentImage] = useState(null);
   const { users } = useContext(UsersContext);
   const textareaRef = useRef();
+  const commentImageRef = useRef();
+  const editImageRef = useRef();
 
   const renderCommentText = (text) => {
     const mentionRegex = /@[\w\s]+?(?=\s|$)/g;
@@ -101,19 +107,109 @@ export default function PostComments({
     }
   };
 
+  const handleCommentImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert("Please select a valid image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Create a preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCommentImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Cloudinary
+      const imageUrl = await upload(e);
+      setCommentImage(imageUrl);
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload image. Please try again.");
+      setCommentImage(null);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleEditImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert("Please select a valid image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Create a preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Cloudinary
+      const imageUrl = await upload(e);
+      setEditImage(imageUrl);
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload image. Please try again.");
+      setEditImage(null);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeCommentImage = () => {
+    setCommentImage(null);
+    if (commentImageRef.current) {
+      commentImageRef.current.value = "";
+    }
+  };
+
+  const removeEditImage = () => {
+    setEditImage(null);
+    if (editImageRef.current) {
+      editImageRef.current.value = "";
+    }
+  };
+
   const handleEditComment = (commentIndex, commentData) => {
     setEditingComment(commentIndex);
     setEditContent(commentData.content || "");
+    setEditImage(commentData.image || null);
   };
 
   const handleSaveEdit = async (commentIndex) => {
-    if (!editContent.trim()) return;
+    if (!editContent.trim() && !editImage) return;
 
     try {
       const updatedComments = [...post.comments];
       updatedComments[commentIndex] = {
         ...updatedComments[commentIndex],
         content: editContent,
+        image: editImage,
         editedAt: new Date().toISOString(),
       };
 
@@ -123,6 +219,7 @@ export default function PostComments({
 
       setEditingComment(null);
       setEditContent("");
+      setEditImage(null);
     } catch (err) {
       console.error("Error updating comment:", err);
       alert("Failed to update comment. Please try again.");
@@ -155,6 +252,44 @@ export default function PostComments({
   const cancelEdit = () => {
     setEditingComment(null);
     setEditContent("");
+    setEditImage(null);
+  };
+
+  const handleSubmitComment = async (e) => {
+    e.preventDefault();
+    const commentText = commentInputs[post.id] || "";
+    if (!commentText.trim() && !commentImage) return;
+
+    try {
+      const newComment = {
+        authorProfileImage: currentUser.profileImage || "",
+        authorId: currentUser.id || currentUser.uid,
+        authorName: currentUser.name || "Unknown",
+        content: commentText,
+        image: commentImage,
+        mentions,
+        createdAt: new Date().toISOString(),
+      };
+
+      const updatedComments = Array.isArray(post.comments)
+        ? [...post.comments, newComment]
+        : [newComment];
+
+      await updatePost(post.id, {
+        comments: updatedComments,
+      });
+
+      // Reset form
+      setCommentInputs((inputs) => ({ ...inputs, [post.id]: "" }));
+      setCommentImage(null);
+      setMentions([]);
+      if (commentImageRef.current) {
+        commentImageRef.current.value = "";
+      }
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      alert("Failed to add comment. Please try again.");
+    }
   };
 
   const handleInputChange = (e) => {
@@ -170,12 +305,11 @@ export default function PostComments({
     // Find the word at the cursor position (allowing spaces in usernames)
     const textBeforeCursor = value.slice(0, cursor);
     const lastAtIndex = textBeforeCursor.lastIndexOf("@");
-    console.log(textBeforeCursor);
-    console.log(lastAtIndex);
+   
     if (lastAtIndex !== -1) {
       const query = textBeforeCursor.slice(lastAtIndex + 1).trimStart();
       if (query || query === "") {
-        console.log(query);
+       
 
         const filteredSuggestions = users.filter((user) =>
           user.name.toLowerCase().includes(query.toLowerCase()),
@@ -264,7 +398,52 @@ export default function PostComments({
                           onChange={(e) => setEditContent(e.target.value)}
                           className="w-full border border-input rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
                           rows={2}
+                          placeholder="Edit your comment..."
                         />
+                        
+                        {/* Edit Image Section */}
+                        <div className="mt-3">
+                          {editImage && (
+                            <div className="relative inline-block mb-2">
+                              <img
+                                src={editImage}
+                                alt="Comment image"
+                                className="max-h-32 rounded-lg border"
+                              />
+                              <button
+                                onClick={removeEditImage}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                title="Remove image"
+                              >
+                                <HiOutlineXMark className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2">
+                            <input
+                              ref={editImageRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handleEditImageUpload}
+                              className="hidden"
+                              disabled={uploadingImage}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => editImageRef.current?.click()}
+                              disabled={uploadingImage}
+                              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80"
+                            >
+                              <HiOutlinePhoto className="w-3 h-3" />
+                              {editImage ? "Change Image" : "Add Image"}
+                            </button>
+                            {uploadingImage && (
+                              <span className="text-xs text-muted-foreground">Uploading...</span>
+                            )}
+                          </div>
+                        </div>
+                        
                         <div className="flex space-x-2 mt-2">
                           <button
                             onClick={() => handleSaveEdit(idx)}
@@ -281,8 +460,21 @@ export default function PostComments({
                         </div>
                       </div>
                     ) : (
-                      <div className="text-foreground text-sm mt-1">
-                        {renderCommentText(comment.content || "")}
+                      <div className="mt-1">
+                        {comment.content && (
+                          <div className="text-foreground text-sm mb-2">
+                            {renderCommentText(comment.content)}
+                          </div>
+                        )}
+                        {comment.image && (
+                          <div className="mt-2">
+                            <img
+                              src={comment.image}
+                              alt="Comment attachment"
+                              className="max-h-48 rounded-lg border"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -313,43 +505,88 @@ export default function PostComments({
           No comments yet. Be the first to comment!
         </div>
       )}
+      
       <form
-        className="flex relative items-center mt-3 gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onAddComment(commentInputs[post.id] || "", mentions);
-        }}
+        className="flex flex-col gap-3 mt-3"
+        onSubmit={handleSubmitComment}
       >
-        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold flex-shrink-0">
-          {currentUser.profileImage ? (
-            <Image
-              src={currentUser.profileImage}
-              className="h-10 w-10 rounded-full object-cover"
-              width={40}
-              height={40}
-              alt={currentUser.name || "Current user"}
-            />
-          ) : (
-            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
-              {(currentUser.name || "U").charAt(0)}
+        <div className="flex items-center gap-2">
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold flex-shrink-0">
+            {currentUser.profileImage ? (
+              <Image
+                src={currentUser.profileImage}
+                className="h-10 w-10 rounded-full object-cover"
+                width={40}
+                height={40}
+                alt={currentUser.name || "Current user"}
+              />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
+                {(currentUser.name || "U").charAt(0)}
+              </div>
+            )}
+          </div>
+          <input
+            ref={textareaRef}
+            type="text"
+            className="flex-1 border border-input rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+            placeholder="Write a comment..."
+            value={commentInputs[post.id] || ""}
+            onChange={handleInputChange}
+          />
+          <button
+            type="submit"
+            className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/80 disabled:opacity-50"
+            disabled={!(commentInputs[post.id] && commentInputs[post.id].trim()) && !commentImage}
+          >
+            ➤
+          </button>
+        </div>
+
+        {/* Comment Image Section */}
+        <div className="ml-12">
+          {commentImage && (
+            <div className="relative inline-block mb-2">
+              <img
+                src={commentImage}
+                alt="Comment image"
+                className="max-h-32 rounded-lg border"
+              />
+              <button
+                type="button"
+                onClick={removeCommentImage}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                title="Remove image"
+              >
+                <HiOutlineXMark className="w-3 h-3" />
+              </button>
             </div>
           )}
+          
+          <div className="flex items-center gap-2">
+            <input
+              ref={commentImageRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCommentImageUpload}
+              className="hidden"
+              disabled={uploadingImage}
+            />
+            <button
+              type="button"
+              onClick={() => commentImageRef.current?.click()}
+              disabled={uploadingImage}
+              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80"
+            >
+              <HiOutlinePhoto className="w-3 h-3" />
+              {commentImage ? "Change Image" : "Add Image"}
+            </button>
+            {uploadingImage && (
+              <span className="text-xs text-muted-foreground">Uploading...</span>
+            )}
+          </div>
         </div>
-        <input
-          ref={textareaRef}
-          type="text"
-          className="flex-1 border border-input rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-          placeholder="Write a comment..."
-          value={commentInputs[post.id] || ""}
-          onChange={handleInputChange}
-        />
-        <button
-          type="submit"
-          className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/80 disabled:opacity-50"
-          disabled={!(commentInputs[post.id] && commentInputs[post.id].trim())}
-        >
-          ➤
-        </button>
+
         {suggestions.length > 0 && (
           <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
             {suggestions.map((user) => (
