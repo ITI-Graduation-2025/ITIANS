@@ -72,7 +72,7 @@ export default function PostCreation({ currentUser }) {
                 className="h-12 w-12 rounded-full object-cover"
                 width={100}
                 height={100}
-                alt={currentUser.fullName}
+                alt={currentUser.fullName||"user"}
               />
             ) : (
               <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">

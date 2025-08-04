@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { updateUser } from "@/services/userServices";
+import { upload } from "@/utils/upload";
 import { toast } from "sonner";
-import { FiX } from "react-icons/fi";
+import { FiX, FiUpload, FiTrash2 } from "react-icons/fi";
 
 export const EditModal = ({ type, onClose, user, refetchUser }) => {
   const [tempValue, setTempValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [changed, setChanged] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef();
 
   useEffect(() => {
     if (type === "about") setTempValue(user.bio || "");
@@ -22,12 +26,50 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
       setTempValue(user.education || { school: "", degree: "", year: "" });
     else if (type === "work") setTempValue(user.finishedJobs || []);
     else if (type === "certificates") setTempValue(user.certificates || []);
+    else if (type === "profileImage") {
+      setTempValue(user.profileImage || "");
+      setImagePreview(user.profileImage || null);
+    }
     setChanged(false);
   }, [type, user]);
 
   useEffect(() => {
     setChanged(true);
   }, [tempValue]);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      // Create a preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Cloudinary using the upload function
+      const imageUrl = await upload(e);
+      setTempValue(imageUrl);
+      toast.success("Image uploaded successfully!");
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error(err.message || "Failed to upload image. Please try again.");
+      setImagePreview(null);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setTempValue("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -46,6 +88,8 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
         await updateUser(user.id, { finishedJobs: tempValue });
       } else if (type === "certificates") {
         await updateUser(user.id, { certificates: tempValue });
+      } else if (type === "profileImage") {
+        await updateUser(user.id, { profileImage: tempValue });
       }
       await refetchUser();
       toast.success("Profile updated successfully!");
@@ -70,8 +114,63 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
           <FiX />
         </button>
         <h2 className="text-2xl font-bold text-[#B71C1C] mb-6 capitalize tracking-wide text-center">
-          Edit {type}
+          Edit {type === "profileImage" ? "Profile Image" : type}
         </h2>
+        
+        {type === "profileImage" && (
+          <div className="space-y-4">
+            <div className="flex flex-col items-center space-y-4">
+              {/* Current/Preview Image */}
+              <div className="relative">
+                <img
+                  src={imagePreview || user.profileImage || "https://i.pravatar.cc/100?img=5"}
+                  alt="Profile"
+                  className="w-32 h-32 rounded-full border-4 border-[#B71C1C] shadow-lg object-cover"
+                />
+                {uploadingImage && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Upload Controls */}
+              <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#B71C1C] text-white rounded-lg hover:bg-[#B71C1C]/90 transition-colors disabled:opacity-50"
+                >
+                  <FiUpload />
+                  {uploadingImage ? "Uploading..." : "Upload New Image"}
+                </button>
+                {(imagePreview || user.profileImage) && (
+                  <button
+                    onClick={handleRemoveImage}
+                    disabled={uploadingImage}
+                    className="flex items-center gap-2 px-4 py-2 border-2 border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                  >
+                    <FiTrash2 />
+                    Remove
+                  </button>
+                )}
+              </div>
+              
+              <p className="text-sm text-gray-500 text-center">
+                Supported formats: JPG, PNG, GIF. Max size: 5MB
+              </p>
+            </div>
+          </div>
+        )}
+
         {type === "about" && (
           <textarea
             className="w-full border-2 border-[#B71C1C] px-4 py-3 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg min-h-[120px]"
@@ -204,7 +303,7 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
           <button
             onClick={handleSave}
             className="px-4 py-2 bg-[#B71C1C] text-white rounded-lg font-semibold text-lg hover:bg-[#B71C1C]/90 transition-colors disabled:opacity-50"
-            disabled={loading || !changed}
+            disabled={loading || (!changed && type !== "profileImage")}
           >
             {loading ? "Saving..." : "Save"}
           </button>
