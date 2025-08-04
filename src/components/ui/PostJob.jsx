@@ -1,6 +1,6 @@
 "use client";  
 
-import React, { useState } from "react";
+import React, { useState , useEffect } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/config/firebase";
@@ -17,6 +17,8 @@ import {
 } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
 import { useSession } from "next-auth/react";
+import { useParams } from "next/navigation";
+
 
 export default function PostJob() {
   const { data: session } = useSession();
@@ -35,6 +37,8 @@ export default function PostJob() {
   });
 
   const [loading, setLoading] = useState(false);
+  const params = useParams();
+const jobId = params?.jobId;
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -99,6 +103,7 @@ export default function PostJob() {
         postedBy: userId,
         companyId: userId,
         applicants: [],
+        newApplications: [],
       });
 
       toast.success("Job posted successfully!");
@@ -158,6 +163,18 @@ export default function PostJob() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+  const clearNewApplications = async () => {
+    const jobRef = doc(db, "jobs", jobId);
+    await updateDoc(jobRef, {
+      newApplications: [],
+    });
+  };
+
+  clearNewApplications();
+}, [jobId]);
+
 
   return (
     <div className="min-h-screen bg-[#fff7f2]">
@@ -231,7 +248,7 @@ export async function updateApplicantStatus(jobId, applicantId, status) {
       app.applicantId === applicantId ? { ...app, status } : app
     );
 
-    await updateDoc(jobRef, { applicants: updatedApplicants });
+    await updateDoc(jobRef, { applicants: updatedApplicants ,newApplications: arrayUnion(user.id), });
     toast.success(`Applicant ${status} successfully`);
   } catch (error) {
     console.error("Failed to update applicant status:", error);

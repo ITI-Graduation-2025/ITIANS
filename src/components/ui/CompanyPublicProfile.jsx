@@ -25,8 +25,8 @@ import {
     Hand,
     ChevronLeft,
     Edit3,
-     MoreVertical,
-     Trash2,
+    MoreVertical,
+    Trash2,
 } from "lucide-react";
 
 import { FaFacebook, FaLinkedin, FaGlobe, FaEnvelope } from "react-icons/fa";
@@ -41,7 +41,7 @@ import { useSession } from "next-auth/react";
 import { use } from "react";
 
 
-{/*formatRelativeTime  */}
+{/*formatRelativeTime  */ }
 function formatRelativeTime(date) {
     const now = new Date();
     const diffMs = now - date;
@@ -69,28 +69,28 @@ export default function CompanyPublicProfile({ params }) {
     const [selectedJob, setSelectedJob] = useState(null);
     const [showComments, setShowComments] = useState(false);
     const [user, setUser] = useState(null);
-    {/*apply job  */}
+    {/*apply job  */ }
     const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
     const [showActionsIndex, setShowActionsIndex] = useState(null);
 
-    {/*comments  */}
-   const [editingComment, setEditingComment] = useState(null);
+    {/*comments  */ }
+    const [editingComment, setEditingComment] = useState(null);
 
-const handleDeleteComment = (index) => {
-  const updatedComments = [...selectedJob.comments];
-  updatedComments.splice(index, 1);
-  setSelectedJob({ ...selectedJob, comments: updatedComments });
-
-  
-};
-
-const handleEditComment = (index) => {
-  const commentToEdit = selectedJob.comments[index];
-  setEditingComment({ index, text: commentToEdit.text });
-};
+    const handleDeleteComment = (index) => {
+        const updatedComments = [...selectedJob.comments];
+        updatedComments.splice(index, 1);
+        setSelectedJob({ ...selectedJob, comments: updatedComments });
 
 
-{/*pageinate  */}
+    };
+
+    const handleEditComment = (index) => {
+        const commentToEdit = selectedJob.comments[index];
+        setEditingComment({ index, text: commentToEdit.text });
+    };
+
+
+    {/*pageinate  */ }
     const jobsPerPage = 3;
 
     const indexOfLastJob = currentPage * jobsPerPage;
@@ -109,7 +109,7 @@ const handleEditComment = (index) => {
     }, [session]);
 
 
-{/*apply job  */}
+    {/*apply job  */ }
     useEffect(() => {
         if (!selectedJob || !user) {
             setHasAlreadyApplied(false);
@@ -129,7 +129,7 @@ const handleEditComment = (index) => {
         setHasAlreadyApplied(alreadyApplied);
     }, [selectedJob, user]);
 
-{/*jobs */}
+    {/*jobs */ }
     useEffect(() => {
         async function fetchCompanyAndJobs() {
             if (!companyId) return;
@@ -142,7 +142,7 @@ const handleEditComment = (index) => {
                 const jobsQuery = query(
                     collection(db, "jobs"),
                     where("companyId", "==", companyId)
-                    
+
                 );
 
                 const jobsSnapshot = await getDocs(jobsQuery);
@@ -152,7 +152,7 @@ const handleEditComment = (index) => {
                         id: doc.id,
                         ...doc.data(),
                     }))
-                    .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); 
+                    .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
 
                 // إحصائيات الوظائف
                 const activeProjects = jobsData.filter(
@@ -203,20 +203,20 @@ const handleEditComment = (index) => {
     const goToPage = (pageNumber) => {
         setCurrentPage(pageNumber);
     };
-{/*apply jobs  */}
+    {/*apply jobs  */ }
     async function handleApply() {
         if (!user?.id) {
             toast.error("You must be logged in to apply.");
             return;
         }
 
-        
+
         if (selectedJob?.deadline && new Date(selectedJob.deadline) < new Date()) {
             toast.error("The application deadline has passed.");
             return;
         }
 
-        
+
         const isRejected = Array.isArray(selectedJob?.applicants) &&
             selectedJob.applicants.some((applicant) => {
                 if (typeof applicant === "object" && applicant.userId === user.id) {
@@ -230,7 +230,7 @@ const handleEditComment = (index) => {
             return;
         }
 
-        
+
         if (hasAlreadyApplied) {
             toast.error("You have already applied to this job.");
             return;
@@ -248,6 +248,7 @@ const handleEditComment = (index) => {
             await updateDoc(jobRef, {
                 applicants: arrayUnion(newApplicant),
                 applicationsCount: increment(1),
+                newApplications: arrayUnion(user.id),
             });
 
             // تحديث الحالة محليًا
@@ -265,7 +266,7 @@ const handleEditComment = (index) => {
         }
     }
 
-{/*loading  */}
+    {/*loading  */ }
 
     if (loading) return <p className="text-center py-8">جارٍ التحميل...</p>;
     if (!company) return <p className="text-center py-8">لم يتم العثور على الشركة.</p>;
@@ -550,92 +551,92 @@ const handleEditComment = (index) => {
                                     </div>
                                 </section>
                             )}
-                               {/*Comments*/}
-                           <section className="mt-6">
-  <button
-    onClick={() => setShowComments((prev) => !prev)}
-    className="text-md font-semibold text-[#8B0000] mb-3 flex items-center gap-2 focus:outline-none"
-  >
-    <MessageCircle className="w-5 h-5 text-[#8B0000]" />
-    Comments
-    {showComments ? (
-      <ChevronDown className="w-4 h-4 text-[#203947]" />
-    ) : (
-      <ChevronRight className="w-4 h-4 text-[#203947]" />
-    )}
-  </button>
+                            {/*Comments*/}
+                            <section className="mt-6">
+                                <button
+                                    onClick={() => setShowComments((prev) => !prev)}
+                                    className="text-md font-semibold text-[#8B0000] mb-3 flex items-center gap-2 focus:outline-none"
+                                >
+                                    <MessageCircle className="w-5 h-5 text-[#8B0000]" />
+                                    Comments
+                                    {showComments ? (
+                                        <ChevronDown className="w-4 h-4 text-[#203947]" />
+                                    ) : (
+                                        <ChevronRight className="w-4 h-4 text-[#203947]" />
+                                    )}
+                                </button>
 
-  {showComments && (
-    <>
-      {selectedJob?.comments?.length > 0 ? (
-        <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
-          {selectedJob.comments.map((comment, index) => (
-            <li
-              key={index}
-              className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm flex gap-4 items-start relative"
-            >
-              <img
-                src={comment.avatar || "/default-user.png"}
-                alt={comment.userName}
-                className="w-10 h-10 rounded-full object-cover mt-1 border"
-              />
-              <div className="flex-1">
-                <div className="flex justify-between items-center mb-1">
-                  <p className="font-semibold text-[#203947]">
-                    {comment.userName}
-                  </p>
-                  <div className="relative">
-                    <button
-                      onClick={() =>
-                        setShowActionsIndex(showActionsIndex === index ? null : index)
-                      }
-                      className="p-1 text-gray-500 hover:text-black"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
+                                {showComments && (
+                                    <>
+                                        {selectedJob?.comments?.length > 0 ? (
+                                            <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                                                {selectedJob.comments.map((comment, index) => (
+                                                    <li
+                                                        key={index}
+                                                        className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm flex gap-4 items-start relative"
+                                                    >
+                                                        <img
+                                                            src={comment.avatar || "/default-user.png"}
+                                                            alt={comment.userName}
+                                                            className="w-10 h-10 rounded-full object-cover mt-1 border"
+                                                        />
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <p className="font-semibold text-[#203947]">
+                                                                    {comment.userName}
+                                                                </p>
+                                                                <div className="relative">
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            setShowActionsIndex(showActionsIndex === index ? null : index)
+                                                                        }
+                                                                        className="p-1 text-gray-500 hover:text-black"
+                                                                    >
+                                                                        <MoreVertical className="w-5 h-5" />
+                                                                    </button>
 
-                    {showActionsIndex === index && (
-                      <div className="absolute right-0 mt-2 w-28 bg-white border shadow-lg rounded-md z-10">
-                        <button
-                          onClick={() => {
-                            handleEditComment(index);
-                            setShowActionsIndex(null);
-                          }}
-                          className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-100 text-sm text-gray-700"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleDeleteComment(index);
-                            setShowActionsIndex(null);
-                          }}
-                          className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-100 text-sm text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <p className="text-gray-400 text-xs">
-                  {comment.timestamp?.seconds
-                    ? formatRelativeTime(new Date(comment.timestamp.seconds * 1000))
-                    : ""}
-                </p>
-                <p className="text-gray-700 text-sm mt-1">{comment.text}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm text-gray-500">No comments yet.</p>
-      )}
-    </>
-  )}
-</section>
+                                                                    {showActionsIndex === index && (
+                                                                        <div className="absolute right-0 mt-2 w-28 bg-white border shadow-lg rounded-md z-10">
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    handleEditComment(index);
+                                                                                    setShowActionsIndex(null);
+                                                                                }}
+                                                                                className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-100 text-sm text-gray-700"
+                                                                            >
+                                                                                <Edit3 className="w-4 h-4" />
+                                                                                Edit
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    handleDeleteComment(index);
+                                                                                    setShowActionsIndex(null);
+                                                                                }}
+                                                                                className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-100 text-sm text-red-600"
+                                                                            >
+                                                                                <Trash2 className="w-4 h-4" />
+                                                                                Delete
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-gray-400 text-xs">
+                                                                {comment.timestamp?.seconds
+                                                                    ? formatRelativeTime(new Date(comment.timestamp.seconds * 1000))
+                                                                    : ""}
+                                                            </p>
+                                                            <p className="text-gray-700 text-sm mt-1">{comment.text}</p>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">No comments yet.</p>
+                                        )}
+                                    </>
+                                )}
+                            </section>
 
 
                             <button
@@ -674,15 +675,15 @@ const handleEditComment = (index) => {
                                             onClick={hasAlreadyApplied || isRejected ? undefined : handleApply}
                                             disabled={hasAlreadyApplied || isRejected}
                                             className={`mt-4 px-4 py-2 rounded-md text-white text-sm transition-all ${hasAlreadyApplied || isRejected
-                                                    ? "bg-gray-400 cursor-not-allowed"
-                                                    : "bg-[#8B0000] hover:bg-[#a30000]"
+                                                ? "bg-gray-400 cursor-not-allowed"
+                                                : "bg-[#8B0000] hover:bg-[#a30000]"
                                                 }`}
                                         >
                                             {isRejected
                                                 ||
-                                                 hasAlreadyApplied
-                                                    ? "Already Applied"
-                                                    : "Apply Now"}
+                                                hasAlreadyApplied
+                                                ? "Already Applied"
+                                                : "Apply Now"}
                                         </button>
 
                                     );

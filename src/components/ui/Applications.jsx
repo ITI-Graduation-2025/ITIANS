@@ -20,7 +20,9 @@ import {
   doc,
   getDoc,
   updateDoc,
-  onSnapshot,  // استيراد onSnapshot
+  onSnapshot,
+  collection, 
+  getDocs,   // استيراد onSnapshot
 } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
 import { useParams } from "next/navigation";
@@ -40,7 +42,7 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => (
       />
       <div>
         <h3 className="font-semibold text-lg">{applicant.name || "Unnamed Applicant"}</h3>
-        <p className="text-gray-600 text-sm">Applied for: {applicant.jobId || "Not specified"}</p>
+        <p className="text-gray-600 text-sm">Applied for: {applicant.jobTitle || "Not specified"}</p>
         <p className="text-xs text-gray-500">Status: {applicant.status}</p>
         <div className="text-sm text-gray-500 mt-1 flex items-center gap-4">
           {applicant.experience && (
@@ -115,6 +117,29 @@ export default function CompanyApplications() {
   const modalRef = useRef(null);
   const { jobId } = useParams();
   const { data: session } = useSession();
+  const companyId = session?.user?.id;
+
+  const [company, setCompany] = useState(null);
+  useEffect(() => {
+    const fetchCompany = async () => {
+      if (!companyId) return;
+      try {
+        const docRef = doc(db, "users", companyId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setCompany(data);
+        } else {
+          console.warn("Company document not found");
+        }
+      } catch (err) {
+        console.error("Error fetching company:", err);
+      }
+    };
+
+    fetchCompany();
+  }, [companyId]);
+
 
   useEffect(() => {
     if (!jobId) return;
@@ -133,6 +158,11 @@ export default function CompanyApplications() {
       const jobData = jobSnap.data();
       const applicantEntries = jobData.applicants || [];
 
+      // 👇 حذف newApplications من الفايرستور بعد ما نشوفهم
+    if (Array.isArray(jobData.newApplications) && jobData.newApplications.length > 0) {
+      await updateDoc(jobRef, { newApplications: [] });
+    }
+
       const applicantData = await Promise.all(
         applicantEntries.map(async (entry) => {
           const userId = typeof entry === "string" ? entry : entry.userId;
@@ -140,6 +170,7 @@ export default function CompanyApplications() {
 
           const userRef = doc(db, "users", userId);
           const userSnap = await getDoc(userRef);
+          const jobTitle = jobSnap.data().title;
 
           if (!userSnap.exists()) {
             console.log("User not found:", userId);
@@ -149,6 +180,7 @@ export default function CompanyApplications() {
           return {
             id: userId,
             status,
+              jobTitle,
             ...userSnap.data(),
           };
         })
@@ -217,26 +249,31 @@ export default function CompanyApplications() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7f2]" onClick={selectedApplicant ? handleOutsideClick : null}>
+    <div className="min-h-screen bg-[#f9f9f9]" onClick={selectedApplicant ? handleOutsideClick : null}>
       <Toaster />
       <CompanyNavbar />
       <main className="p-6 max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Company Dashboard</h1>
+       <div>
+        <h1 className="text-2xl md:text-3xl font-semibold text-[#b30000]">
+          {company?.name} <span className="text-[#203947] text-2xl">Dashboard</span>
+        </h1>
+       </div>
         <p className="text-gray-600 mb-6">Manage your job postings and find the best ITI talent</p>
 
         <div className="flex gap-4 border-b mb-6">
-          <Link href="/dashboardCompany" className="px-4 py-2 flex items-center gap-1 text-gray-600 font-medium hover:text-red-600">
-            <LayoutDashboard className="w-4 h-4" /> Overview
-          </Link>
-          <Link href="/companyjobs" className="px-4 py-2 flex items-center gap-1 text-gray-600 hover:text-red-600">
-            <FileText className="w-4 h-4" /> My Jobs
-          </Link>
-          <button className="border-b-2 border-red-500 text-red-600 px-4 py-2 font-medium flex items-center gap-1">
-            <Users2 className="w-4 h-4" /> Applications
-          </button>
-          <Link href="/companyprofile" className="px-4 py-2 flex items-center gap-1 text-gray-600 hover:text-red-600">
-            <Building2 className="w-4 h-4" /> Company Profile
-          </Link>
+          <Link href="/dashboardCompany" className="px-4 py-2 flex items-center gap-1 text-[#203947] font-medium hover:text-[#b30000] transition">
+                      <LayoutDashboard className="w-4 h-4" /> Overview
+                    </Link>
+                    <Link href="/companyjobs" className="  px-4 py-2 flex items-center gap-1  text-[#203947] font-medium hover:text-[#b30000] transition">
+                      <FileText className="w-4 h-4" /> My Jobs
+                    </Link>
+                   <button className="border-b-2 border-[#b30000] text-[#b30000] px-4 py-2 font-medium flex items-center gap-1">
+                  <Users2 className="w-4 h-4" /> Applications
+                        </button>
+          
+                    <Link href="/companyprofile" className="text-[#203947] px-4 py-2 font-medium flex items-center gap-1 hover:text-[#b30000] transition">
+                      <Building2 className="w-4 h-4" /> Company Profile
+                    </Link>
         </div>
 
         <h2 className="text-lg font-semibold mb-3">Job Applications</h2>
