@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { updatePost, deletePost } from "@/services/postServices";
 import { upload } from "@/utils/upload";
 import { toast } from "sonner";
-import { HiOutlinePencil, HiOutlineTrash, HiOutlineXMark, HiOutlinePhoto } from "react-icons/hi2";
+import { HiOutlinePencil, HiOutlineTrash, HiOutlineXMark, HiOutlinePhoto, HiOutlineArrowDownTray } from "react-icons/hi2";
 
 export const Posts = ({ userPosts = [], currentUser, isOwner }) => {
   const [editingPost, setEditingPost] = useState(null);
@@ -122,6 +122,51 @@ export const Posts = ({ userPosts = [], currentUser, isOwner }) => {
     const currentUserId = currentUser?.uid || currentUser?.id;
     const postAuthorId = post.authorId;
     return currentUserId === postAuthorId;
+  };
+
+  const downloadFile = async (url, filename) => {
+    try {
+      // Use our API endpoint to handle the download
+      const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename || 'download';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Download started!");
+    } catch (err) {
+      console.error("Download error:", err);
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+      toast.info("File opened in new tab. You can save it from there.");
+    }
+  };
+
+  const getFileExtension = (url) => {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const extension = pathname.split('.').pop();
+      return extension || 'jpg'; // Default to jpg for images
+    } catch {
+      return 'jpg';
+    }
+  };
+
+  const getFileName = (post, attachment) => {
+    if (attachment?.name) {
+      return attachment.name;
+    }
+    
+    const extension = getFileExtension(attachment?.url || '');
+    const timestamp = new Date().getTime();
+    return `post_${post.id}_${timestamp}.${extension}`;
   };
 
   return (
@@ -244,22 +289,40 @@ export const Posts = ({ userPosts = [], currentUser, isOwner }) => {
                     {post.attachment &&
                       post.attachment.type &&
                       post.attachment.type.startsWith("image") && (
-                        <img
-                          src={post.attachment.url}
-                          alt="Attachment"
-                          className="max-h-48 rounded mt-2"
-                        />
+                        <div className="relative inline-block mt-2">
+                          <img
+                            src={post.attachment.url}
+                            alt="Attachment"
+                            className="max-h-48 rounded"
+                          />
+                          <button
+                            onClick={() => downloadFile(post.attachment.url, getFileName(post, post.attachment))}
+                            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                            title="Download image"
+                          >
+                            <HiOutlineArrowDownTray className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     {post.attachment &&
                       post.attachment.type &&
                       !post.attachment.type.startsWith("image") && (
-                        <a
-                          href={post.attachment.url}
-                          download={post.attachment.name}
-                          className="inline-flex items-center text-blue-600 underline mt-2"
-                        >
-                          {post.attachment.name}
-                        </a>
+                        <div className="mt-2 flex items-center gap-2">
+                          <a
+                            href={post.attachment.url}
+                            download={post.attachment.name}
+                            className="inline-flex items-center text-blue-600 underline"
+                          >
+                            {post.attachment.name}
+                          </a>
+                          <button
+                            onClick={() => downloadFile(post.attachment.url, post.attachment.name)}
+                            className="text-blue-600 hover:text-blue-800 p-1 rounded"
+                            title="Download file"
+                          >
+                            <HiOutlineArrowDownTray className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     {post.repostOf && (
                       <div className="mt-2 text-xs text-gray-500">

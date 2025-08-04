@@ -17,7 +17,7 @@ export default function CommunitySidebar({ currentUser, posts, companies = [] })
                                      className="h-12 w-12 rounded-full object-cover"
                                      width={100}
                                      height={100}
-                                     alt={currentUser.role}
+                                     alt={currentUser.jobTitle}
                                    />
                                  ) : (
                                    <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
@@ -28,7 +28,7 @@ export default function CommunitySidebar({ currentUser, posts, companies = [] })
             <div>
               <h3 className="font-bold text-lg">{currentUser?.name}</h3>
               <p className="text-sm text-muted-foreground">
-                {currentUser?.role}
+                {currentUser?.jobTitle}
               </p>
             </div>
           </div>

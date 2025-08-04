@@ -15,6 +15,7 @@ import {
   HiOutlinePencil,
   HiOutlineTrash,
   HiOutlinePhoto,
+  HiOutlineArrowDownTray,
 } from "react-icons/hi2";
 import PostComments from "./PostComments";
 
@@ -253,6 +254,51 @@ export default function PostItem({ post, currentUser }) {
     return `${Math.floor(diffInMinutes / 1440)} days ago`;
   };
 
+  const downloadFile = async (url, filename) => {
+    try {
+      // Use our API endpoint to handle the download
+      const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename || 'download';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log("Download started for:", filename);
+    } catch (err) {
+      console.error("Download error:", err);
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+      alert("File opened in new tab. You can save it from there.");
+    }
+  };
+
+  const getFileExtension = (url) => {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const extension = pathname.split('.').pop();
+      return extension || 'jpg'; // Default to jpg for images
+    } catch {
+      return 'jpg';
+    }
+  };
+
+  const getFileName = (post, attachment) => {
+    if (attachment?.name) {
+      return attachment.name;
+    }
+    
+    const extension = getFileExtension(attachment?.url || '');
+    const timestamp = new Date().getTime();
+    return `post_${post.id}_${timestamp}.${extension}`;
+  };
+
   const isImageAttachment = post.attachment && post.attachment.type && post.attachment.type.startsWith("image");
   const isPostOwner = post.authorId === (currentUser?.uid || currentUser?.id);
 
@@ -356,20 +402,38 @@ export default function PostItem({ post, currentUser }) {
               <div className="mt-2">
                 {post.repostOf.attachment.type &&
                 post.repostOf.attachment.type.startsWith("image") ? (
-                  <img
-                    src={post.repostOf.attachment.url}
-                    alt="Attachment"
-                    className="max-h-48 w-auto rounded-lg border"
-                  />
+                  <div className="relative inline-block">
+                    <img
+                      src={post.repostOf.attachment.url}
+                      alt="Attachment"
+                      className="max-h-48 w-auto rounded-lg border"
+                    />
+                    <button
+                      onClick={() => downloadFile(post.repostOf.attachment.url, getFileName(post, post.repostOf.attachment))}
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                      title="Download image"
+                    >
+                      <HiOutlineArrowDownTray className="w-4 h-4" />
+                    </button>
+                  </div>
                 ) : (
-                  <a
-                    href={post.repostOf.attachment.url}
-                    download={post.repostOf.attachment.name}
-                    className="inline-flex items-center text-primary hover:text-primary/80 text-sm"
-                  >
-                    <HiOutlinePaperClip className="w-4 h-4 mr-1" />{" "}
-                    {post.repostOf.attachment.name}
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={post.repostOf.attachment.url}
+                      download={post.repostOf.attachment.name}
+                      className="inline-flex items-center text-primary hover:text-primary/80 text-sm"
+                    >
+                      <HiOutlinePaperClip className="w-4 h-4 mr-1" />
+                      {post.repostOf.attachment.name}
+                    </a>
+                    <button
+                      onClick={() => downloadFile(post.repostOf.attachment.url, post.repostOf.attachment.name)}
+                      className="text-primary hover:text-primary/80 p-1 rounded"
+                      title="Download file"
+                    >
+                      <HiOutlineArrowDownTray className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -413,10 +477,17 @@ export default function PostItem({ post, currentUser }) {
                       alt="Attachment"
                       className="max-h-96 w-full object-contain rounded-lg border"
                     />
+                    <button
+                      onClick={() => downloadFile(post.attachment.url, getFileName(post, post.attachment))}
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                      title="Download image"
+                    >
+                      <HiOutlineArrowDownTray className="w-4 h-4" />
+                    </button>
                     {isPostOwner && (
                       <button
                         onClick={() => setEditingImage(true)}
-                        className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                        className="absolute top-2 left-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
                         title="Edit image"
                       >
                         <HiOutlinePhoto className="w-4 h-4" />
@@ -424,16 +495,25 @@ export default function PostItem({ post, currentUser }) {
                     )}
                   </div>
                 ) : (
-                  <a
-                    href={post.attachment.url}
-                    download={post.attachment.name}
-                    className="inline-flex items-center p-3 bg-muted rounded-lg border border-border text-primary hover:text-primary/80"
-                  >
-                    <HiOutlinePaperClip className="w-4 h-4 mr-2" />
-                    <span className="max-w-xs truncate">
-                      {post.attachment.name}
-                    </span>
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={post.attachment.url}
+                      download={post.attachment.name}
+                      className="inline-flex items-center p-3 bg-muted rounded-lg border border-border text-primary hover:text-primary/80"
+                    >
+                      <HiOutlinePaperClip className="w-4 h-4 mr-2" />
+                      <span className="max-w-xs truncate">
+                        {post.attachment.name}
+                      </span>
+                    </a>
+                    <button
+                      onClick={() => downloadFile(post.attachment.url, post.attachment.name)}
+                      className="text-primary hover:text-primary/80 p-2 rounded-lg border border-border"
+                      title="Download file"
+                    >
+                      <HiOutlineArrowDownTray className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             )}
