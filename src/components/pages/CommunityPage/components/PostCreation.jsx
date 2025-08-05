@@ -31,17 +31,16 @@ export default function PostCreation({ currentUser }) {
         };
       }
       const newPostData = {
-        authorProfileImage: currentUser.profileImage || "",
+        authorProfileImage: currentUser.profileImage || currentUser.photo || "",
         author: currentUser.name || "Unknown",
         role: currentUser.role || "Unknown",
         content: postContent,
-        likes: 0,
+        likes: [],
         comments: [],
-        isLiked: false,
         attachment: attachmentData,
         authorId: userId,
+        authorFcmToken: currentUser.fcmToken,
       };
-      console.log(newPostData);
 
       await createPost(newPostData);
       setPostContent("");
@@ -64,20 +63,20 @@ export default function PostCreation({ currentUser }) {
         <h2 className="text-lg font-bold">Create a Post</h2>
       </div>
       <div className="p-4">
-        {error && <div className="text-red-500 mb-2">{error}</div>}
+        {error && <div className="text-destructive mb-2">{error}</div>}
         <form onSubmit={handleAddPost}>
           <div className="flex items-start space-x-3">
-            {currentUser.profileImage ? (
+            {currentUser.profileImage || currentUser.photo ? (
               <Image
-                src={currentUser?.profileImage}
+                src={currentUser?.profileImage || currentUser?.photo || ""}
                 className="h-12 w-12 rounded-full object-cover"
                 width={100}
                 height={100}
-                alt={currentUser.fullName}
+                alt={currentUser.fullName || "user"}
               />
             ) : (
               <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
-                {currentUser?.profileImage}
+                {currentUser?.profileImage || currentUser?.photo || ""}
               </div>
             )}
             <div className="flex-1">

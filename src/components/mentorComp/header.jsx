@@ -24,6 +24,7 @@ export function Header() {
       deleteOldNotifications(user.uid);
 
       const unsubscribe = listenToNotifications(user.uid, (notifications) => {
+       
         setNotifications(notifications);
       });
       return () => unsubscribe();

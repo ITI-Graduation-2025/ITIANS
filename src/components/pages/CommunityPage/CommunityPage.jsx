@@ -70,6 +70,23 @@ export default function CommunityPage() {
     return freelancers;
   }, [users]);
 
+  const filteredCompanies = useMemo(() => {
+    const companies = users
+      .filter((user) => user?.role === "company")
+      .slice(0, 6); 
+
+    return companies;
+  }, [users]);
+
+  const filteredMentors = useMemo(() => {
+    const mentors = users
+      .filter((user) => user?.role === "mentor")
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 5);
+
+    return mentors;
+  }, [users]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
@@ -107,7 +124,7 @@ export default function CommunityPage() {
       />
 
       <main className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
-        <CommunitySidebar currentUser={currentUser} posts={posts} />
+        <CommunitySidebar currentUser={currentUser} posts={posts} companies={filteredCompanies} />
 
         <div className="w-full md:w-2/4 space-y-6">
           <PostCreation currentUser={currentUser} />
@@ -120,11 +137,12 @@ export default function CommunityPage() {
 
         <CommunityRightSidebar
           freelancers={filteredFreelancers}
+          mentors={filteredMentors}
           search={search}
         />
       </main>
 
-      <CommunityFooter />
+      {/* <CommunityFooter /> */}
     </div>
   );
 }

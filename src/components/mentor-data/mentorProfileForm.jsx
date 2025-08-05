@@ -1,19 +1,20 @@
 "use client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useUserContext } from "@/context/userContext";
+import { upload } from "@/utils/upload";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import EducationReviewStep from "./educationReviewStep";
 import PersonalInfoStep from "./personalInfoStep";
 import ProfessionalInfoStep from "./professionalInfoStep";
 import SpecializationStep from "./specializationStep";
 import BioLanguagesStep from "./bioLanguagesStep";
-import EducationReviewStep from "./educationReviewStep";
 import { getUser, setUser, updateUser } from "@/services/userServices";
 import { redirect, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { useUserContext } from "@/context/userContext";
 
 const TOTAL_STEPS = 5;
 
@@ -36,6 +37,7 @@ export default function MentorProfileForm({
   //   redirect("/pending-review");
   // }
   // console.log(user, "user");
+  console.log(session, "data");
 
   const form = useForm({
     mode: "onChange",
@@ -132,6 +134,8 @@ export default function MentorProfileForm({
   };
 
   const onSubmit = async (data) => {
+    console.log(data);
+
     if (currentStep !== TOTAL_STEPS) {
       toast.error("Please complete all steps before submitting.");
       return;
@@ -145,7 +149,9 @@ export default function MentorProfileForm({
       }
 
       const uid = session.user.id;
+      const res = await upload({ target: { files: [data.photo] } });
 
+      data.photo = res;
       const updateData = {
         ...data,
         profileUnderReview: true, // بدلاً من profileCompleted: true

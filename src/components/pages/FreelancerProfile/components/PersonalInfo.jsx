@@ -52,11 +52,22 @@ export const PersonalInfo = ({
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 relative">
       <div className="flex items-center gap-4">
-        <img
-          src={profileImage}
-          alt={fullName}
-          className="w-20 h-20 rounded-full border-2 border-gray-200 shadow-sm"
-        />
+        <div className="relative">
+          <img
+            src={profileImage}
+            alt={fullName}
+            className="w-20 h-20 rounded-full border-2 border-gray-200 shadow-sm"
+          />
+          {isOwner && (
+            <button
+              onClick={() => setIsModalOpen("profileImage")}
+              className="absolute -bottom-1 -right-1 bg-[#B71C1C] text-white rounded-full p-1 hover:bg-[#B71C1C]/90 transition-colors"
+              title="Edit profile image"
+            >
+              <FiEdit size={12} />
+            </button>
+          )}
+        </div>
         <div className="flex justify-between gap-4 w-full items-start">
           <div>
             <h1 className="text-xl font-bold text-[#B71C1C]">{fullName}</h1>

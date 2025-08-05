@@ -1,5 +1,5 @@
 // app/mentors/[id]/page.jsx
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 // import { getUser } from "@/services/firebase";
 import { getUser } from "@/services/userServices";
@@ -21,6 +21,12 @@ export default async function MentorProfilePage({ params }) {
   const mentorData = await getUser(mentorIdFromUrl);
   if (!mentorData || mentorData === "User not found") {
     notFound();
+  }
+  if (mentorData?.profileUnderReview) {
+    redirect("/pending");
+  }
+  if (!mentorData?.profileCompleted) {
+    redirect("/mentorData");
   }
 
   const isOwner = currentUserId === mentorIdFromUrl;
