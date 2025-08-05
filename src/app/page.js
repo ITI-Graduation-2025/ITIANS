@@ -14,22 +14,17 @@ export default function Home() {
   return (
     <>
       <LandingSection />
-      <section id="jobs">
-        <JobSlider />
-      </section>
-      <section id="mentors">
-        <TopRatedMentors />
-      </section>
+
+      <JobSlider />
+      <TopRatedMentors />
       <TracksMarquee />
-      <section id="about">
-        <AboutUsSection />
-      </section>
+
+      <AboutUsSection />
+
       <QuoteSection />
       <CompaniesTicker />
       <OurImpactSection />
-      <section id="contact">
-        <ContactUs />
-      </section>
+      <ContactUs />
     </>
   );
 }

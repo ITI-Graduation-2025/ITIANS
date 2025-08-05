@@ -11,8 +11,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { PaperAirplaneIcon, FaceSmileIcon } from "@heroicons/react/24/outline";
-// import Picker from "@emoji-mart/react";
-// import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 
 export default function SendBox({ chatId, senderId, senderName }) {
   const [text, setText] = useState("");
@@ -71,11 +71,11 @@ export default function SendBox({ chatId, senderId, senderName }) {
       </button>
       {showEmojiPicker && (
         <div className="absolute bottom-14 left-2 z-10">
-          {/* <Picker data={data} onEmojiSelect={handleEmojiSelect} theme="auto" /> */}
+          <Picker data={data} onEmojiSelect={handleEmojiSelect} theme="auto" />
         </div>
       )}
       <input
-        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-700"
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyPress={handleKeyPress}

@@ -126,7 +126,7 @@ export default function ChatScreen({ chatId, currentUser }) {
   return (
     <div className="flex flex-col h-[80vh] border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg bg-white dark:bg-gray-900">
       {isUserDataFetched && (
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-red-800 dark:bg-gray-800 flex items-center gap-2">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-500 dark:bg-gray-800 flex items-center gap-2">
           <img
             src={otherUser.profileImage || "/default--avatar.avif"}
             alt={otherUser.name}

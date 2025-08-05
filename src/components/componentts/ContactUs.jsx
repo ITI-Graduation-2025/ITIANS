@@ -9,7 +9,7 @@ export default function ContactUs() {
   const [isClicked, setIsClicked] = useState(false);
 
   return (
-    <section className="min-h-screen flex py-16 bg-[#FFFBF5]">
+    <section className="min-h-screen flex py-16 bg-[var(--background)]">
       {/* Left Side - Image Only */}
       <div className="w-1/2 relative">
         <Image

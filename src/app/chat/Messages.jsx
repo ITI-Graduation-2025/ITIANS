@@ -297,7 +297,7 @@ export default function Messages({ chatId, currentUserId }) {
                 />
               ) : (
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-lg font-semibold ${userProfiles[msg.senderId]?.bgColor}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-lg font-bold ${userProfiles[msg.senderId]?.bgColor}`}
                 >
                   {userProfiles[msg.senderId]?.initial}
                 </div>
@@ -317,7 +317,7 @@ export default function Messages({ chatId, currentUserId }) {
               ) : (
                 <>
                   <div className="text-base">{msg.text}</div>
-                  <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                  <div className="text-xs text-gray-300 mt-1 flex justify-between">
                     <span>
                       {msg.createdAt
                         ? formatDistanceToNow(

@@ -1,153 +1,4 @@
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import {
-//   doc,
-//   collection,
-//   query,
-//   where,
-//   getDoc,
-//   getDocs,
-//   setDoc,
-//   addDoc,
-//   serverTimestamp,
-// } from "firebase/firestore";
-// import { db } from "@/config/firebase";
-// import useCurrentUser from "@/hooks/useCurrentUser";
-// import { MessageCircle } from "lucide-react";
-// import { generateChatId } from "@/lib/chatFunctions";
-// const ITEMS_PER_PAGE = 6;
-
-// export default function UsersList() {
-//   const currentUser = useCurrentUser();
-//   const [users, setUsers] = useState([]);
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchUsers = async () => {
-//       try {
-//         setLoading(true);
-//         setError(null);
-//         const querySnapshot = await getDocs(collection(db, "users"));
-//         const usersData = querySnapshot.docs
-//           .map((doc) => ({ id: doc.id, ...doc.data() }))
-//           .filter((user) => user.id !== currentUser?.uid);
-//         setUsers(usersData);
-//       } catch (e) {
-//         console.error("Error fetching users:", e);
-//         setError("Failed to load users. Please try again.");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     if (currentUser) fetchUsers();
-//   }, [currentUser]);
-
-//   const handleStartChat = async (otherUserId) => {
-//     if (!currentUser) return;
-
-//     try {
-//       const chatId = generateChatId(currentUser.uid, otherUserId);
-//       const chatRef = doc(db, "chats", chatId);
-//       const chatSnap = await getDoc(chatRef);
-
-//       if (!chatSnap.exists()) {
-//         await setDoc(chatRef, {
-//           participants: [currentUser.uid, otherUserId],
-//           createdAt: serverTimestamp(),
-//           lastMessage: "",
-//         });
-//       }
-//       window.location.href = `/chat/${chatId}`;
-//     } catch (e) {
-//       console.error("Error starting chat:", e);
-//       setError("Failed to start chat. Please try again.");
-//     }
-//   };
-
-//   const filteredUsers = users.filter(
-//     (user) =>
-//       user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//       user.email?.toLowerCase().includes(searchQuery.toLowerCase()),
-//   );
-
-//   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-//   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-//   const currentUsers = filteredUsers.slice(
-//     startIndex,
-//     startIndex + ITEMS_PER_PAGE,
-//   );
-
-//   const handlePageChange = (page) => setCurrentPage(page);
-
-//   if (!currentUser) return <p>Please log in to view users.</p>;
-//   if (loading) return <p>Loading users...</p>;
-//   if (error) return <p className="text-red-500">{error}</p>;
-
-//   return (
-//     <div className="max-w-5xl mx-auto mt-10 mb-20">
-//       <h2 className="text-3xl font-bold mb-6 text-center text-[#9E2A2B]">
-//         Available Users
-//       </h2>
-
-//       <input
-//         type="text"
-//         placeholder="Search users by name or email..."
-//         value={searchQuery}
-//         onChange={(e) => setSearchQuery(e.target.value)}
-//         className="w-full mb-6 p-2 border border-gray-300 rounded"
-//       />
-
-//       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-//         {currentUsers.map((user) => (
-//           <div
-//             key={user.id}
-//             className="bg-[#E0E0E0] p-4 rounded-lg shadow flex flex-col items-center text-center transform transition duration-500 hover:scale-105"
-//           >
-//             <img
-//               src={user.profileImage || "/default--avatar.avif"}
-//               alt={user.name}
-//               className="w-20 h-20 rounded-full mb-3 object-cover"
-//             />
-//             <h3 className="text-lg font-semibold text-[#9E2A2B]">
-//               {user.name || "No Name"}
-//             </h3>
-//             <p className="text-gray-700 text-sm mb-3">{user.email}</p>
-//             <button
-//               onClick={() => handleStartChat(user.id)}
-//               className="bg-[#9E2A2B] hover:bg-[#7b1c1d] text-white py-2 px-3 rounded-full"
-//               title="Start Chat"
-//             >
-//               <MessageCircle className="w-5 h-5" />
-//             </button>
-//           </div>
-//         ))}
-//       </div>
-
-//       {totalPages > 1 && (
-//         <div className="flex justify-center mt-6 space-x-2">
-//           {Array.from({ length: totalPages }, (_, i) => (
-//             <button
-//               key={i}
-//               onClick={() => handlePageChange(i + 1)}
-//               className={`px-3 py-1 rounded ${
-//                 currentPage === i + 1
-//                   ? "bg-[#9E2A2B] text-white"
-//                   : "bg-[#E0E0E0] text-[#9E2A2B] border border-[#9E2A2B]"
-//               }`}
-//             >
-//               {i + 1}
-//             </button>
-//           ))}
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
+////////////////////////
 "use client";
 
 import { useEffect, useState } from "react";
@@ -164,17 +15,29 @@ import {
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import useCurrentUser from "@/hooks/useCurrentUser";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, User } from "lucide-react";
 import { generateChatId } from "@/lib/chatFunctions";
 const ITEMS_PER_PAGE = 6;
 
 export default function UsersList() {
   const currentUser = useCurrentUser();
   const [users, setUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const getDefaultAvatar = (role) => {
+    switch (role?.toLowerCase()) {
+      case "company":
+        return "/default-logo.avif";
+      case "freelancer":
+        return "/default--avatar.avif";
+      case "mentor":
+        return "/default-avatar.avif";
+      default:
+        return "/default-avatar.avif";
+    }
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -219,18 +82,36 @@ export default function UsersList() {
     }
   };
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const handleViewProfile = (user) => {
+    const role = user.role?.toLowerCase();
 
-  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+    if (role === "mentor") {
+      window.location.href = `/mentors/${user.id}`;
+    } else if (role === "freelancer") {
+      window.location.href = `/profile`;
+    } else if (role === "company") {
+      window.location.href = `/company`;
+    } else {
+      window.location.href = `/profile`;
+    }
+  };
+
+  const getRoleTitle = (role) => {
+    switch (role?.toLowerCase()) {
+      case "mentor":
+        return "Mentor";
+      case "freelancer":
+        return "Freelancer";
+      case "company":
+        return "Company";
+      default:
+        return "User";
+    }
+  };
+
+  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentUsers = filteredUsers.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE,
-  );
+  const currentUsers = users.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const getPaginationNumbers = () => {
     const pages = [];
@@ -263,66 +144,97 @@ export default function UsersList() {
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="max-w-5xl mx-auto mt-10 mb-20">
-      <h2 className="text-3xl font-bold mb-6 text-center text-[#9E2A2B]">
+    <div className="max-w-6xl mx-auto mt-10 mb-20 px-4">
+      <h2 className="text-4xl font-bold mb-12 text-center text-[var(--primary)]">
         Available Users
       </h2>
 
-      <input
-        type="text"
-        placeholder="Search users by name or email..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full mb-6 p-2 border border-gray-300 rounded"
-      />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {currentUsers.map((user) => (
           <div
             key={user.id}
-            className="bg-[#E0E0E0] p-4 rounded-lg shadow flex flex-col items-center text-center transform transition duration-500 hover:scale-105"
+            className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 p-8 text-center border border-gray-100"
           >
-            <img
-              src={user.profileImage || "/default--avatar.avif"}
-              alt={user.name}
-              className="w-20 h-20 rounded-full mb-3 object-cover"
-            />
-            <h3 className="text-lg font-semibold text-[#9E2A2B]">
+            {/* Profile Image with circular border */}
+            <div className="relative mb-6">
+              <div className="w-24 h-24 mx-auto rounded-full border-4 border-transparent overflow-hidden">
+                <img
+                  src={user.profileImage || getDefaultAvatar(user.role)}
+                  alt={user.name}
+                  className="w-full h-full object-cover hover:grayscale-0 transition-all duration-300"
+                />
+              </div>
+            </div>
+
+            {/* User Name */}
+            <h3 className="text-2xl font-bold text-gray-800 mb-2 font-serif">
               {user.name || "No Name"}
             </h3>
-            <p className="text-gray-700 text-sm mb-3">{user.email}</p>
-            <button
-              onClick={() => handleStartChat(user.id)}
-              className="bg-[#9E2A2B] hover:bg-[#7b1c1d] text-white py-2 px-3 rounded-full"
-              title="Start Chat"
-            >
-              <MessageCircle className="w-5 h-5" />
-            </button>
+
+            {/* User Role */}
+            <p className="text-gray-600 text-sm font-medium mb-6 tracking-wider uppercase">
+              {getRoleTitle(user.role)}
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex justify-center space-x-3">
+              <button
+                onClick={() => handleViewProfile(user)}
+                className="bg-[var(--primary)] hover:bg-opacity-10 text-white px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center space-x-2"
+              >
+                <User className="w-4 h-4" />
+                <span>View Profile</span>
+              </button>
+
+              {/* <button
+                onClick={() => handleStartChat(user.id)}
+                className="bg-transparent border-2 border-gray-800 text-gray-800 hover:bg-[var(--primary)] hover:border-transparent hover:text-white px-4 py-2 rounded-full transition-all duration-300"
+                title="Start Chat"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </button> */}
+              {user.role?.toLowerCase() !== "company" && (
+                <button
+                  onClick={() => handleStartChat(user.id)}
+                  className="bg-transparent border-2 border-gray-800 text-gray-800 hover:bg-[var(--primary)] hover:border-transparent hover:text-white px-4 py-2 rounded-full transition-all duration-300"
+                  title="Start Chat"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
 
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center mt-6 space-x-2 items-center">
+        <div className="flex justify-center mt-12 space-x-2 items-center">
           <button
             onClick={handlePrev}
-            className="px-3 py-1 rounded bg-[#E0E0E0] text-[#9E2A2B] hover:bg-gray-300 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
             disabled={currentPage === 1}
           >
-            Prev
+            Previous
           </button>
+
           {getPaginationNumbers().map((number) => (
             <button
               key={number}
               onClick={() => handlePageChange(number)}
-              className={`px-3 py-1 rounded ${currentPage === number ? "bg-[#9E2A2B] text-white" : "bg-[#E0E0E0] text-[#9E2A2B] border border-[#E0E0E0]"} hover:bg-gray-300`}
+              className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+                currentPage === number
+                  ? "bg-[var(--primary)] text-white shadow-lg"
+                  : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
             >
               {number}
             </button>
           ))}
+
           <button
             onClick={handleNext}
-            className="px-3 py-1 rounded bg-[#E0E0E0] text-[#9E2A2B] hover:bg-gray-300 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
             disabled={currentPage === totalPages}
           >
             Next
