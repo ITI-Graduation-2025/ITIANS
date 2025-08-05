@@ -29,7 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Search } from "lucide-react";
-import { setUser, getUser } from "@/services/firebase";
+import { setUser, getUser } from "@/services/userServices";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/config/firebase";
 
@@ -158,7 +158,7 @@ export default function CompanyForm() {
           </h2>
         </div>
 
-        <Card>
+        <Card className="shadow-dashboard-card dark:shadow-dashboard-card-dark">
           <CardHeader>
             <CardTitle>Create Company Account</CardTitle>
             <CardDescription>

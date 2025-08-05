@@ -14,12 +14,15 @@ export default function LayoutWrapper({ children }) {
     "/dashboardCompany",
     "/dashboard",
     "/mentor/[id]",
+    "/pending",
+    "/rejected",
   ];
 
   const hideBoth =
     hideBothExactPaths.includes(pathname) ||
     pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/mentor/");
+    pathname.startsWith("/mentor/") ||
+    pathname.startsWith("/rejected");
 
   const hideNavbar = pathname === "/profile";
 

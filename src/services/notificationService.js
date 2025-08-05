@@ -11,6 +11,7 @@ import {
   where,
   orderBy,
   getDocs,
+  deleteDoc,
 } from "firebase/firestore";
 import { getMessaging } from "firebase/messaging";
 import { getAuth } from "firebase/auth";
@@ -40,6 +41,11 @@ export async function sendPushNotification({ token, title, body, data }) {
   }
 }
 // ---- Notification ----
+export async function getAllNotifications() {
+  const snapshot = await getDocs(collection(db, "notifications"));
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+
 export function listenToNotifications(userId, callback) {
   const q = query(
     collection(db, "notifications"),
@@ -58,6 +64,11 @@ export function listenToNotifications(userId, callback) {
 export async function updateNotification(notificationId, updates) {
   const notificationRef = doc(db, "notifications", notificationId);
   await updateDoc(notificationRef, updates);
+}
+
+export async function deleteNotification(notificationId) {
+  await deleteDoc(doc(db, "notifications", notificationId));
+  return { id: notificationId };
 }
 
 // --- New Function to Delete Old Notifications ---

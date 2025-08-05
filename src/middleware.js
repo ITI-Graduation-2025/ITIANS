@@ -29,11 +29,14 @@ export default withAuth(
     const token = await getToken({ req: request });
     const userStatus = token?.verificationStatus;
 
-    if (userStatus === "Pending") {
-      // return NextResponse.redirect(new URL("/pending", request.url));
+    if (userStatus === "Pending" && pathname !== "/pending") {
+      return NextResponse.redirect(new URL("/pending", request.url));
     }
 
-    if (userStatus === "Rejected" || userStatus === "Suspended") {
+    if (
+      (userStatus === "Rejected" || userStatus === "Suspended") &&
+      pathname !== "/rejected"
+    ) {
       return NextResponse.redirect(new URL("/rejected", request.url));
     }
 

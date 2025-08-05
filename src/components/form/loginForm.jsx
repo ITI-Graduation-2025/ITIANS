@@ -65,6 +65,38 @@ export default function LoginForm() {
         }
         // console.log(session.user.role)
         const userRole = session?.user?.role;
+        const verificationStatus = session?.user?.verificationStatus;
+        const profileCompleted = session?.user?.profileCompleted;
+
+        // Check verification status first
+        if (verificationStatus === "Pending") {
+          router.push("/pending");
+          toast.success("Login successful");
+          return;
+        }
+
+        // Check if profile is under review
+        if (
+          verificationStatus === "Approved" &&
+          session?.user?.profileUnderReview
+        ) {
+          router.push("/pending");
+          toast.success("Login successful");
+          return;
+        }
+
+        // Check if profile is completed
+        if (!profileCompleted) {
+          if (userRole === "mentor") {
+            router.push("/mentorData");
+          } else if (userRole === "freelancer") {
+            router.push("/complete-profile");
+          }
+          toast.success("Login successful");
+          return;
+        }
+
+        // Normal routing for completed profiles
         if (userRole === "admin") {
           router.push("/dashboard");
         } else if (userRole === "mentor") {

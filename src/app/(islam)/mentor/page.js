@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/nextAuth";
 // import { getUser } from "@/services/firebase";
 import { getUser } from "@/services/userServices";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { Header } from "@/components/mentorComp/header";
 import { Sidebar } from "@/components/mentorComp/sidebar";
@@ -21,6 +21,12 @@ export default async function MentorHome() {
   const mentor = await getUser(mentorId);
   if (!mentor || mentor === "User not found") {
     notFound(); // Show 404 page
+  }
+  if (mentor?.profileUnderReview) {
+    redirect("/pending");
+  }
+  if (!mentor?.profileCompleted) {
+    redirect("/mentorData");
   }
 
   // ✅ 3. Pass mentor as props to all components

@@ -1,0 +1,63 @@
+{
+  "card_styles": {
+    "light_mode": {
+      "background_color": "#ffffff",
+      "text_color": "#000000",
+      "box_shadow": "0 4px 12px rgba(0, 0, 0, 0.1)",
+      "border_radius": "0.5rem"
+    },
+    "dark_mode": {
+      "background_color": "#1f1f1f",
+      "text_color": "#ffffff",
+      "box_shadow": "0 4px 12px rgba(0, 0, 0, 0.3)",
+      "border_radius": "0.5rem"
+    },
+    "card_title": {
+      "font_size": "1rem",
+      "font_weight": "normal",
+      "text_color": "#6b7280"
+    },
+    "card_value": {
+      "font_size": "2.25rem",
+      "font_weight": "normal",
+      "text_color": "#000000",
+      "dark_text_color": "#ffffff"
+    },
+    "link": {
+      "color": "#6b7280",
+      "text_decoration": "underline"
+    },
+    "icon_container": {
+      "width": "2.5rem",
+      "height": "2.5rem",
+      "border_radius": "0.25rem",
+      "display": "flex",
+      "align_items": "center",
+      "justify_content": "center"
+    }
+  },
+  "sidebar_styles": {
+    "light_mode": {
+      "background_color": "#ffffff",
+      "text_color": "#000000"
+    },
+    "dark_mode": {
+      "background_color": "#1f1f1f",
+      "text_color": "#ffffff"
+    },
+    "menu_item": {
+      "padding": "0.5rem 1rem",
+      "border_radius": "0.25rem",
+      "hover_background_color_light": "#f3f4f6",
+      "hover_background_color_dark": "#374151"
+    }
+  },
+  "navbar_styles": {
+    "light_mode": {
+      "background_color": "#ffffff"
+    },
+    "dark_mode": {
+      "background_color": "#1f1f1f"
+    }
+  }
+}

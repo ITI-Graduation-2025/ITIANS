@@ -10,6 +10,7 @@ import {
   collection,
   onSnapshot,
   serverTimestamp,
+  deleteDoc,
 } from "firebase/firestore";
 
 // --- User CRUD Operations ---
@@ -32,6 +33,11 @@ export const getUser = async (uid) => {
 
 export const updateUser = async (uid, data) => {
   await updateDoc(doc(db, "users", uid), data);
+};
+
+export const deleteUser = async (uid) => {
+  await deleteDoc(doc(db, "users", uid));
+  return { id: uid };
 };
 
 export const getAllUsers = async () => {

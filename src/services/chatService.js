@@ -93,3 +93,14 @@ export const subscribeToMessages = (chatId, callback) => {
     callback(messages);
   });
 };
+
+// get all chats
+export const getAllChats = async () => {
+  const chatsRef = collection(db, "chats");
+  const q = query(chatsRef, orderBy("lastMessageTimestamp", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};

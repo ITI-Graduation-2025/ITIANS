@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUserContext } from "@/context/userContext";
-import { updateUser } from "@/services/firebase";
-import { upload } from "@/utils/upload";
+import { updateUser } from "@/services/userServices";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 const TRACKS = [
   "Frontend",
@@ -25,6 +25,7 @@ export default function CompleteProfileForm() {
   const { user, setUser, refetchUser } = useUserContext();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { update: updateSession } = useSession();
   const [profileImageUrl, setProfileImageUrl] = useState(
     user?.profileImage || "",
   );
@@ -67,16 +68,31 @@ export default function CompleteProfileForm() {
     name: "finishedJobs",
   });
 
-  // Handle profile image upload (local preview only, not uploading to storage for now)
+  // نقل الشروط بعد استدعاء جميع Hooks
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "freelancer" || user.profileCompleted) {
+    router.push("/");
+    return null;
+  }
+
+  // Handle profile image upload
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     try {
       if (file) {
-        const res =await upload(e);
-        console.log(res);
-
+        // const res = await upload(e); // تأكد من أن دالة upload تعمل بشكل صحيح
         const reader = new FileReader();
-        reader.onloadend = () => setProfileImageUrl(res);
+        reader.onloadend = () => setProfileImageUrl(reader.result);
         reader.readAsDataURL(file);
       }
     } catch (error) {
@@ -90,23 +106,22 @@ export default function CompleteProfileForm() {
       const updateData = {
         ...data,
         profileImage: profileImageUrl,
-        status: "pending",
+        profileUnderReview: true,
       };
       await updateUser(user.id, updateData);
       setUser({ ...user, ...updateData });
       await refetchUser();
-      toast.success("Profile completed!");
-      router.push("/");
+      await updateSession();
+      toast.success(
+        "Profile submitted successfully! Please wait for admin review.",
+      );
+      router.push("/pending");
     } catch (err) {
       toast.error("Failed to complete profile");
     } finally {
       setIsLoading(false);
     }
   };
-
-  // If user is not freelancer or already completed, redirect
-  if (!user || user.role !== "freelancer") return null;
-  // Optionally, check if already complete and redirect
 
   return (
     <form
