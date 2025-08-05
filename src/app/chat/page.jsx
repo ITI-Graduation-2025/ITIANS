@@ -26,7 +26,7 @@ export default function ChatsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [loading, setLoading] = useState(true);
-  console.log(chats);
+  // console.log(chats);
 
   // Fetch all users from Firestore
   useEffect(() => {

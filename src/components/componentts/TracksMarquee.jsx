@@ -19,7 +19,7 @@ export default function TracksMarquee() {
   const repeatedTracks = [...tracks, ...tracks, ...tracks];
 
   return (
-    <section className="bg-[#FFFBF5] py-12 overflow-hidden">
+    <section className="bg-[var(--background)] py-12 overflow-hidden">
       <h2 className="text-3xl md:text-4xl font-bold text-[#B71C1C] text-center mb-8">
         Graduate Tracks
       </h2>

@@ -25,7 +25,7 @@ function Typewriter({ text, speed = 50 }) {
 
 export default function AboutUsSection() {
   return (
-    <section className="bg-[#FFFBF5] py-20 px-4">
+    <section className="bg-[var(--background)] py-20 px-4">
       {/* Title */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
