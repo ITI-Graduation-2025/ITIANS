@@ -146,7 +146,7 @@ export default function UserInfo() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center space-x-2 text-white hover:text-[#E57373] hover:bg-transparent"
+            className="flex items-center space-x-2 text-[#B71C1C] hover:text-[var(--primary)] hover:bg-transparent"
           >
             <FaUserCircle className="w-6 h-6" />
             <span>{data?.user?.name || "User"}</span>
@@ -162,7 +162,11 @@ export default function UserInfo() {
             className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
           >
             <Link
-              href={data?.user?.role === "mentor" ? "/mentor" : "/profile"}
+              href={
+                data?.user?.role === "mentor"
+                  ? `/mentor/${data?.user?.id}`
+                  : `/profile/${data?.user?.id}`
+              }
               className="flex items-center gap-3"
             >
               <FaRegUser className="text-[#B71C1C] group-hover:text-white" />
@@ -170,7 +174,7 @@ export default function UserInfo() {
             </Link>
           </DropdownMenuItem>
 
-          <DropdownMenuItem
+          {/* <DropdownMenuItem
             asChild
             className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
           >
@@ -178,17 +182,17 @@ export default function UserInfo() {
               <FaUsers className="text-[#B71C1C] group-hover:text-white" />
               <span>Users</span>
             </Link>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
 
-          <DropdownMenuItem
+          {/* <DropdownMenuItem
             asChild
             className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
-          >
-            <Link href="/chat" className="flex items-center gap-3">
+          > */}
+          {/* <Link href="/chat" className="flex items-center gap-3">
               <FaComments className="text-[#B71C1C] group-hover:text-white" />
               <span>Messages</span>
             </Link>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
 
           <DropdownMenuItem
             onClick={() => signOut()}

@@ -1,14 +1,16 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import {
-  FaMapMarkerAlt,
+  FaMapPin,
   FaBriefcase,
-  FaClock,
-  FaCalendarAlt,
+  FaDollarSign,
+  FaUser,
   FaPen,
   FaTrash,
+  FaLink,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 import {
@@ -24,9 +26,17 @@ import { db } from "@/config/firebase";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { Toaster, toast } from "sonner";
 
+// Default styles for Toaster
+const defaultToastStyles = {
+  error: { background: "#901b20", color: "white" },
+  success: { background: "#B33C42", color: "white" },
+  warning: { background: "#901b20", color: "white" },
+};
+
 export default function JobDetailsPage() {
   const { id } = useParams();
   const [job, setJob] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isApplied, setIsApplied] = useState(false);
   const [comment, setComment] = useState("");
   const [users, setUsers] = useState([]);
@@ -43,11 +53,11 @@ export default function JobDetailsPage() {
 
   // Colors for initial circle
   const initialColors = [
-    "bg-red-500",
-    "bg-blue-500",
-    "bg-green-500",
-    "bg-purple-500",
-    "bg-orange-500",
+    "bg-[#901b20]",
+    "bg-[#B33C42]",
+    "bg-[#D97706]",
+    "bg-gray-600",
+    "bg-blue-600",
   ];
 
   useEffect(() => {
@@ -74,6 +84,7 @@ export default function JobDetailsPage() {
         toast.error("Failed to load users. Please try again.", {
           position: "bottom-center",
           duration: 3000,
+          style: defaultToastStyles.error,
         });
       } finally {
         setLoadingUsers(false);
@@ -81,6 +92,7 @@ export default function JobDetailsPage() {
     };
 
     const fetchJob = async () => {
+      setIsLoading(true);
       try {
         const docRef = doc(db, "jobs", id);
         const docSnap = await getDoc(docRef);
@@ -102,7 +114,9 @@ export default function JobDetailsPage() {
           }
           if (
             currentUser?.uid &&
-            jobData.applicants?.includes(currentUser.uid)
+            jobData.applicants?.some(
+              (applicant) => applicant.userId === currentUser.uid,
+            )
           ) {
             setIsApplied(true);
           }
@@ -113,6 +127,8 @@ export default function JobDetailsPage() {
       } catch (error) {
         console.error("Error fetching job:", error);
         setJob(null);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -135,8 +151,12 @@ export default function JobDetailsPage() {
     fetchUserRole();
   }, [id, currentUser?.uid]);
 
+  if (isLoading) {
+    return null;
+  }
+
   if (!job) {
-    return <p className="text-center text-red-700 p-10">Job not found.</p>;
+    return <p className="text-center text-[#901b20] p-10">Job not found.</p>;
   }
 
   const formatDate = (date) => {
@@ -156,11 +176,32 @@ export default function JobDetailsPage() {
       : "N/A";
   };
 
+  const isDeadlinePassed = () => {
+    if (!job.deadline) return false;
+    const deadlineDate =
+      job.deadline instanceof Date
+        ? job.deadline
+        : job.deadline.toDate
+          ? job.deadline.toDate()
+          : new Date(job.deadline);
+    return deadlineDate < new Date();
+  };
+
   const handleApply = async () => {
     if (!currentUser?.uid) {
       toast.error("Please log in to apply for this job.", {
         position: "bottom-center",
         duration: 3000,
+        style: defaultToastStyles.error,
+      });
+      return;
+    }
+
+    if (isDeadlinePassed()) {
+      toast.error("The application deadline has passed.", {
+        position: "bottom-center",
+        duration: 3000,
+        style: defaultToastStyles.error,
       });
       return;
     }
@@ -172,6 +213,7 @@ export default function JobDetailsPage() {
         toast.error("Job not found.", {
           position: "bottom-center",
           duration: 3000,
+          style: defaultToastStyles.error,
         });
         return;
       }
@@ -179,34 +221,100 @@ export default function JobDetailsPage() {
       const jobData = jobSnap.data();
       const userId = currentUser.uid;
 
-      if (jobData.applicants && jobData.applicants.includes(userId)) {
+      if (
+        jobData.applicants?.some((applicant) => applicant.userId === userId)
+      ) {
         toast.warning("You have already applied for this job.", {
           position: "bottom-center",
           duration: 3000,
+          style: defaultToastStyles.warning,
         });
         return;
       }
 
+      const applicantData = { userId, status: "pending" };
       await updateDoc(jobRef, {
-        applicants: jobData.applicants ? arrayUnion(userId) : [userId],
+        applicants: jobData.applicants
+          ? arrayUnion(applicantData)
+          : [applicantData],
         applicationsCount: (jobData.applicationsCount || 0) + 1,
       });
 
       setJob((prev) => ({
         ...prev,
-        applicants: prev.applicants ? [...prev.applicants, userId] : [userId],
+        applicants: prev.applicants
+          ? [...prev.applicants, applicantData]
+          : [applicantData],
         applicationsCount: (prev.applicationsCount || 0) + 1,
       }));
       setIsApplied(true);
       toast.success("Applied successfully!", {
         position: "bottom-center",
         duration: 3000,
+        style: defaultToastStyles.success,
       });
     } catch (error) {
       console.error("Error applying for job:", error);
       toast.error("Failed to apply. Please try again.", {
         position: "bottom-center",
         duration: 3000,
+        style: defaultToastStyles.error,
+      });
+    }
+  };
+
+  const handleReject = async (userId) => {
+    try {
+      const jobRef = doc(db, "jobs", id);
+      const jobSnap = await getDoc(jobRef);
+      if (!jobSnap.exists()) {
+        toast.error("Job not found.", {
+          position: "bottom-center",
+          duration: 3000,
+          style: defaultToastStyles.error,
+        });
+        return;
+      }
+
+      const jobData = jobSnap.data();
+      const applicant = jobData.applicants?.find(
+        (app) => app.userId === userId,
+      );
+      if (!applicant) {
+        toast.error("Applicant not found.", {
+          position: "bottom-center",
+          duration: 3000,
+          style: defaultToastStyles.error,
+        });
+        return;
+      }
+
+      const updatedApplicant = { ...applicant, status: "rejected" };
+      await updateDoc(jobRef, {
+        applicants: [
+          ...jobData.applicants.filter((app) => app.userId !== userId),
+          updatedApplicant,
+        ],
+      });
+
+      setJob((prev) => ({
+        ...prev,
+        applicants: [
+          ...prev.applicants.filter((app) => app.userId !== userId),
+          updatedApplicant,
+        ],
+      }));
+      toast.success("Applicant rejected successfully!", {
+        position: "bottom-center",
+        duration: 3000,
+        style: defaultToastStyles.success,
+      });
+    } catch (error) {
+      console.error("Error rejecting applicant:", error);
+      toast.error("Failed to reject applicant. Please try again.", {
+        position: "bottom-center",
+        duration: 3000,
+        style: defaultToastStyles.error,
       });
     }
   };
@@ -216,6 +324,7 @@ export default function JobDetailsPage() {
       toast.error("Comment cannot be empty.", {
         position: "bottom-center",
         duration: 3000,
+        style: defaultToastStyles.error,
       });
       return;
     }
@@ -249,6 +358,7 @@ export default function JobDetailsPage() {
         toast.success("Comment updated successfully!", {
           position: "bottom-center",
           duration: 3000,
+          style: defaultToastStyles.success,
         });
       } else {
         await updateDoc(jobRef, {
@@ -262,6 +372,7 @@ export default function JobDetailsPage() {
         toast.success("Comment added successfully!", {
           position: "bottom-center",
           duration: 3000,
+          style: defaultToastStyles.success,
         });
       }
 
@@ -274,6 +385,7 @@ export default function JobDetailsPage() {
       toast.error("Failed to save comment. Please try again.", {
         position: "bottom-center",
         duration: 3000,
+        style: defaultToastStyles.error,
       });
     }
   };
@@ -300,12 +412,14 @@ export default function JobDetailsPage() {
       toast.success("Comment deleted successfully!", {
         position: "bottom-center",
         duration: 3000,
+        style: defaultToastStyles.success,
       });
     } catch (error) {
       console.error("Error deleting comment:", error);
       toast.error("Failed to delete comment. Please try again.", {
         position: "bottom-center",
         duration: 3000,
+        style: defaultToastStyles.error,
       });
     }
     setIsDeletePopupOpen(false);
@@ -318,14 +432,15 @@ export default function JobDetailsPage() {
     const cursor = e.target.selectionStart;
     setCursorPosition(cursor);
 
-    // Find the word at the cursor position (allowing spaces in usernames)
     const textBeforeCursor = value.slice(0, cursor);
     const lastAtIndex = textBeforeCursor.lastIndexOf("@");
     if (lastAtIndex !== -1) {
       const query = textBeforeCursor.slice(lastAtIndex + 1).trimStart();
       if (query || query === "") {
-        const filteredSuggestions = users.filter((user) =>
-          user.display.toLowerCase().includes(query.toLowerCase()),
+        const filteredSuggestions = users.filter(
+          (user) =>
+            user.display.toLowerCase().includes(query.toLowerCase()) &&
+            user.role !== "company",
         );
         setSuggestions(filteredSuggestions);
       } else {
@@ -340,7 +455,6 @@ export default function JobDetailsPage() {
     const textBeforeCursor = comment.slice(0, cursorPosition);
     const lastAtIndex = textBeforeCursor.lastIndexOf("@");
     if (lastAtIndex !== -1) {
-      // Use only the first word of the username as the alias
       const alias = selectedUser.display.split(" ")[0];
       const newComment =
         comment.slice(0, lastAtIndex) +
@@ -349,7 +463,6 @@ export default function JobDetailsPage() {
       setComment(newComment);
       setSuggestions([]);
       textareaRef.current.focus();
-      // Update cursor position to after the inserted alias
       setCursorPosition(lastAtIndex + alias.length + 2);
     }
   };
@@ -359,7 +472,6 @@ export default function JobDetailsPage() {
     return initialColors[index];
   };
 
-  // Function to render comment text with mentions in Facebook-like style, using alias (first word)
   const renderCommentText = (text) => {
     const mentionRegex = /@[\w\s]+?(?=\s|$)/g;
     const parts = [];
@@ -371,23 +483,20 @@ export default function JobDetailsPage() {
       const startIndex = match.index;
       const endIndex = startIndex + mention.length;
 
-      // Extract the first word of the mention (after @)
       const mentionText = mention.slice(1).split(" ")[0];
 
-      // Add text before the mention
       if (startIndex > lastIndex) {
         parts.push(
-          <span key={`text-${lastIndex}`} className="text-black">
+          <span key={`text-${lastIndex}`} className="text-gray-800">
             {text.slice(lastIndex, startIndex)}
           </span>,
         );
       }
 
-      // Add the mention (first word only) in Facebook blue with light gray background
       parts.push(
         <span
           key={`mention-${startIndex}`}
-          className="text-[#1877F2] bg-[#E8ECEF] px-1 rounded-sm font-medium"
+          className="text-[#901b20] bg-[#FFE4E6] px-1 rounded-sm font-medium"
         >
           {mentionText}
         </span>,
@@ -396,10 +505,9 @@ export default function JobDetailsPage() {
       lastIndex = endIndex;
     }
 
-    // Add remaining text after the last mention
     if (lastIndex < text.length) {
       parts.push(
-        <span key={`text-${lastIndex}`} className="text-black">
+        <span key={`text-${lastIndex}`} className="text-gray-800">
           {text.slice(lastIndex)}
         </span>,
       );
@@ -409,117 +517,167 @@ export default function JobDetailsPage() {
   };
 
   return (
-    <section className="min-h-screen bg-[#FFFBF5] py-12 px-6">
-      <div className="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-xl border border-[#E8D8C4] shadow-lg hover:shadow-2xl transition-shadow">
+    <section className="min-h-screen bg-[var(--background)] py-12 px-6">
+      <div className="w-full sm:max-w-4xl mx-auto bg-[#fcfcfc] p-10 md:p-14 rounded-2xl border border-transparent shadow-xl hover:shadow-2xl transition-shadow">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="space-y-6"
+          className="space-y-8"
         >
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#B71C1C] mb-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-5xl md:text-5xl font-bold text-[#901b20] tracking-tight">
               {job.title.charAt(0).toUpperCase() + job.title.slice(1)}
             </h2>
-            <p className="text-lg md:text-xl font-medium text-[#6D2932] mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-gray-500 text-lg font-medium">
+                Posted on {formatDate(job.createdAt)}
+              </span>
+              <span
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--primary)] text-[#FCEEEF] text-base font-semibold"
+                title="Number of Applicants"
+              >
+                {job.applicationsCount || 0}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <Link
+              href={job.companyId ? `/company/${job.companyId}` : "/company"}
+              className="flex items-center gap-2 text-2xl md:text-2xl font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200"
+            >
+              <FaLink className="w-5 h-5" />
               {job.company.charAt(0).toUpperCase() + job.company.slice(1)}
-            </p>
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-[#2D2D2D]">
-            <div className="flex items-center gap-2">
-              <FaMapMarkerAlt /> <span>Location: {job.location || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaBriefcase /> <span>Type: {job.type || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaClock /> <span>Experience: {job.experience || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaCalendarAlt />{" "}
-              <span>Created: {formatDate(job.createdAt)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaCalendarAlt />{" "}
-              <span>Deadline: {formatDate(job.deadline)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>Level: {job.level || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>Salary: {job.salary || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>Views: {job.views || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>Applications: {job.applicationsCount || "N/A"}</span>
+          <div className="grid grid-cols-1 gap-4 text-base font-medium text-[#1F2937]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base text-gray-800">
+              <span className="flex items-center px-4 py-2 border border-transparent rounded-xl bg-[#FCEEEF] shadow-sm hover:shadow-md transition-shadow duration-200">
+                <FaMapPin className="w-6 h-6 mr-3 text-[#901b20]" />
+                {job.location || "N/A"}
+              </span>
+              <span className="flex items-center px-4 py-2 border border-transparent rounded-xl bg-[#FCEEEF] shadow-sm hover:shadow-md transition-shadow duration-200">
+                <FaBriefcase className="w-6 h-6 mr-3 text-[#901b20]" />
+                {job.type || "N/A"}
+              </span>
+              <span className="flex items-center px-4 py-2 border border-transparent rounded-xl bg-[#FCEEEF] shadow-sm hover:shadow-md transition-shadow duration-200">
+                <FaDollarSign className="w-6 h-6 mr-3 text-[var(--primary)]" />
+                {job.salary || "N/A"}
+              </span>
+              <span className="flex items-center px-4 py-2 border border-transparent rounded-xl bg-[#FCEEEF] shadow-sm hover:shadow-md transition-shadow duration-200">
+                <FaUser className="w-6 h-6 mr-3 text-[var(--primary)]" />
+                {job.level || "N/A"}
+              </span>
             </div>
           </div>
 
-          <div className="mb-6">
-            <h3 className="text-xl md:text-2xl font-semibold text-[#B71C1C] mb-2">
+          <div className="mb-8">
+            <h3 className="text-3xl font-semibold text-[var(--primary)] mb-4">
               Description
             </h3>
-            <p className="text-[#333] leading-relaxed break-words line-clamp-6 max-h-[12rem] overflow-hidden">
+            <p className="text-gray-900 leading-7 break-words line-clamp-6 max-h-[12rem] overflow-hidden text-lg font-medium">
               {job.description || "No description available."}
             </p>
           </div>
 
           {job.requirements && (
-            <div className="mb-6">
-              <h3 className="text-xl md:text-2xl font-semibold text-[#B71C1C] mb-2">
+            <div className="mb-8">
+              <h3 className="text-3xl font-semibold text-[var(--primary)] mb-4">
                 Requirements
               </h3>
-              <p className="text-[#333] leading-relaxed break-words line-clamp-4 max-h-[8rem] overflow-hidden">
+              <p className="text-gray-900 text-lg leading-7 break-words line-clamp-4 max-h-[8rem] overflow-hidden font-medium">
                 {job.requirements}
               </p>
             </div>
           )}
 
           {job.skills && (
-            <div className="mb-6">
-              <h3 className="text-xl md:text-2xl font-semibold text-[#B71C1C] mb-2">
+            <div className="mb-8">
+              <h3 className="text-3xl font-semibold text-[var(--primary)] mb-4">
                 Skills
               </h3>
-              <p className="text-[#333] leading-relaxed break-words line-clamp-4 max-h-[8rem] overflow-hidden">
+              <p className="text-gray-900 text-lg leading-7 break-words line-clamp-4 max-h-[8rem] overflow-hidden font-medium">
                 {job.skills}
               </p>
             </div>
           )}
 
-          <div className="flex gap-4 justify-center">
+          {job.deadline && (
+            <div className="mb-8">
+              <h3 className="text-3xl font-semibold text-[var(--primary)] mb-4">
+                Deadline
+              </h3>
+              <p className="text-gray-900 text-lg leading-7 font-medium">
+                {formatDate(job.deadline)}
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {userRole === "freelancer" && (
+              // <button
+              //   onClick={handleApply}
+              //   disabled={isApplied || isDeadlinePassed()}
+              //   className={`flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold transition-all duration-200 ease-in-out shadow-md hover:scale-105 hover:shadow-lg focus:ring-2 focus:ring-[var(--primary)] cursor-not-allowed ${
+              //     isApplied || isDeadlinePassed()
+              //       ? "bg-gray-300 text-gray-700 cursor-not-allowed"
+              //       : "bg-[var(--primary)] text-white hover:bg-[#6B1519] cursor-pointer"
+              //   }`}
+              // >
+              //   {isDeadlinePassed()
+              //     ? "Deadline Passed"
+              //     : isApplied
+              //       ? "Applied"
+              //       : "Apply Now"}
+              // </button>
               <button
                 onClick={handleApply}
-                disabled={isApplied}
-                className={`flex-1 text-center py-3 rounded-lg font-semibold transition-all duration-300 ease-in-out shadow-md ${
-                  isApplied
-                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                    : "bg-[#B71C1C] text-white hover:bg-[#8B0000] hover:shadow-lg"
+                disabled={isApplied || isDeadlinePassed()}
+                className={`flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold transition-all duration-200 ease-in-out shadow-md focus:ring-2 focus:ring-[var(--primary)] ${
+                  isApplied || isDeadlinePassed()
+                    ? "bg-gray-300 text-gray-700 cursor-not-allowed"
+                    : "bg-[var(--primary)] text-white hover:bg-[#6B1519] hover:scale-105 hover:shadow-lg"
                 }`}
               >
-                {isApplied ? "Applied" : "Apply Now"}
+                {isDeadlinePassed()
+                  ? "Deadline Passed"
+                  : isApplied
+                    ? "Applied"
+                    : "Apply Now"}
               </button>
             )}
             {["freelancer", "mentor"].includes(userRole) && (
               <button
                 onClick={() => setIsCommentPopupOpen(true)}
-                className={`${
-                  userRole === "mentor" ? "w-32 mx-auto" : "flex-1"
-                } text-center py-3 rounded-lg font-semibold bg-[#B71C1C] text-white hover:bg-[#8B0000] transition-all duration-300 ease-in-out shadow-md hover:shadow-lg`}
+                className="flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold bg-[#901b20] text-white hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200 ease-in-out shadow-md"
               >
-                Comment
+                Mention
+              </button>
+            )}
+            {userRole === "company" && (
+              <button
+                onClick={() => handleReject(currentUser?.uid)}
+                className="flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold bg-[#901b20] text-white hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200 ease-in-out shadow-md"
+              >
+                Reject Applicant (Test)
               </button>
             )}
           </div>
 
-          {/* Comment Popup */}
           {isCommentPopupOpen && (
-            <div className="fixed inset-0 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                <h3 className="text-xl font-semibold text-[#B71C1C] mb-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white p-10 rounded-2xl shadow-lg w-full max-w-md"
+              >
+                <h3 className="text-xl font-semibold text-[#901b20] mb-4">
                   {editingComment !== null ? "Edit Comment" : "Add a Comment"}
                 </h3>
                 {!loadingUsers ? (
@@ -529,16 +687,16 @@ export default function JobDetailsPage() {
                       value={comment}
                       onChange={handleInputChange}
                       placeholder="Type @ to mention someone..."
-                      className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#B71C1C]"
+                      className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#901b20]"
                       rows="4"
                     />
                     {suggestions.length > 0 && (
-                      <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
+                      <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
                         {suggestions.map((user) => (
                           <li
                             key={user.id}
                             onClick={() => handleSuggestionSelect(user)}
-                            className="p-2 hover:bg-gray-100 cursor-pointer"
+                            className="p-2 hover:bg-[#FFE4E6] cursor-pointer"
                           >
                             @{user.display}
                           </li>
@@ -552,7 +710,7 @@ export default function JobDetailsPage() {
                 <div className="flex gap-4 mt-4">
                   <button
                     onClick={handleCommentSubmit}
-                    className="flex-1 bg-[#B71C1C] text-white py-2 rounded-lg hover:bg-[#8B0000] transition-colors duration-200"
+                    className="flex-1 bg-[#901b20] text-white py-3 rounded-lg hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200"
                     disabled={loadingUsers}
                   >
                     {editingComment !== null ? "Update" : "Submit"}
@@ -564,26 +722,33 @@ export default function JobDetailsPage() {
                       setIsCommentPopupOpen(false);
                       setEditingComment(null);
                     }}
-                    className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors duration-200"
+                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 hover:scale-105 focus:ring-2 focus:ring-gray-500 transition-all duration-200"
                   >
                     Cancel
                   </button>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
 
-          {/* Delete Confirmation Popup */}
           {isDeletePopupOpen && (
-            <div className="fixed inset-0 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm">
-                <h3 className="text-lg font-semibold text-[#B71C1C] mb-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white p-10 rounded-2xl shadow-lg w-full max-w-sm"
+              >
+                <h3 className="text-lg font-semibold text-[#901b20] mb-4">
                   Are you sure you want to delete this comment?
                 </h3>
                 <div className="flex gap-4">
                   <button
                     onClick={() => handleDeleteComment(deleteCommentIndex)}
-                    className="flex-1 bg-[#B71C1C] text-white py-2 rounded-lg hover:bg-[#8B0000] transition-colors duration-200"
+                    className="flex-1 bg-[#901b20] text-white py-3 rounded-lg hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200"
                   >
                     Confirm
                   </button>
@@ -592,20 +757,25 @@ export default function JobDetailsPage() {
                       setIsDeletePopupOpen(false);
                       setDeleteCommentIndex(null);
                     }}
-                    className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors duration-200"
+                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 hover:scale-105 focus:ring-2 focus:ring-gray-500 transition-all duration-200"
                   >
                     Cancel
                   </button>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
 
-          {/* Comments Section */}
           {job.comments && job.comments.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-xl md:text-2xl font-semibold text-[#B71C1C] mb-2">
-                Comments ({job.comments.length})
+            <div className="mt-8">
+              <h3 className="text-3xl font-semibold text-[#901b20] mb-4">
+                Comments
+                <span
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--primary)] text-[#FCEEEF] text-base font-semibold ms-4"
+                  title="Number of Comments"
+                >
+                  {job.comments.length}
+                </span>
               </h3>
               <div
                 className={`space-y-4 px-4 ${
@@ -624,17 +794,17 @@ export default function JobDetailsPage() {
                   return (
                     <div
                       key={index}
-                      className="p-4 bg-gray-100 rounded-lg flex gap-4 relative"
+                      className="p-4 bg-white border border-gray-200 rounded-xl flex gap-4 relative shadow-sm hover:shadow-md transition-shadow duration-200"
                     >
                       {profileImage ? (
                         <img
                           src={profileImage}
                           alt={userName}
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-14 h-14 rounded-full object-cover shadow-sm"
                         />
                       ) : (
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${initialColor}`}
+                          className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-semibold ${initialColor} shadow-sm`}
                         >
                           {initial}
                         </div>
@@ -643,10 +813,10 @@ export default function JobDetailsPage() {
                         <div className="flex justify-between items-center">
                           <p className="text-gray-900 font-bold">{userName}</p>
                           {comment.userId === currentUser?.uid && (
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                               <button
                                 onClick={() => handleEditComment(index)}
-                                className="text-gray-700 hover:text-gray-900"
+                                className="text-gray-600 hover:text-[#901b20] transition-colors duration-200"
                                 title="Edit"
                               >
                                 <FaPen />
@@ -656,7 +826,7 @@ export default function JobDetailsPage() {
                                   setIsDeletePopupOpen(true);
                                   setDeleteCommentIndex(index);
                                 }}
-                                className="text-red-500 hover:text-red-700"
+                                className="text-[#901b20] hover:text-[#6B1519] transition-colors duration-200"
                                 title="Delete"
                               >
                                 <FaTrash />
@@ -664,10 +834,10 @@ export default function JobDetailsPage() {
                             </div>
                           )}
                         </div>
-                        <p className="text-black">
+                        <p className="text-gray-800 leading-7 font-medium">
                           {renderCommentText(comment.text)}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-500">
                           {formatDate(comment.timestamp)}
                         </p>
                       </div>
