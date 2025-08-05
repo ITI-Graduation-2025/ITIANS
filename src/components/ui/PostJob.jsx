@@ -99,11 +99,11 @@ const jobId = params?.jobId;
         createdAt: serverTimestamp(),
         status: "Active",
         applicationsCount: 0,
-        views: 0,
         postedBy: userId,
         companyId: userId,
         applicants: [],
         newApplications: [],
+        postedAt: serverTimestamp(),
       });
 
       toast.success("Job posted successfully!");
@@ -177,18 +177,19 @@ const jobId = params?.jobId;
 
 
   return (
-    <div className="min-h-screen bg-[#fff7f2]">
+    <div className="min-h-screen bg-[#f9f9f9]">
       <Toaster position="top-right" />
       <main className="p-6 max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold text-gray-800">Post a New Job</h1>
           <Link
             href="/companyjobs"
-            className="flex items-center gap-1 text-red-600 border border-red-600 px-3 py-1 rounded hover:bg-red-100 text-sm font-medium"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#b30000] text-white font-semibold text-sm  transition-all duration-300 shadow-sm hover:shadow-md group"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to My Jobs
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
+            <span>Back to My Jobs</span>
           </Link>
+
         </div>
         <p className="text-gray-600 mb-6">
           Connect with skilled ITI graduates for your projects
@@ -220,11 +221,13 @@ const jobId = params?.jobId;
             <button
               type="submit"
               disabled={loading}
-              className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 flex items-center justify-center gap-2 mx-auto"
+              className={`group relative overflow-hidden bg-[#b30000] text-white px-6 py-2 rounded-full shadow-md hover:from-red-700 hover:to-red-800 transition-all duration-300 ease-in-out flex items-center justify-center gap-2 mx-auto ${loading ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               {loading ? "Posting..." : "Post Job"}
             </button>
+
           </div>
         </form>
       </main>
@@ -232,7 +235,7 @@ const jobId = params?.jobId;
   );
 }
 
-// 🔧 دالة لتحديث حالة المتقدم (قبول/رفض) داخل الوظيفة
+//  دالة لتحديث حالة المتقدم (قبول/رفض) داخل الوظيفة
 export async function updateApplicantStatus(jobId, applicantId, status) {
   try {
     const jobRef = doc(db, "jobs", jobId);

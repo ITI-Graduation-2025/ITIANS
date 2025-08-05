@@ -24,6 +24,12 @@ import {
      XCircle,
      DollarSign,
      MapPin,
+     ClipboardList,
+     ListChecks,
+     UserCheck,
+     FolderKanban,
+     LayoutGrid,
+     Newspaper,
 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/config/firebase";
@@ -36,6 +42,8 @@ import {
   arrayUnion,
   increment,
   getDoc,
+  arrayRemove,
+  serverTimestamp,
   
 } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
@@ -115,6 +123,17 @@ export default function CompanyJobs() {
 
     fetchCompany();
   }, [companyId]);
+
+
+  
+
+
+  const clearNewApplications = async (jobId, userId) => {
+  const jobRef = doc(db, "jobs", jobId);
+  await updateDoc(jobRef, {
+    newApplications: arrayRemove(userId),
+  });
+};
 
 
 
@@ -227,13 +246,18 @@ export default function CompanyJobs() {
             <Building2 className="w-4 h-4" /> Company Profile
           </Link>
         </div>
-
+           {/**job heading */}
         {jobs.length > 0 && (
-          <div className="flex justify-between items-center mb-4">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-[#203947]">Your Job Postings</h2>
-              <p className="text-sm text-gray-500">Overview of all your job postings with current status.</p>
-            </div>
+          <div className="flex justify-between items-center mb-4 border-b border-gray-300">
+  <div className="mb-6">
+    <div className="flex items-center gap-2">
+      <Newspaper className="text-[#b30000] w-5 h-5" />
+      <h2 className="text-xl font-semibold text-[#203947]">Your Job Postings</h2>
+    </div>
+    <p className="text-sm text-gray-800 mt-1">
+      Overview of all your job postings with current status.
+    </p>
+  </div>
 
             <Link href="/PostJob">
               <button className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-r from-[#b30000] to-[#8B0000] px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition-transform duration-300 hover:scale-105 hover:shadow-xl focus:outline-none">
@@ -269,6 +293,7 @@ export default function CompanyJobs() {
                 companyRef={companyRef}
                 onEdit={() => setEditJob(job)}
                 newApplications={job.newApplications || []}
+                 clearNewApplications={clearNewApplications}
 
               />
             ))
@@ -332,6 +357,8 @@ function formatTimestamp(ts) {
   return new Date(ts.seconds * 1000).toLocaleDateString();
 }
 
+
+
 function JobCard({
   id,
   title,
@@ -346,6 +373,7 @@ function JobCard({
   deadline,
   onEdit,
   newApplications = [],
+   clearNewApplications, 
 }) {
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -439,37 +467,43 @@ function JobCard({
         </span>
       </div>
 
-      <div className="flex gap-2 flex-wrap mt-3 text-xs">
-        <div className="flex items-center gap-1  px-2 py-1 rounded text-xs text-blue-800">
-          <Users2 className="w-4 h-4 text-blue-600" />
-          {applicationsCount || 0} Applications
-        </div>
-
-       {newApplications.length > 0 && (
-  <div className="bg-red-600 text-white px-2 py-1 rounded animate-pulse">
-    {newApplications.length} New
+      <div className="flex items-center gap-2 mt-3 text-xs flex-nowrap overflow-hidden">
+  <div className="flex items-center gap-1 px-1 py-0.5 rounded text-blue-800 whitespace-nowrap">
+    <Users2 className="w-4 h-4 text-blue-600" />
+    {applicationsCount || 0} Applications
   </div>
-)}
 
-       
-        <div className="flex items-center gap-1 px-2 py-1 ">
-          <CalendarDays className="w-4 h-4 text-yellow-600" />
-          Posted: {formatTimestamp(postedAt)}
-        </div>
+  {newApplications.length > 0 && (
+    <div className="bg-red-600 text-white px-1 py-0.5 rounded animate-pulse whitespace-nowrap">
+      {newApplications.length} New
+    </div>
+  )}
 
-        <div className="flex items-center gap-1 px-2 py-1 ">
-          <Clock className="w-4 h-4 text-red-600" />
-          Deadline: {formatTimestamp(deadline)}
-        </div>
+  <div className="flex items-center gap-1 px-1 py-0.5 whitespace-nowrap">
+    <CalendarDays className="w-4 h-4 text-yellow-600" />
+    Posted: {formatTimestamp(postedAt)}
+  </div>
 
-      </div>
+  <div className="flex items-center gap-1 px-1 py-0.5 whitespace-nowrap">
+    <Clock className="w-4 h-4 text-red-600" />
+    Deadline: {formatTimestamp(deadline)}
+  </div>
+</div>
 
       <div className="flex flex-wrap gap-2 mt-3">
-        <Link href={`/Applicationjob/${id}`}>
+        <Link
+          href={`/Applicationjob/${id}`}
+          onClick={() => {
+            newApplications.forEach((uid) => {
+              clearNewApplications(id, uid);
+            });
+          }}
+>
   <button className="bg-[#b30000] text-white px-2 py-1 rounded text-xs flex items-center gap-1">
     View Applications
   </button>
 </Link>
+
 
 
         {status === "Active" && (

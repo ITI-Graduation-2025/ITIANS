@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Building2, ArrowLeft } from "lucide-react";
+import { Building2, ArrowLeft,Pencil } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/config/firebase";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
@@ -10,7 +10,7 @@ import toast, { Toaster } from "react-hot-toast";
 
 export default function ProfileEdit() {
   const { data: session } = useSession();
-  const companyId = session?.user?.id; // ✅ استخدم companyId
+  const companyId = session?.user?.id;
 
   const [loading, setLoading] = useState(true);
   const [newSpec, setNewSpec] = useState("");
@@ -26,17 +26,12 @@ export default function ProfileEdit() {
     description: "",
     rating: 0,
     reviews: 0,
-    stats: {
-      activeJobs: 0,
-      totalHires: 0,
-      successRate: "",
-    },
     specializations: [],
   });
 
   useEffect(() => {
     if (!companyId) return;
-    const docRef = doc(db, "users", companyId); // ✅ استخدم companyId هنا
+    const docRef = doc(db, "users", companyId);
 
     const unsubscribe = onSnapshot(docRef, (snap) => {
       if (snap.exists()) {
@@ -58,7 +53,7 @@ export default function ProfileEdit() {
 
   const handleSave = async () => {
     try {
-      const docRef = doc(db, "users", companyId); // ✅ استخدم companyId هنا
+      const docRef = doc(db, "users", companyId);
       await updateDoc(docRef, formData);
       toast.success("Profile updated successfully");
     } catch (err) {
@@ -83,24 +78,56 @@ export default function ProfileEdit() {
     }));
   };
 
-  if (loading) return <p className="p-6">Loading...</p>;
+  // ✅ Skeleton Loading UI
+  if (loading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="col-span-1 space-y-4">
+            <div className="w-20 h-20 bg-gray-200 rounded-xl mx-auto"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+            <div className="space-y-2 mt-6">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+            </div>
+          </div>
+          <div className="col-span-2 space-y-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="h-10 bg-gray-200 rounded w-full"></div>
+            ))}
+            <div className="h-24 bg-gray-200 rounded"></div>
+            <div className="h-10 bg-gray-200 rounded w-1/3"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // ✅ Main UI after loading
   return (
-    <div className="min-h-screen bg-[#fff7f2]">
+    <div className="min-h-screen bg-[#f9f9f9]">
       <Toaster position="top-right" />
       <main className="p-6 max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold text-gray-800">Edit Company Profile</h1>
+         <h1 className="text-2xl font-semibold text-[#203947] tracking-tight flex items-center gap-3 mb-4">
+  <Pencil className="w-6 h-6 text-[#b30000]" />
+  Edit Company Profile
+</h1>
+
           <Link
             href="/companyprofile"
-            className="flex items-center gap-1 text-red-600 border border-red-600 px-3 py-1 rounded hover:bg-red-100 text-sm font-medium"
+            className="inline-flex items-center gap-2 bg-[#203947] text-white border  px-4 py-2 rounded-full text-sm font-medium transition duration-200 hover:bg-[#b30000] shadow-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Profile
           </Link>
         </div>
 
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-900 mb-6">
           Update your company details and stay up-to-date
         </p>
 
@@ -116,28 +143,6 @@ export default function ProfileEdit() {
               ⭐ {formData.rating}/5{" "}
               <span className="text-gray-500">({formData.reviews} reviews)</span>
             </p>
-
-            <div className="bg-red-50 p-4 rounded-lg mt-6 text-center">
-              <h3 className="font-semibold mb-2">Company Stats</h3>
-              <p className="text-sm text-gray-600">
-                Active Jobs:{" "}
-                <span className="text-red-600 font-semibold">
-                  {formData.stats.activeJobs}
-                </span>
-              </p>
-              <p className="text-sm text-gray-600">
-                Total Hires:{" "}
-                <span className="text-red-600 font-semibold">
-                  {formData.stats.totalHires}
-                </span>
-              </p>
-              <p className="text-sm text-gray-600">
-                Success Rate:{" "}
-                <span className="text-red-600 font-semibold">
-                  {formData.stats.successRate}
-                </span>
-              </p>
-            </div>
           </div>
 
           {/* RIGHT SIDE FORM */}
@@ -178,9 +183,7 @@ export default function ProfileEdit() {
             </div>
 
             <div>
-              <label className="text-gray-500 text-sm mb-2 block">
-                Specializations
-              </label>
+              <label className="text-gray-500 text-sm mb-2 block">Specializations</label>
               <div className="flex items-center gap-2 mb-2">
                 <input
                   type="text"
@@ -192,7 +195,7 @@ export default function ProfileEdit() {
                 <button
                   type="button"
                   onClick={handleAddSpec}
-                  className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 text-sm"
+                  className="bg-gradient-to-r from-[#b30000] to-[#8B0000] text-white px-5 py-2 rounded-full shadow-md text-sm font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#b30000]/50"
                 >
                   Add
                 </button>
@@ -219,12 +222,14 @@ export default function ProfileEdit() {
             <div className="flex gap-4 pt-4">
               <button
                 onClick={handleSave}
-                className="bg-red-600 text-white px-5 py-2 rounded hover:bg-red-700"
+                className="bg-gradient-to-r from-[#b30000] to-[#8B0000] text-white px-6 py-2.5 rounded-full shadow-lg text-sm font-semibold tracking-wide flex items-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#b30000]/50 cursor-pointer"
               >
                 Save Changes
               </button>
               <Link href="/companyprofile">
-                <button className="border px-5 py-2 rounded hover:bg-gray-100">
+                <button
+                  className="bg-white text-gray-700 px-6 py-2.5 rounded-full shadow-lg text-sm font-semibold tracking-wide flex items-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300/50 cursor-pointer"
+                >
                   Cancel
                 </button>
               </Link>

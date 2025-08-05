@@ -5,6 +5,7 @@ import { Send } from "lucide-react";
 import { db } from "@/config/firebase";
 import { addDoc, collection, doc, serverTimestamp, updateDoc, Timestamp } from "firebase/firestore";
 import { toast } from "react-hot-toast";
+import { Pencil } from "lucide-react";
 
 export default function JobForm({ mode = "create", job = {}, onClose }) {
   const [formData, setFormData] = useState({
@@ -106,9 +107,11 @@ export default function JobForm({ mode = "create", job = {}, onClose }) {
         onSubmit={handleSubmit}
         className="bg-white/30 backdrop-blur-md p-6 rounded-xl shadow-md space-y-6 w-full max-w-3xl overflow-y-auto max-h-[90vh]"
       >
-        <h1 className="text-xl font-bold text-red-700">
-          {mode === "create" ? "Post a New Job" : "Edit Job"}
+        <h1 className="text-xl md:text-xl font-semibold text-gray-800 flex items-center gap-2">
+          <Pencil className="w-5 h-5 text-red-600" />
+          <span className="text-red-700 tracking-tight">Edit your Job</span>
         </h1>
+
 
         <div className="grid md:grid-cols-2 gap-4">
           <InputField label="Job Title" name="title" value={formData.title} onChange={handleChange} />
@@ -129,15 +132,31 @@ export default function JobForm({ mode = "create", job = {}, onClose }) {
         </div>
 
         <div className="flex justify-end gap-2 mt-4">
-          <button type="button" onClick={onClose} className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-full border border-gray-300 text-gray-600 text-sm font-medium bg-white hover:bg-gray-100 hover:text-gray-800 shadow-sm transition-all duration-200 cursor-pointer active:scale-95"
+          >
+            Cancel
+          </button>
+
+
           <button
             type="submit"
             disabled={loading}
-            className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 flex items-center gap-2"
+            className={`px-6 py-2 rounded-full flex items-center gap-2 text-sm font-semibold transition-all duration-200 shadow-md 
+    ${loading ? "bg-red-400 cursor-not-allowed" : "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 cursor-pointer hover:shadow-lg active:scale-95 text-white"}`}
           >
             <Send className="w-4 h-4" />
-            {loading ? (mode === "create" ? "Posting..." : "Saving...") : (mode === "create" ? "Post Job" : "Save Changes")}
+            {loading
+              ? mode === "create"
+                ? "Posting..."
+                : "Saving..."
+              : mode === "create"
+                ? "Post Job"
+                : "Save Changes"}
           </button>
+
         </div>
       </form>
     </div>

@@ -49,52 +49,62 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [companyId]);
 
-  useEffect(() => {
-    if (!companyId) return;
+ useEffect(() => {
+  if (!companyId) return;
 
-    const fetchApplications = async () => {
-      try {
-        const jobsRef = collection(db, "jobs");
-        const q = query(jobsRef, where("companyId", "==", companyId));
-        const querySnapshot = await getDocs(q);
+  const fetchApplications = async () => {
+    try {
+      const jobsRef = collection(db, "jobs");
+      const q = query(jobsRef, where("companyId", "==", companyId));
+      const querySnapshot = await getDocs(q);
 
-        let total = 0;
-        let hires = 0;
-        let newApplicationsThisWeek = 0;
-        let lastWeekApplications = 0;
-        let hiresThisMonth = 0;
-        let hiresLastMonth = 0;
+      let total = 0;
+      let hires = 0;
+      let newApplicationsThisWeek = 0;
+      let lastWeekApplications = 0;
+      let hiresThisMonth = 0;
+      let hiresLastMonth = 0;
 
-        const now = new Date();
-        const oneWeekAgo = new Date(now);
-        oneWeekAgo.setDate(now.getDate() - 7);
-        const twoWeeksAgo = new Date(now);
-        twoWeeksAgo.setDate(now.getDate() - 14);
-        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      const now = new Date();
+      const oneWeekAgo = new Date(now);
+      oneWeekAgo.setDate(now.getDate() - 7);
+      const twoWeeksAgo = new Date(now);
+      twoWeeksAgo.setDate(now.getDate() - 14);
+      const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-        querySnapshot.forEach((doc) => {
-          const job = doc.data();
-          const applicants = job.applicants || [];
+      querySnapshot.forEach((doc) => {
+        const job = doc.data();
+        const applicants = job.applicants || [];
 
-          applicants.forEach((applicant) => {
-            if (typeof applicant === "string") {
-              total += 1;
-            } else if (typeof applicant === "object" && applicant.userId) {
-              total += 1;
+        applicants.forEach((applicant) => {
+          if (typeof applicant === "string") {
+            total += 1;
+          } else if (typeof applicant === "object" && applicant.userId) {
+            total += 1;
 
-              const appliedDate = new Date(applicant.appliedAt);
+            // applied date fallback
+            const appliedDate = applicant.appliedAt
+              ? new Date(applicant.appliedAt)
+              : job.createdAt?.toDate
+                ? job.createdAt.toDate()
+                : null;
 
+            // حساب الطلبات الجديدة هذا الأسبوع
+            if (appliedDate) {
               if (appliedDate >= oneWeekAgo) {
                 newApplicationsThisWeek += 1;
               } else if (appliedDate >= twoWeeksAgo && appliedDate < oneWeekAgo) {
                 lastWeekApplications += 1;
               }
+            }
 
-              if (applicant.status === "Approved") {
-                hires += 1;
+            // حساب التعيينات
+            if (applicant.status?.toLowerCase() === "approved") {
+              hires += 1;
 
+              if (appliedDate) {
                 if (appliedDate >= startOfThisMonth) {
                   hiresThisMonth += 1;
                 } else if (appliedDate >= startOfLastMonth && appliedDate <= endOfLastMonth) {
@@ -102,37 +112,39 @@ export default function DashboardPage() {
                 }
               }
             }
-          });
+          }
         });
+      });
 
-        const getTrend = (current, previous) => {
-          if (previous === 0) return current > 0 ? "up" : "flat";
-          if (current > previous) return "up";
-          if (current < previous) return "down";
-          return "flat";
-        };
+      const getTrend = (current, previous) => {
+        if (previous === 0) return current > 0 ? "up" : "flat";
+        if (current > previous) return "up";
+        if (current < previous) return "down";
+        return "flat";
+      };
 
-        const applicationTrend = getTrend(newApplicationsThisWeek, lastWeekApplications);
-        const hireTrend = getTrend(hiresThisMonth, hiresLastMonth);
+      const applicationTrend = getTrend(newApplicationsThisWeek, lastWeekApplications);
+      const hireTrend = getTrend(hiresThisMonth, hiresLastMonth);
 
-        setApplicationStats({
-          total,
-          hires,
-          newThisWeek: newApplicationsThisWeek,
-          hiresThisMonth,
-          applicationTrend,
-          hireTrend,
-        });
+      setApplicationStats({
+        total,
+        hires,
+        newThisWeek: newApplicationsThisWeek,
+        hiresThisMonth,
+        applicationTrend,
+        hireTrend,
+      });
 
-        setLoading(false);
-      } catch (error) {
-        console.error("Error calculating application stats:", error);
-        setLoading(false);
-      }
-    };
+      setLoading(false);
+    } catch (error) {
+      console.error("Error calculating application stats:", error);
+      setLoading(false);
+    }
+  };
 
-    fetchApplications();
-  }, [companyId]);
+  fetchApplications();
+}, [companyId]);
+
 
   if (status === "loading" || loading)
     return <div className="p-6 animate-pulse text-gray-500">Loading dashboard...</div>;
@@ -248,14 +260,14 @@ export default function DashboardPage() {
 
   <div className="grid grid-cols-1 gap-3">
     <Link href="/PostJob">
-      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-red-600 border-red-300 bg-red-50/20 hover:bg-red-100 transition-colors duration-200">
+      <button className="flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-red-600 border-red-300 bg-red-50/20 hover:bg-red-100 transition-colors duration-200">
         <FilePlus className="w-4 h-4" />
         Post New Job
       </button>
     </Link>
 
     <Link href="/Applicationjob">
-      <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-red-600 border-red-300 bg-red-50/20 hover:bg-red-100 transition-colors duration-200">
+      <button className=" flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-red-600 border-red-300 bg-red-50/20 hover:bg-red-100 transition-colors duration-200">
         <ClipboardCopy className="w-4 h-4" />
         View Applicants
       </button>

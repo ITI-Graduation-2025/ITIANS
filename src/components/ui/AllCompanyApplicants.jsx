@@ -15,6 +15,10 @@ import {
   AlertCircle,
     CheckCircle,  
     Ban, 
+    Eye, 
+    XCircle,
+    ClipboardList,
+    ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/config/firebase";
@@ -37,7 +41,7 @@ const STATUS_ICONS = {
 };
 
 
-const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => {
+const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile, setSelectedToReject, setShowRejectModal }) => {
   const status = applicant.status?.toLowerCase() || "pending";
 
   return (
@@ -94,35 +98,39 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile }) => {
     )}
 
     <button
-      onClick={() => onViewProfile(applicant)}
-      className="bg-[#b30000] hover:bg-[#8B0000] transition-colors text-white px-5 py-2 rounded-md shadow-md"
-    >
-      View Profile
-    </button>
+  onClick={() => onViewProfile(applicant)}
+  className="bg-[#b30000] hover:bg-[#8B0000] transition-colors text-white px-5 py-2 rounded-md shadow-md flex items-center gap-2"
+>
+  <Eye className="w-4 h-4" />
+  View Profile
+</button>
 
-    {status !== "approved" && (
-      <button
-        onClick={() =>
-          onUpdateStatus(applicant.jobId, applicant.id, "approved", applicant.name)
-        }
-        className="bg-green-600 hover:bg-green-700 transition-colors text-white px-5 py-2 rounded-md shadow-md"
-      >
-        Approve
-      </button>
-    )}
 
-    {status !== "rejected" && (
-      <button
-        onClick={() => {
-          if (confirm("Are you sure you want to reject this applicant?")) {
-            onUpdateStatus(applicant.jobId, applicant.id, "rejected", applicant.name);
-          }
-        }}
-        className="bg-gray-300 hover:bg-gray-400 transition-colors text-black px-5 py-2 rounded-md shadow-md"
-      >
-        Reject
-      </button>
-    )}
+   {status !== "approved" && (
+  <button
+    onClick={() =>
+      onUpdateStatus(applicant.jobId, applicant.id, "approved", applicant.name)
+    }
+    className="bg-green-600 hover:bg-green-700 transition-colors text-white px-5 py-2 rounded-md shadow-md flex items-center gap-2"
+  >
+    <CheckCircle className="w-4 h-4" />
+    Approve
+  </button>
+)}
+
+   {status !== "rejected" && (
+     <button
+       onClick={() => {
+         setSelectedToReject(applicant); 
+         setShowRejectModal(true);       
+       }}
+       className="bg-gray-300 hover:bg-gray-400 transition-colors text-black px-5 py-2 rounded-md shadow-md flex items-center gap-2"
+     >
+       <XCircle className="w-4 h-4" />
+       Reject
+     </button>
+   )}
+
   </div>
 </div>
 
@@ -137,6 +145,8 @@ export default function AllCompanyApplicants() {
   const [hasAccessToJob, setHasAccessToJob] = useState(true);
   const companyId = session?.user?.id;
   const [applications, setApplications] = useState([]);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedToReject, setSelectedToReject] = useState(null);
 
   const [company, setCompany] = useState(null);
     useEffect(() => {
@@ -289,7 +299,30 @@ export default function AllCompanyApplicants() {
                     </Link>
         </div>
 
-        <h2 className="text-lg font-semibold mb-3">All Job Applications</h2>
+        <div className="mb-6 border-b border-gray-300 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {/* العنوان والوصف */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <ClipboardList className="text-[#b30000] w-5 h-5" />
+               
+                <span className="text-xl md:text-xl font-semibold text-[#203947] ">All Job Applications</span>
+              </h2>
+              <p className="text-sm text-gray-800 mt-1 font-[Poppins]">
+          Track and manage all applicants across your active jobs.
+        </p>
+            </div>
+        
+            {/* زر الرجوع */}
+           <Link
+          href="/companyjobs"
+          className="inline-flex items-center gap-2 text-sm font-medium bg-[#203947] text-white border  px-4 py-2 rounded-lg hover:bg-[#b30000] hover:text-white transition-colors duration-200 shadow-sm"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Jobs
+        </Link>
+          </div>
+        </div>
 
 
         
@@ -337,6 +370,8 @@ export default function AllCompanyApplicants() {
               applicant={applicant}
               onUpdateStatus={handleUpdateStatus}
               onViewProfile={setSelectedApplicant}
+              setSelectedToReject={setSelectedToReject}
+               setShowRejectModal={setShowRejectModal}
             />
           ))
         ) : (
@@ -383,6 +418,38 @@ export default function AllCompanyApplicants() {
     </div>
   </div>
 )}
+
+ {showRejectModal && selectedToReject && (
+  <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+      <h2 className="text-lg font-semibold text-gray-800 mb-2">Reject Applicant</h2>
+      <p className="text-sm text-gray-600 mb-4">
+        Are you sure you want to reject{" "}
+        <span className="font-medium text-[#b30000]">{selectedToReject.name || "this applicant"}</span>?
+      </p>
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setShowRejectModal(false)}
+          className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-full shadow-sm hover:bg-gray-200 hover:text-black transition"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={() => {
+               handleUpdateStatus(selectedToReject.jobId, selectedToReject.id, "rejected", selectedToReject.name || "The applicant");
+            setShowRejectModal(false);
+            setSelectedToReject(null);
+          }}
+          className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition cursor-pointer"
+        >
+          Reject
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
 
     </div>
