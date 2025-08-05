@@ -34,6 +34,10 @@ export const authOptions = {
             verificationStatus: userData?.verificationStatus,
             name: userData?.name || userCredential.user.displayName,
             role: userData?.role || "freelancer",
+            profileCompleted: userData?.profileCompleted || false,
+            profileUnderReview: userData?.profileUnderReview || false,
+            adminComment: userData?.adminComment || null,
+            adminActionDate: userData?.adminActionDate || null,
           };
         } catch (error) {
           let message = "Unknown error";
@@ -56,6 +60,10 @@ export const authOptions = {
       if (user) {
         token.role = user.role;
         token.verificationStatus = user.verificationStatus;
+        token.profileCompleted = user.profileCompleted;
+        token.profileUnderReview = user.profileUnderReview;
+        token.adminComment = user.adminComment;
+        token.adminActionDate = user.adminActionDate;
       }
       return token;
     },
@@ -64,6 +72,10 @@ export const authOptions = {
         session.user.id = token.sub;
         session.user.role = token.role;
         session.user.verificationStatus = token.verificationStatus;
+        session.user.profileCompleted = token.profileCompleted;
+        session.user.profileUnderReview = token.profileUnderReview;
+        session.user.adminComment = token.adminComment;
+        session.user.adminActionDate = token.adminActionDate;
       }
       return session;
     },

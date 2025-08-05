@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/select";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "@/config/firebase";
+import { auth, db, initializeFCM } from "@/config/firebase";
 import { toast } from "sonner";
-import { setUser } from "@/services/firebase";
-import { signIn } from "next-auth/react";
+import { setUser } from "@/services/userServices";
+import { signIn, getSession } from "next-auth/react";
 
 export default function RegisterForm() {
   const {
@@ -91,25 +91,35 @@ export default function RegisterForm() {
         role: data.role,
         nationalId: data.nationalId,
         verificationStatus: "Pending",
+        profileCompleted: false,
         createdAt: new Date().toISOString(),
       });
 
-      const signInResponse = await signIn("credentials", {
-        redirect: false,
-        email: data.email,
-        password: data.password,
-      });
+      // const signInResponse = await signIn("credentials", {
+      //   redirect: false,
+      //   email: data.email,
+      //   password: data.password,
+      // });
 
-      if (signInResponse?.error) {
-        throw new Error("Failed to sign in after registration");
-      }
+      // if (signInResponse?.error) {
+      //   throw new Error("Failed to sign in after registration");
+      // }
 
-      toast.success("Account created successfully");
-      if (data.role === "mentor") {
-        router.push("/mentorData");
-      } else {
-        router.push("/login");
-      }
+      // Wait for session to be updated
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Get updated session
+      const session = await getSession();
+
+      // if (!session?.user?.id) {
+      //   throw new Error("Session not updated properly");
+      // }
+
+      toast.success("Account created successfully! Please login to continue.");
+
+      // Redirect to pending page
+      router.push("/login");
+      // await initializeFCM(user.uid); // استدعاء initializeFCM بـ userId
     } catch (error) {
       let errorMessage = "Something went wrong. Please try again.";
       if (error.code === "auth/email-already-in-use") {

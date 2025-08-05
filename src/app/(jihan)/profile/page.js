@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import ProfileDropdown from "../ProfileDropdown/page";
-import CertificateSelect from "../CertificateSelect/Page"
+import CertificateSelect from "../CertificateSelect/Page";
 import { FiEdit } from "react-icons/fi";
 import {
   FaEnvelope,
@@ -18,7 +18,7 @@ export default function Profile() {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const [aboutValue, setAboutValue] = useState(
-    "Passionate web developer skilled in React, TailwindCSS and modern web technologies."
+    "Passionate web developer skilled in React, TailwindCSS and modern web technologies.",
   );
   const [educationValue, setEducationValue] = useState({
     university: "ITI",
@@ -59,7 +59,10 @@ export default function Profile() {
     },
   ]);
 
-  const [editingJob, setEditingJob] = useState({ tab: "completed", index: null });
+  const [editingJob, setEditingJob] = useState({
+    tab: "completed",
+    index: null,
+  });
 
   const trustedCertificates = [
     "ITI Graduation Certificate",
@@ -360,7 +363,6 @@ function WorkHistorySection({ completedJobs, inProgressJobs }) {
   );
 }
 
-
 function Modal(props) {
   const {
     type,
@@ -391,7 +393,8 @@ function Modal(props) {
   const [tempValue, setTempValue] = React.useState("");
 
   React.useEffect(() => {
-    if (type === "certificates") setTempValue(certificatesValue[0]?.title || "");
+    if (type === "certificates")
+      setTempValue(certificatesValue[0]?.title || "");
     else if (type === "links") setTempValue({ ...linksValue });
     else if (type === "languages") setTempValue(languagesValue.join(", "));
     else if (type === "education") setTempValue({ ...educationValue });
@@ -528,9 +531,7 @@ function Modal(props) {
                 min="1"
                 className="w-full border px-6 py-2 rounded text-right"
                 value={tempValue.replace("$", "").replace("/hr", "")}
-                onChange={(e) =>
-                  setTempValue(`$${e.target.value}/hr`)
-                }
+                onChange={(e) => setTempValue(`$${e.target.value}/hr`)}
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
@@ -673,6 +674,3 @@ function Modal(props) {
     </div>
   );
 }
-
-
-

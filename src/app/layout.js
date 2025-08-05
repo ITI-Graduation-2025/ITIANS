@@ -39,7 +39,9 @@ export default async function RootLayout({ children }) {
         <Toaster />
         {/* <AuthProvider> */}
         <NextProvider>
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <UserProvider>
+            <LayoutWrapper>{children}</LayoutWrapper>
+          </UserProvider>
         </NextProvider>
         {/* </AuthProvider> */}
       </body>

@@ -1,19 +1,19 @@
-// import { db, auth } from "@/config/firebase";
-// import {
-//   collection,
-//   doc,
-//   getDoc,
-//   getDocs,
-//   setDoc,
-//   addDoc,
-//   updateDoc,
-//   deleteDoc,
-//   serverTimestamp,
-//   onSnapshot,
-//   query,
-//   orderBy,
-//   where,
-// } from "firebase/firestore";
+import { db, auth } from "@/config/firebase";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+  where,
+} from "firebase/firestore";
 // import { getMessaging, getToken } from "firebase/messaging";
 
 // // --- User CRUD Operations ---
@@ -731,3 +731,14 @@
 //     throw error;
 //   }
 // };
+
+// get all jobs
+export const getAllJobs = async () => {
+  const jobsRef = collection(db, "jobs");
+  const q = query(jobsRef, orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};

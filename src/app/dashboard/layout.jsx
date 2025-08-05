@@ -1,13 +1,12 @@
 import { Inter } from "next/font/google";
-// import ""
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { SiteHeader } from "@/components/site-header";
 import NextProvider from "@/components/providers/nextProvider";
 import { UsersProvider } from "@/context/usersContext";
-import { getAllUsers } from "@/services/firebase";
-
+import { getAllUsers, getUser } from "@/services/userServices";
+import "./dasboardColors.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {

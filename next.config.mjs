@@ -93,9 +93,9 @@ messaging.onBackgroundMessage((payload) => {
   const filePath = join(process.cwd(), "public", "firebase-messaging-sw.js");
   try {
     await writeFile(filePath, workerContent, "utf8");
-    console.log("✅ تم إنشاء: public/firebase-messaging-sw.js");
+    console.log("✅  public/firebase-messaging-sw.js");
   } catch (error) {
-    console.error("❌ فشل في إنشاء ملف الـ Service Worker:", error);
+    console.error("❌ Service Worker:", error);
   }
 };
 

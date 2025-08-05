@@ -9,10 +9,12 @@ export const UserContext = createContext();
 export function UserProvider({ children, initialUser }) {
   const { data: session } = useSession();
   const [user, setUser] = useState(initialUser || null);
+  console.log(user, "user");
 
   const fetchUser = async () => {
     if (session?.user?.id) {
       const fetchedUser = await getUser(session.user.id);
+      console.log(fetchedUser, "fetchedUser");
       // تحويل createdAt لـ string باستخدام toISOString إذا كان Timestamp
       if (
         fetchedUser &&
@@ -38,5 +40,9 @@ export function UserProvider({ children, initialUser }) {
 }
 
 export function useUserContext() {
-  return useContext(UserContext);
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error("useUserContext must be used within a UserProvider");
+  }
+  return context;
 }

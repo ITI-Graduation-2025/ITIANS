@@ -62,6 +62,11 @@ export const getBookedSessionsSnapshot = async (mentorId, callback) => {
 };
 
 // --- Session CRUD Operations ---
+export async function getAllSessions() {
+  const snapshot = await getDocs(collection(db, "sessions"));
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+
 export async function getAvailableSessions(mentorId) {
   const q = query(
     collection(db, "sessions"),
@@ -176,6 +181,21 @@ export async function bookSession(sessionId, freelancerId, title) {
 
   await addDoc(collection(db, "notifications"), notification);
 }
+// get collection bookedSession
+export const getBookedSessionsForCommunity = async () => {
+  const q = query(collection(db, "bookedSessions"));
+  const snapshot = await getDocs(q);
+  const sessions = [];
+  for (const docSnap of snapshot.docs) {
+    const sessionData = { id: docSnap.id, ...docSnap.data() };
+    const mentorDoc = await getDoc(doc(db, "users", sessionData.mentorId));
+    sessionData.mentorName = mentorDoc.exists()
+      ? mentorDoc.data().name || "Mentor"
+      : "Mentor";
+    sessions.push(sessionData);
+  }
+  return sessions;
+};
 
 export const getAvailableSessionsForCommunity = async () => {
   const q = query(collection(db, "sessions"), where("isBooked", "==", false));
@@ -513,4 +533,11 @@ export const cancelSession = async (sessionId, mentorId, menteeId) => {
     console.error("Error cancelling session:", error);
     throw error;
   }
+};
+
+// get all collection sessionRequests
+
+export const getAllSessionRequests = async () => {
+  const snapshot = await getDocs(collection(db, "sessionRequests"));
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };

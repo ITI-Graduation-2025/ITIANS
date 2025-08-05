@@ -52,6 +52,14 @@ export const theme = {
         foreground: "hsl(var(--card-foreground))",
       },
     },
+    boxShadow: {
+      "custom-dark":
+        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+      "card-dark-mode":
+        "0px 10px 30px rgba(0, 0, 0, 0.5), 0px 5px 15px rgba(0, 0, 0, 0.25)",
+      "dashboard-card": "0 4px 12px rgba(0, 0, 0, 0.1)", // Light mode box shadow
+      "dashboard-card-dark": "0 4px 12px rgba(0, 0, 0, 0.3)", // Dark mode box shadow
+    },
     borderRadius: {
       lg: "var(--radius)",
       md: "calc(var(--radius) - 2px)",

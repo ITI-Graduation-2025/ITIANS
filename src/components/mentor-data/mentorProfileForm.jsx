@@ -9,8 +9,8 @@ import ProfessionalInfoStep from "./professionalInfoStep";
 import SpecializationStep from "./specializationStep";
 import BioLanguagesStep from "./bioLanguagesStep";
 import EducationReviewStep from "./educationReviewStep";
-import { setUser, updateUser } from "@/services/firebase";
-import { useRouter } from "next/navigation";
+import { getUser, setUser, updateUser } from "@/services/userServices";
+import { redirect, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useUserContext } from "@/context/userContext";
@@ -24,8 +24,18 @@ export default function MentorProfileForm({
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { data: session } = useSession();
-  const { refetchUser } = useUserContext();
+  const { data: session, update: updateSession } = useSession();
+  const { user } = useUserContext();
+  // console.log(session?.user, "session");
+  // console.log(refetchUser, "refetchUser");
+  // const mentor = getUser(user?.id);
+  // if (!mentor || mentor === "User not found") {
+  //   notFound(); // Show 404 page
+  // }
+  // if (!mentor?.profileUnderReview) {
+  //   redirect("/pending-review");
+  // }
+  // console.log(user, "user");
 
   const form = useForm({
     mode: "onChange",
@@ -136,16 +146,28 @@ export default function MentorProfileForm({
 
       const uid = session.user.id;
 
-      if (mode === "edit") {
-        await updateUser(uid, data);
-        await refetchUser(); // ✅ تحديث البيانات في الكونتكست
-        toast.success("Profile updated successfully");
-      } else {
-        await updateUser(uid, data);
-        toast.success("Profile created successfully");
-      }
+      const updateData = {
+        ...data,
+        profileUnderReview: true, // بدلاً من profileCompleted: true
+        profileCompleted: false,
+      };
 
-      router.push("/mentor");
+      if (mode === "edit") {
+        await updateUser(uid, updateData);
+        await refetchUser(); // Update context data
+        // Force refresh session to update immediately
+        await updateSession();
+        toast.success("Profile updated successfully");
+        router.push("/pending"); // Go to pending review after edit
+      } else {
+        await updateUser(uid, updateData);
+        // Force refresh session to update immediately
+        await updateSession();
+        toast.success(
+          "Profile submitted successfully! Please wait for admin review.",
+        );
+        router.push("/pending"); // Go to pending review after submission
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Failed to submit data");
