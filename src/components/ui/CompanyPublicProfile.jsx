@@ -686,51 +686,64 @@ export default function CompanyPublicProfile({ params }) {
                                 Copy Job Link
                             </button>
 
-                            <div className="flex justify-between items-center pt-4">
-                                {user && (() => {
-                                    const deadlinePassed =
-                                        selectedJob.deadline && selectedJob.deadline.toDate() < new Date();
+                           <div className="flex justify-between items-center pt-4 gap-3">
+    {user && (() => {
+        const deadlinePassed =
+            selectedJob.deadline && selectedJob.deadline.toDate() < new Date();
 
-                                    const isRejected = Array.isArray(selectedJob?.applicants) &&
-                                        selectedJob.applicants.some(
-                                            (applicant) =>
-                                                typeof applicant === "object" &&
-                                                applicant.userId === user.id &&
-                                                applicant.status?.toLowerCase() === "rejected"
-                                        );
+        const isPaused = selectedJob?.status?.toLowerCase() === "paused";
 
+        const isRejected = Array.isArray(selectedJob?.applicants) &&
+            selectedJob.applicants.some(
+                (applicant) =>
+                    typeof applicant === "object" &&
+                    applicant.userId === user.id &&
+                    applicant.status?.toLowerCase() === "rejected"
+            );
 
-                                    if (deadlinePassed) {
-                                        return <p className="text-red-500">Deadline has passed</p>;
-                                    }
+        const baseBtnClasses = "px-4 py-2 rounded-md text-white text-sm min-w-[120px] text-center";
 
-                                    return (
+        if (deadlinePassed) {
+            return (
+                <button disabled className={`${baseBtnClasses} bg-gray-400 cursor-not-allowed`}>
+                    Deadline Passed
+                </button>
+            );
+        }
 
-                                        <button
-                                            onClick={hasAlreadyApplied || isRejected ? undefined : handleApply}
-                                            disabled={hasAlreadyApplied || isRejected}
-                                            className={`mt-4 px-4 py-2 rounded-md text-white text-sm transition-all ${hasAlreadyApplied || isRejected
-                                                ? "bg-gray-400 cursor-not-allowed"
-                                                : "bg-[#8B0000] hover:bg-[#a30000]"
-                                                }`}
-                                        >
-                                            {isRejected
-                                                ||
-                                                hasAlreadyApplied
-                                                ? "Already Applied"
-                                                : "Apply Now"}
-                                        </button>
+        if (isPaused) {
+            return (
+                <button disabled className={`${baseBtnClasses} bg-orange-500 cursor-not-allowed`}>
+                    Job Paused
+                </button>
+            );
+        }
 
-                                    );
-                                })()}
+        return (
+            <button
+                onClick={hasAlreadyApplied || isRejected ? undefined : handleApply}
+                disabled={hasAlreadyApplied || isRejected}
+                className={`${baseBtnClasses} ${
+                    hasAlreadyApplied || isRejected
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-[#8B0000] hover:bg-[#a30000]"
+                }`}
+            >
+                {isRejected || hasAlreadyApplied
+                    ? "Already Applied"
+                    : "Apply Now"}
+            </button>
+        );
+    })()}
 
-                                <button
-                                    className="bg-[#203947] text-white px-4 py-2 rounded-md hover:bg-[#8B0000] text-sm transition-all"
-                                    onClick={() => setSelectedJob(null)}
-                                >
-                                    Close
-                                </button>
-                            </div>
+    <button
+        className="px-4 py-2 rounded-md text-white text-sm min-w-[120px] text-center bg-[#203947] hover:bg-[#8B0000] transition-all"
+        onClick={() => setSelectedJob(null)}
+    >
+        Close
+    </button>
+</div>
+
                         </div>
                     </div>
                 )}
