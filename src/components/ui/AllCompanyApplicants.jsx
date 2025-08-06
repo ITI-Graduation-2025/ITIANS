@@ -299,7 +299,7 @@ export default function AllCompanyApplicants() {
                     </Link>
         </div>
 
-        <div className="mb-6 border-b border-gray-300 pb-4">
+        <div className="mb-6  pb-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* العنوان والوصف */}
             <div>
@@ -308,9 +308,7 @@ export default function AllCompanyApplicants() {
                
                 <span className="text-xl md:text-xl font-semibold text-[#203947] ">All Job Applications</span>
               </h2>
-              <p className="text-sm text-gray-800 mt-1 font-[Poppins]">
-          Track and manage all applicants across your active jobs.
-        </p>
+              
             </div>
         
             {/* زر الرجوع */}

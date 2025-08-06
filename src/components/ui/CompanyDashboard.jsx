@@ -17,6 +17,7 @@ import {
   ClipboardCopy,
   Zap,
   Clock,
+  Users2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -84,14 +85,12 @@ export default function DashboardPage() {
           } else if (typeof applicant === "object" && applicant.userId) {
             total += 1;
 
-            // applied date fallback
             const appliedDate = applicant.appliedAt
               ? new Date(applicant.appliedAt)
               : job.createdAt?.toDate
                 ? job.createdAt.toDate()
                 : null;
 
-            // حساب الطلبات الجديدة هذا الأسبوع
             if (appliedDate) {
               if (appliedDate >= oneWeekAgo) {
                 newApplicationsThisWeek += 1;
@@ -100,7 +99,6 @@ export default function DashboardPage() {
               }
             }
 
-            // حساب التعيينات
             if (applicant.status?.toLowerCase() === "approved") {
               hires += 1;
 
@@ -145,9 +143,8 @@ export default function DashboardPage() {
   fetchApplications();
 }, [companyId]);
 
-
   if (status === "loading" || loading)
-    return <div className="p-6 animate-pulse text-gray-500">Loading dashboard...</div>;
+    return <DashboardSkeleton />;
 
   if (!companyId)
     return <div className="p-6 text-red-500">Please log in to view your dashboard.</div>;
@@ -157,29 +154,19 @@ export default function DashboardPage() {
 
   const navTabs = [
     { label: "Overview", href: "/dashboardCompany", icon: LayoutDashboard },
-    {
-      label: "My Jobs",
-      href: "/companyjobs",
-      icon: FileText,
-    },
-    {
-      label: "Applications",
-      href: "/Applicationjob",
-      icon: ClipboardCopy,
-      //badge: applicationStats.newThisWeek > 0 ? applicationStats.newThisWeek : null,
-    },
-    {
-      label: "CompanyProfile",
-      href: "/companyprofile",
-      icon: Building2,
-    },
+    { label: "My Jobs", href: "/companyjobs", icon: FileText },
+    { label: "Applications", href: "/AllCompanyApplicants", icon: Users2 },
+    { label: "CompanyProfile", href: "/companyprofile", icon: Building2 },
   ];
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
       <CompanyNavbar />
       <main className="p-6 max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Company Dashboard</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold text-[#b30000]">
+          {companyStats?.name} <span className="text-[#203947] text-2xl">Dashboard</span>
+        </h1>
+
         <p className="text-gray-600 mb-6">Manage your job postings and find the best ITI talent</p>
 
         {/* Tabs */}
@@ -188,11 +175,10 @@ export default function DashboardPage() {
             <Link
               key={href}
               href={href}
-              className={`relative px-4 py-2 flex items-center gap-1 font-medium ${
-                isActive(href)
-                  ? "text-red-600 border-b-2 border-red-500"
-                  : "text-gray-600 hover:text-red-600"
-              }`}
+              className={`relative px-4 py-2 flex items-center gap-1 font-medium ${isActive(href)
+                  ? "text-[#b30000] border-b-2 border-[#b30000]"
+                  : "text-[#203947] hover:text-[#b30000]"
+                }`}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -231,9 +217,9 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white shadow p-4 rounded">
              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-    <Clock className="text-red-600 w-5 h-5" />
-    Recent Activity
-  </h2>
+               <Clock className="text-red-600 w-5 h-5" />
+               Recent Activity
+             </h2>
             {recentActivities.length > 0 ? (
               <ul className="space-y-2 text-sm text-gray-700">
                 {recentActivities.map((activity, idx) => (
@@ -250,29 +236,42 @@ export default function DashboardPage() {
             )}
           </div>
 
-         <div
-  className="bg-white shadow-md rounded-lg p-5"
->
-  <div className="flex items-center gap-2 mb-4">
-    <Zap className="text-red-600 w-5 h-5" />
+          <div className="bg-white shadow-md rounded-lg p-6 flex flex-col items-center justify-center text-center">
+  {/* العنوان */}
+  <div className="flex items-center gap-2 mb-6">
+    <Zap className="text-red-600 w-6 h-6" />
     <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
   </div>
 
-  <div className="grid grid-cols-1 gap-3">
-    <Link href="/PostJob">
-      <button className="flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-red-600 border-red-300 bg-red-50/20 hover:bg-red-100 transition-colors duration-200">
-        <FilePlus className="w-4 h-4" />
-        Post New Job
-      </button>
-    </Link>
+  {/* الأزرار */}
+ <div className="flex flex-col gap-4 w-full">
+  {/* زر أساسي بتدرج */}
+  <Link href="/PostJob" className="w-full">
+    <button 
+      className="w-full flex items-center justify-center gap-3 px-6 py-4 
+                 rounded-xl font-semibold text-white text-base
+                 bg-gradient-to-r from-[#b30000] to-[#8B0000] 
+                 hover:shadow-lg hover:scale-[1.02] active:scale-95
+                 transition-all duration-300 relative overflow-hidden group">
+      <FilePlus className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
+      Post New Job
+    </button>
+  </Link>
 
-    <Link href="/Applicationjob">
-      <button className=" flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-red-600 border-red-300 bg-red-50/20 hover:bg-red-100 transition-colors duration-200">
-        <ClipboardCopy className="w-4 h-4" />
-        View Applicants
-      </button>
-    </Link>
-  </div>
+  {/* زر ثانوي (Outline + خلفية فاتحة) */}
+  <Link href="/AllCompanyApplicants" className="w-full">
+    <button 
+      className="w-full flex items-center justify-center gap-3 px-6 py-4 
+                 rounded-xl font-semibold text-[#b30000] text-base 
+                 border-2 border-[#b30000] bg-white
+                 hover:bg-[#f5f5f5] hover:shadow-md hover:scale-[1.02] active:scale-95
+                 transition-all duration-300 relative overflow-hidden group">
+      <ClipboardCopy className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
+      View Applicants
+    </button>
+  </Link>
+</div>
+
 </div>
 
         </div>
@@ -284,11 +283,11 @@ export default function DashboardPage() {
 function StatCard({ title, value, detail, trend, tooltip }) {
   return (
     <div
-      className="bg-white rounded-lg shadow p-4 w-full"
+      className="bg-white rounded-lg shadow p-4 w-full flex flex-col items-center justify-center text-center"
       title={tooltip || ""}
     >
-      <div className="text-sm font-medium text-gray-500">{title}</div>
-      <div className="text-2xl font-bold mt-1">{value ?? "N/A"}</div>
+      <div className="text-sm font-bold text-gray-900">{title}</div>
+      <div className="text-2xl text-[#b30000] font-medium mt-1">{value ?? "N/A"}</div>
       {detail && (
         <div className="flex items-center text-sm mt-2">
           {trend === "up" ? (
@@ -296,12 +295,15 @@ function StatCard({ title, value, detail, trend, tooltip }) {
           ) : (
             <ArrowRight className="w-4 h-4 text-gray-400 mr-1" />
           )}
-          <span className={`${trend === "up" ? "text-green-600" : "text-gray-500"}`}>{detail}</span>
+          <span className={`${trend === "up" ? "text-green-600" : "text-gray-500"}`}>
+            {detail}
+          </span>
         </div>
       )}
     </div>
   );
 }
+
 
 function Activity({ icon, text, detail }) {
   return (
@@ -326,6 +328,43 @@ function getActivityIcon(type) {
     default:
       return <FileText className="text-gray-400 w-4 h-4" />;
   }
+}
+
+/* --- Skeleton Component --- */
+function DashboardSkeleton() {
+  return (
+    <div className="p-6 max-w-7xl mx-auto animate-pulse">
+      <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+      <div className="flex gap-4 mb-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-8 bg-gray-200 rounded w-24"></div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white shadow p-4 rounded">
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white shadow p-4 rounded">
+          <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+          ))}
+        </div>
+        <div className="bg-white shadow p-4 rounded">
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="h-10 bg-gray-200 rounded w-full mb-4"></div>
+          <div className="h-10 bg-gray-200 rounded w-full"></div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 

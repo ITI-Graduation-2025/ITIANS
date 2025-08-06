@@ -297,7 +297,7 @@ const [selectedToReject, setSelectedToReject] = useState(null);
           </Link>
         </div>
 
-       <div className="mb-6 border-b border-gray-300 pb-4">
+       <div className="mb-6 pb-4">
   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     {/* العنوان والوصف */}
     <div>
@@ -306,9 +306,7 @@ const [selectedToReject, setSelectedToReject] = useState(null);
         <span className="text-[#b30000]">{jobTitle}</span>
         <span className="text-gray-700">Job Applications</span>
       </h2>
-      <p className="text-sm text-gray-800 mt-1">
-        Review and manage all applicants for this position.
-      </p>
+      
     </div>
 
     {/* زر الرجوع */}

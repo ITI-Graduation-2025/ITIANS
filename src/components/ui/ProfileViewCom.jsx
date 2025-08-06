@@ -43,6 +43,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { FaFacebook, FaLinkedin, FaGlobe, FaEnvelope } from "react-icons/fa";
 import NavbarProfileCom from "./NavbarProfileCom";
 import ReactPaginate from "react-paginate";
+import Link from "next/link";
 
 
 function formatRelativeTime(date) {
@@ -119,7 +120,7 @@ export default function ProfileViewCom() {
       const jobsQuery = query(
         collection(db, "jobs"),
         where("companyId", "==", companyId)
-        // يمكن إضافة orderBy("createdAt", "desc") هنا إذا كنت متأكدة أن جميع الوظائف تحتوي على createdAt
+        
       );
 
       const jobsSnapshot = await getDocs(jobsQuery);
@@ -129,7 +130,7 @@ export default function ProfileViewCom() {
           id: doc.id,
           ...doc.data(),
         }))
-        .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); // ← الترتيب من الأحدث إلى الأقدم
+        .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); 
 
       // إحصائيات الوظائف
       const activeProjects = jobsData.filter(
@@ -138,23 +139,27 @@ export default function ProfileViewCom() {
           job.status?.toLowerCase() === "open"
       ).length;
 
-      const totalHired = jobsData.reduce((sum, job) => {
-        if (!Array.isArray(job.applicants)) return sum;
-        const hiredCount = job.applicants.filter(
-          (applicant) => applicant.status === "Approved"
-        ).length;
-        return sum + hiredCount;
-      }, 0);
-
-      const successfulJobs = jobsData.filter(
-        (job) =>
-          Array.isArray(job.applicants) &&
-          job.applicants.some((applicant) => applicant.status === "Approved")
-      ).length;
-
       const totalJobs = jobsData.length;
-      const successRate =
-        totalJobs > 0 ? `${Math.round((successfulJobs / totalJobs) * 100)}%` : "N/A";
+
+let totalApplicants = 0;
+let totalHired = 0;
+
+jobsData.forEach((job) => {
+  if (!Array.isArray(job.applicants)) return;
+
+  totalApplicants += job.applicants.length;
+
+  totalHired += job.applicants.filter(
+    (applicant) => applicant?.status?.toLowerCase() === "approved"
+  ).length;
+});
+
+const successRate = totalApplicants > 0 
+  ? `${Math.round((totalHired / totalApplicants) * 100)}%`
+  : "0%";
+
+  console.log("Total Jobs:", totalJobs);
+
 
       setCompany({
         ...companyData,
@@ -303,49 +308,85 @@ export default function ProfileViewCom() {
             </span>
           </h2>
           <div className="space-y-4">
-            {currentJobs.map((job) => (
-              <div
-                key={job.id}
-                className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
-              >
-                 {/* View Details */}
-                <div>
-                  <h3 className="text-lg font-semibold">{job.title}</h3>
-                  <p className="text-sm text-gray-500">Type: {job.type}</p>
-                  <p className="text-sm text-gray-500">Level: {job.level}</p>
-                  <p className="text-sm text-gray-500">
-                    Applications: {job.applicants?.length || 0}
-                  </p>
-                  <button
-                    onClick={() => setSelectedJob(job)}
-                    className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
-                  >
-                    View Details
-                  </button>
-                </div>
-                <div className="text-xs text-gray-400">
-                  {job.createdAt?.toDate() && formatRelativeTime(job.createdAt.toDate())}
-                </div>
+  {jobs.length === 0 ? (
+   <div className="bg-white mt-20  rounded-xl p-8 text-center mr-20">
+  <div className="flex justify-center items-center mb-4">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-10 w-10 text-[#b30000]"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  </div>
+  <h3 className="text-xl font-semibold text-[#333] mb-2">
+    No Job Postings Yet
+  </h3>
+  <p className="text-sm text-gray-700 max-w-md mx-auto mb-6">
+    You haven’t posted any jobs yet. Start attracting top ITI talents by
+    creating your first job posting now.
+  </p>
+  <Link href="/PostJob"
+   className="px-6 py-2 rounded-full bg-gradient-to-r from-[#b30000] to-[#8B0000] text-white font-medium shadow hover:scale-105 transform transition">
+    Post Your First Job
+  </Link>
+</div>
 
-              </div>
-            ))}
-            <ReactPaginate
-              breakLabel="..."
-              nextLabel={<ChevronRight size={16} />}
-              previousLabel={<ChevronLeft size={16} />}
-              onPageChange={(e) => goToPage(e.selected + 1)}
-              pageRangeDisplayed={3}
-              marginPagesDisplayed={1}
-              pageCount={totalPages}
-              forcePage={currentPage - 1}
-              containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
-              pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-              activeClassName="bg-[#b30000] text-white border-[#b30000]"
-              previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-              nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-              breakClassName="px-2 py-1"
-            />
-          </div>
+  ) : (
+    currentJobs.map((job) => (
+      <div
+        key={job.id}
+        className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
+      >
+        {/* View Details */}
+        <div>
+          <h3 className="text-lg font-semibold">{job.title}</h3>
+          <p className="text-sm text-gray-500">Type: {job.type}</p>
+          <p className="text-sm text-gray-500">Level: {job.level}</p>
+          <p className="text-sm text-gray-500">
+            Applications: {job.applicants?.length || 0}
+          </p>
+          <button
+            onClick={() => setSelectedJob(job)}
+            className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
+          >
+            View Details
+          </button>
+        </div>
+        <div className="text-xs text-gray-400">
+          {job.createdAt?.toDate() && formatRelativeTime(job.createdAt.toDate())}
+        </div>
+      </div>
+    ))
+  )}
+
+  {jobs.length > 0 && (
+    <ReactPaginate
+      breakLabel="..."
+      nextLabel={<ChevronRight size={16} />}
+      previousLabel={<ChevronLeft size={16} />}
+      onPageChange={(e) => goToPage(e.selected + 1)}
+      pageRangeDisplayed={3}
+      marginPagesDisplayed={1}
+      pageCount={totalPages}
+      forcePage={currentPage - 1}
+      containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
+      pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+      activeClassName="bg-[#b30000] text-white border-[#b30000]"
+      previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+      nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+      breakClassName="px-2 py-1"
+    />
+  )}
+</div>
+
         </div>
         <div className="space-y-4">
           {/* Stats Section */}
@@ -363,7 +404,7 @@ export default function ProfileViewCom() {
               </li>
               <li className="flex gap-2 items-center">
                 <CheckCircle className="w-4 h-4 text-[#b30000]" />
-                {stats?.successRate ?? 0}% Success Rate
+                {stats?.successRate ?? 0} Success Rate
               </li>
             </ul>
           </div>
@@ -625,7 +666,7 @@ export default function ProfileViewCom() {
           )}
 
 
-mm
+
 
         </div>
       </div>

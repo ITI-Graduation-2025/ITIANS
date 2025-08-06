@@ -33,7 +33,7 @@ import { FaFacebook, FaLinkedin, FaGlobe, FaEnvelope } from "react-icons/fa";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { db } from "@/config/firebase";
-import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs, increment } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, collection, query, where, getDocs, increment, onSnapshot } from "firebase/firestore";
 
 import ReactPaginate from "react-paginate";
 import toast, { Toaster } from "react-hot-toast";
@@ -131,73 +131,85 @@ export default function CompanyPublicProfile({ params }) {
 
     {/*jobs */ }
     useEffect(() => {
-        async function fetchCompanyAndJobs() {
-            if (!companyId) return;
+        if (!companyId) return;
 
+        async function fetchCompanyAndJobs() {
             try {
                 const companyRef = doc(db, "users", companyId);
                 const companySnap = await getDoc(companyRef);
                 const companyData = companySnap.exists() ? companySnap.data() : {};
 
+               
                 const jobsQuery = query(
                     collection(db, "jobs"),
                     where("companyId", "==", companyId)
-
                 );
 
-                const jobsSnapshot = await getDocs(jobsQuery);
+                const unsubscribe = onSnapshot(jobsQuery, (snapshot) => {
+                    const jobsData = snapshot.docs
+                        .map((doc) => ({
+                            id: doc.id,
+                            ...doc.data(),
+                        }))
+                        .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
 
-                const jobsData = jobsSnapshot.docs
-                    .map((doc) => ({
-                        id: doc.id,
-                        ...doc.data(),
-                    }))
-                    .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
-
-                // إحصائيات الوظائف
-                const activeProjects = jobsData.filter(
-                    (job) =>
-                        job.status?.toLowerCase() === "active" ||
-                        job.status?.toLowerCase() === "open"
-                ).length;
-
-                const totalHired = jobsData.reduce((sum, job) => {
-                    if (!Array.isArray(job.applicants)) return sum;
-                    const hiredCount = job.applicants.filter(
-                        (applicant) => applicant.status === "Approved"
+                    // إحصائيات الوظائف
+                    const activeProjects = jobsData.filter(
+                        (job) =>
+                            job.status?.toLowerCase() === "active" ||
+                            job.status?.toLowerCase() === "open"
                     ).length;
-                    return sum + hiredCount;
-                }, 0);
 
-                const successfulJobs = jobsData.filter(
-                    (job) =>
-                        Array.isArray(job.applicants) &&
-                        job.applicants.some((applicant) => applicant.status === "Approved")
-                ).length;
+                    const totalJobs = jobsData.length;
 
-                const totalJobs = jobsData.length;
-                const successRate =
-                    totalJobs > 0 ? `${Math.round((successfulJobs / totalJobs) * 100)}%` : "N/A";
+                    let totalApplicants = 0;
+                    let totalHired = 0;
 
-                setCompany({
-                    ...companyData,
-                    stats: {
-                        activeProjects,
-                        totalHired,
-                        successRate,
-                    },
+                    jobsData.forEach((job) => {
+                        if (!Array.isArray(job.applicants)) return;
+
+                        totalApplicants += job.applicants.length;
+
+                        totalHired += job.applicants.filter(
+                            (applicant) => applicant?.status?.toLowerCase() === "approved"
+                        ).length;
+                    });
+
+                    const successRate = totalApplicants > 0
+                        ? `${Math.round((totalHired / totalApplicants) * 100)}%`
+                        : "0%";
+
+                    console.log("Total Jobs:", totalJobs);
+
+                    setCompany({
+                        ...companyData,
+                        stats: {
+                            activeProjects,
+                            totalHired,
+                            successRate,
+                        },
+                    });
+
+                    setJobs(jobsData);
+                    setLoading(false);
                 });
 
-                setJobs(jobsData);
-                setLoading(false);
+
+                return unsubscribe;
+
             } catch (error) {
                 console.error("Error fetching company and jobs:", error);
                 toast.error("Failed to load company data.");
             }
         }
 
-        fetchCompanyAndJobs();
+        const unsubscribeFn = fetchCompanyAndJobs();
+
+        return () => {
+            if (typeof unsubscribeFn === "function") unsubscribeFn();
+        };
     }, [companyId]);
+
 
 
     const goToPage = (pageNumber) => {
@@ -268,9 +280,10 @@ export default function CompanyPublicProfile({ params }) {
 
     {/*loading  */ }
 
-    if (loading) return <p className="text-center py-8">جارٍ التحميل...</p>;
-    if (!company) return <p className="text-center py-8">لم يتم العثور على الشركة.</p>;
-    if (company.role !== "company") return <div className="text-center py-8">هذا الحساب ليس شركة</div>;
+    if (loading) return <p className="text-center py-8">Loading...</p>;
+    if (!company) return <p className="text-center py-8">Company not found.</p>;
+    if (company.role !== "company") return <div className="text-center py-8">This account is not a company.</div>;
+
 
     const {
         logo,
@@ -360,49 +373,71 @@ export default function CompanyPublicProfile({ params }) {
                         </span>
                     </h2>
                     <div className="space-y-4">
-                        {currentJobs.map((job) => (
-                            <div
-                                key={job.id}
-                                onClick={() => setSelectedJob(job)}
-                                className="bg-white border border-gray-200 shadow-sm rounded p-4 flex justify-between items-start cursor-pointer hover:bg-gray-50"
-                            >
-                                <div>
-                                    <h3 className="text-lg font-semibold">{job.title}</h3>
-                                    <p className="text-sm text-gray-500">Type: {job.type}</p>
-                                    <p className="text-sm text-gray-500">Level: {job.level}</p>
-                                    <p className="text-sm text-gray-500">Applications: {job.applicants?.length || 0}</p>
+                        {currentJobs.length > 0 ? (
+                            currentJobs.map((job) => (
+                                <div
+                                    key={job.id}
+                                    onClick={() => setSelectedJob(job)}
+                                    className="bg-white border border-gray-200 shadow-sm rounded p-4 flex justify-between items-start cursor-pointer hover:bg-gray-50"
+                                >
+                                    <div>
+                                        <h3 className="text-lg font-semibold">{job.title}</h3>
+                                        <p className="text-sm text-gray-500">Type: {job.type}</p>
+                                        <p className="text-sm text-gray-500">Level: {job.level}</p>
+                                        <p className="text-sm text-gray-500">
+                                            Applications: {job.applicants?.length || 0}
+                                        </p>
 
-                                    <button
-                                        onClick={() => setSelectedJob(job)}
-                                        className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
-                                    >
-                                        View Details
-                                    </button>
+                                        <button
+                                            onClick={() => setSelectedJob(job)}
+                                            className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
+                                        >
+                                            View Details
+                                        </button>
+                                    </div>
+
+                                    <div className="text-xs text-gray-400">
+                                        {job.createdAt?.toDate && formatRelativeTime(job.createdAt.toDate())}
+                                    </div>
                                 </div>
-
-
-                                <div className="text-xs text-gray-400">
-                                    {job.createdAt?.toDate && formatRelativeTime(job.createdAt.toDate())}
+                            ))
+                        ) : (
+                            <div className="bg-white mt-20 mr-20  rounded-xl p-8 text-center ">
+                                <div className="flex justify-center mb-3">
+                                    <Briefcase className="w-10 h-10 text-[#b30000]" />
                                 </div>
+                                <h3 className="text-xl font-bold text-[#333] mb-2">
+                                    No Job Postings Yet
+                                </h3>
+                                <p className="text-sm text-gray-700 max-w-md mx-auto mb-4">
+                                    This company hasn’t posted any jobs yet.
+                                    <br />Check back later for new opportunities!
+                                </p>
+
                             </div>
-                        ))}
-                        <ReactPaginate
-                            breakLabel="..."
-                            nextLabel={<ChevronRight size={16} />}
-                            previousLabel={<ChevronLeft size={16} />}
-                            onPageChange={(e) => goToPage(e.selected + 1)}
-                            pageRangeDisplayed={3}
-                            marginPagesDisplayed={1}
-                            pageCount={totalPages}
-                            forcePage={currentPage - 1}
-                            containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
-                            pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-                            activeClassName="bg-[#b30000] text-white border-[#b30000]"
-                            previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-                            nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-                            breakClassName="px-2 py-1"
-                        />
+                        )}
+
+                        {/* Pagination should only appear if there are jobs */}
+                        {currentJobs.length > 0 && (
+                            <ReactPaginate
+                                breakLabel="..."
+                                nextLabel={<ChevronRight size={16} />}
+                                previousLabel={<ChevronLeft size={16} />}
+                                onPageChange={(e) => goToPage(e.selected + 1)}
+                                pageRangeDisplayed={3}
+                                marginPagesDisplayed={1}
+                                pageCount={totalPages}
+                                forcePage={currentPage - 1}
+                                containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
+                                pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                                activeClassName="bg-[#b30000] text-white border-[#b30000]"
+                                previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                                nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                                breakClassName="px-2 py-1"
+                            />
+                        )}
                     </div>
+
                 </div>
 
                 {/* Right - Sidebar */}
@@ -421,7 +456,7 @@ export default function CompanyPublicProfile({ params }) {
                             </li>
                             <li className="flex gap-2 items-center">
                                 <CheckCircle className="w-4 h-4 text-[#b30000]" />
-                                {stats?.successRate ?? 0}% Success Rate
+                                {stats?.successRate ?? 0} Success Rate
                             </li>
                         </ul>
                     </div>
