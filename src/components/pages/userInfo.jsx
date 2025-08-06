@@ -96,7 +96,7 @@ export default function UserInfo() {
       {/* Notification Bell */}
       <div className="relative">
         <Bell
-          className="w-6 h-6 text-white cursor-pointer hover:text-[#E57373] transition-colors"
+          className="w-6 h-6 text-gray cursor-pointer hover:text-[#E57373] transition-colors"
           onClick={() => setIsNotificationOpen(!isNotificationOpen)}
         />
         {unreadCount > 0 && (
