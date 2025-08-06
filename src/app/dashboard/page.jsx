@@ -338,7 +338,7 @@ export default function Dashboard() {
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
           >
             <Button asChild>
-              <Link href="/analytics">View Detailed Analytics</Link>
+              <Link href="/dashboard/analytics">View Detailed Analytics</Link>
             </Button>
           </motion.div>
         </motion.div>
