@@ -117,11 +117,11 @@ export default function CommunityPage() {
         </div>
       )}
 
-      <CommunityHeader
+      {/* <CommunityHeader
         search={search}
         setSearch={setSearch}
         currentUser={currentUser}
-      />
+      /> */}
 
       <main className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
         <CommunitySidebar currentUser={currentUser} posts={posts} companies={filteredCompanies} />

@@ -79,7 +79,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
 
   return (
     <div className="min-h-screen font-sans bg-gray-50">
-      <Header profileImage={profileImage} fullName={fullName} email={email} />
+      {/* <Header profileImage={profileImage} fullName={fullName} email={email} /> */}
       <div className="h-48 bg-gradient-to-r from-[#B71C1C] to-red-300" />
       <main className="-mt-20 max-w-3xl mx-auto px-4 space-y-8">
         <PersonalInfo

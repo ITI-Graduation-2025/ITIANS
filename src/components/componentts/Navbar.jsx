@@ -196,9 +196,9 @@ export default function Navbar() {
             alt="ITIANS Logo"
             className="h-16 w-16 rounded-full"
           />
-          <span className="text-2xl font-bold tracking-tight text-[var(--primary)]">
+          {/* <span className="text-2xl font-bold tracking-tight text-[var(--primary)]">
             ITIANS
-          </span>
+          </span> */}
         </Link>
 
         {/* Desktop View */}

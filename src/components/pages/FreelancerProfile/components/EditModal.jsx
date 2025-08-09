@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useUserContext } from "@/context/userContext";
 import { updateUser } from "@/services/userServices";
 import { upload } from "@/utils/upload";
+import { useEffect, useRef, useState } from "react";
+import { FiTrash2, FiUpload, FiX } from "react-icons/fi";
 import { toast } from "sonner";
-import { FiX, FiUpload, FiTrash2 } from "react-icons/fi";
 
-export const EditModal = ({ type, onClose, user, refetchUser }) => {
+export const EditModal = ({ type, onClose, refetchUser }) => {
   const [tempValue, setTempValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [changed, setChanged] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const { user , setUser} = useUserContext();
   const fileInputRef = useRef();
 
   useEffect(() => {
@@ -52,6 +54,9 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
 
       // Upload to Cloudinary using the upload function
       const imageUrl = await upload(e);
+      setUser({
+        ...user, profileImage: imageUrl
+      })
       setTempValue(imageUrl);
       toast.success("Image uploaded successfully!");
     } catch (err) {
@@ -116,14 +121,18 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
         <h2 className="text-2xl font-bold text-[#B71C1C] mb-6 capitalize tracking-wide text-center">
           Edit {type === "profileImage" ? "Profile Image" : type}
         </h2>
-        
+
         {type === "profileImage" && (
           <div className="space-y-4">
             <div className="flex flex-col items-center space-y-4">
               {/* Current/Preview Image */}
               <div className="relative">
                 <img
-                  src={imagePreview || user.profileImage || "https://i.pravatar.cc/100?img=5"}
+                  src={
+                    imagePreview ||
+                    user.profileImage ||
+                    "https://i.pravatar.cc/100?img=5"
+                  }
                   alt="Profile"
                   className="w-32 h-32 rounded-full border-4 border-[#B71C1C] shadow-lg object-cover"
                 />
@@ -133,7 +142,7 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
                   </div>
                 )}
               </div>
-              
+
               {/* Upload Controls */}
               <div className="flex gap-2">
                 <input
@@ -163,7 +172,7 @@ export const EditModal = ({ type, onClose, user, refetchUser }) => {
                   </button>
                 )}
               </div>
-              
+
               <p className="text-sm text-gray-500 text-center">
                 Supported formats: JPG, PNG, GIF. Max size: 5MB
               </p>
