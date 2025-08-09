@@ -1,9 +1,9 @@
 import NextProvider from "@/components/providers/nextProvider";
 import { UsersProvider } from "@/context/usersContext";
-import { AuthProvider } from "@/context/AuthContext";
+// import { AuthProvider } from "@/context/AuthContext";
 // import { getAllUsers, getUser } from "@/services/firebase";
-import { authOptions } from "@/lib/nextAuth";
-import { getServerSession } from "next-auth";
+// import { authOptions } from "@/lib/nextAuth";
+// import { getServerSession } from "next-auth";
 import { UserProvider } from "@/context/userContext";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";

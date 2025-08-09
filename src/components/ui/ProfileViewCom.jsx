@@ -5,80 +5,231 @@ import {
   MapPin,
   Users,
   Briefcase,
+  TrendingUp,
+  DollarSign,
+  Calendar,
+  Eye,
+  BadgeCheck,
+  ListChecks,
   Clock,
   CheckCircle,
   Mail,
   Linkedin,
   Globe,
+  MessageCircle,
+  ClipboardCopy,
+  Phone,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  Hand,
+  ChevronLeft,
+
 } from "lucide-react";
+
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "@/config/firebase";
+import toast, { Toaster } from "react-hot-toast";
+import { FaFacebook, FaLinkedin, FaGlobe, FaEnvelope } from "react-icons/fa";
+import NavbarProfileCom from "./NavbarProfileCom";
+import ReactPaginate from "react-paginate";
+import Link from "next/link";
 
+
+function formatRelativeTime(date) {
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return diffMin === 1 ? "1 minute ago" : `${diffMin} minutes ago`;
+  if (diffHr < 24) return diffHr === 1 ? "1 hour ago" : `${diffHr} hours ago`;
+  if (diffDay === 1) return "Yesterday";
+  return `${diffDay} days ago`;
+}
+const timestamp = new Date("2025-07-31T20:00:00Z");
+console.log(formatRelativeTime(timestamp));
+  {/* هنا عدلنا export,const */}
 export default function ProfileViewCom() {
-  const jobs = [
-    {
-      title: "Senior React Developer",
-      rate: "$75-100/hr",
-      duration: "3-6 months",
-      proposals: 12,
-      posted: "2 days ago",
-      tags: ["JavaScript", "React", "Frontend"],
-    },
-    {
-      title: "Mobile App Developer (Flutter)",
-      rate: "$50-70/hr",
-      duration: "2-4 months",
-      proposals: 9,
-      posted: "5 days ago",
-      tags: ["Dart", "Flutter", "Mobile"],
-    },
-    {
-      title: "DevOps Engineer",
-      rate: "$80-120/hr",
-      duration: "1-3 months",
-      proposals: 13,
-      posted: "1 week ago",
-      tags: ["AWS", "Kubernetes", "Automation"],
-    },
-    {
-      title: "UI/UX Designer",
-      rate: "$50-70/hr",
-      duration: "1-2 months",
-      proposals: 22,
-      posted: "3 days ago",
-      tags: ["Adobe XD", "Figma", "Prototyping"],
-    },
-  ];
+  const { data: session } = useSession();
+  const companyId = session?.user?.id;
+  
+  const user = session?.user;
 
-  const reviews = [
-    {
-      name: "Sarah Chen",
-      role: "Full Stack Developer",
-      comment:
-        "Excellent company to work with! Clear requirements, timely payments, and great communication throughout the project. The team is very professional and supportive.",
-      project: "E-commerce Platform Development",
-      posted: "2 weeks ago",
-    },
-    {
-      name: "Marcus Rodriguez",
-      role: "Mobile Developer",
-      comment:
-        "TechCore has been amazing to work with. They provided detailed specifications and were always available for questions. Highly recommend!",
-      project: "iOS App Development",
-      posted: "1 month ago",
-    },
-    {
-      name: "Emma Thompson",
-      role: "UI/UX Designer",
-      comment:
-        "Great experience working on their design project. The feedback was constructive and the team appreciated creative input. Would work with them again.",
-      project: "Website Redesign",
-      posted: "6 months ago",
-    },
-  ];
+  
+
+  const [company, setCompany] = useState(null);
+  const [jobs, setJobs] = useState([]);
+  const [showComments, setShowComments] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const jobsPerPage = 3;
+
+
+
+
+  const {
+    logo,
+    name,
+    location,
+    rating,
+    reviewsCount,
+    description,
+    services,
+    technologies,
+    website,
+    email,
+    linkedin,
+    stats = {},
+    industry,
+    founded,
+    phone,
+    facebook,
+  } = company || {};
+
+
+  const indexOfLastJob = currentPage * jobsPerPage;
+  const indexOfFirstJob = indexOfLastJob - jobsPerPage;
+  const currentJobs = jobs.slice(indexOfFirstJob, indexOfLastJob);
+  const totalPages = Math.ceil(jobs.length / jobsPerPage);
+
+
+ useEffect(() => {
+  async function fetchCompanyAndJobs() {
+    if (!companyId) return;
+
+    try {
+      const companyRef = doc(db, "users", companyId);
+      const companySnap = await getDoc(companyRef);
+      const companyData = companySnap.exists() ? companySnap.data() : {};
+
+      const jobsQuery = query(
+        collection(db, "jobs"),
+        where("companyId", "==", companyId)
+        
+      );
+
+      const jobsSnapshot = await getDocs(jobsQuery);
+
+      const jobsData = jobsSnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); 
+
+      // إحصائيات الوظائف
+      const activeProjects = jobsData.filter(
+        (job) =>
+          job.status?.toLowerCase() === "active" ||
+          job.status?.toLowerCase() === "open"
+      ).length;
+
+      const totalJobs = jobsData.length;
+
+let totalApplicants = 0;
+let totalHired = 0;
+
+jobsData.forEach((job) => {
+  if (!Array.isArray(job.applicants)) return;
+
+  totalApplicants += job.applicants.length;
+
+  totalHired += job.applicants.filter(
+    (applicant) => applicant?.status?.toLowerCase() === "approved"
+  ).length;
+});
+
+const successRate = totalApplicants > 0 
+  ? `${Math.round((totalHired / totalApplicants) * 100)}%`
+  : "0%";
+
+  console.log("Total Jobs:", totalJobs);
+
+
+      setCompany({
+        ...companyData,
+        stats: {
+          activeProjects,
+          totalHired,
+          successRate,
+        },
+      });
+
+      setJobs(jobsData);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching company and jobs:", error);
+      toast.error("Failed to load company data.");
+    }
+  }
+
+  fetchCompanyAndJobs();
+}, [companyId]);
+
+
+  
+
+  const goToPage = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  async function handleApply() {
+  if (!user?.id) {
+    toast.error("You must be logged in to apply.");
+    return;
+  }
+
+  const hasAlreadyApplied = selectedJob?.applicants?.some(applicant =>
+    typeof applicant === "string"
+      ? applicant === user?.id
+      : applicant?.userId === user?.id
+  );
+
+  if (hasAlreadyApplied) {
+    toast.error("You have already applied to this job.");
+    return;
+  }
+
+  try {
+    const jobRef = doc(db, "jobs", selectedJob.id);
+
+    await updateDoc(jobRef, {
+      applicants: arrayUnion({
+        userId: user.id,
+        status: "pending",
+        appliedAt: new Date().toISOString(),
+      }),
+    });
+
+    toast.success("Application submitted successfully!");
+  } catch (error) {
+    console.error("Application error:", error);
+    toast.error("Something went wrong. Please try again.");
+  }
+}
+
+
+
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Header */}
+    <main className="min-h-screen bg-[#f9f9f9] text-[#333]">
+      <NavbarProfileCom />
+
       <div
         className="text-white p-6 bg-cover bg-center"
         style={{
@@ -89,173 +240,445 @@ export default function ProfileViewCom() {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex gap-4 items-center">
             <Image
-              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTkpKMiM5cKQVwbj6CZVRhg7FspTTypVjt8Nw&s"
-              alt="TechCore Logo"
+              src={logo || "/default-logo.png"}
+              alt={`${name || "Company"} Logo`}
               width={48}
               height={48}
               className="rounded-md shadow bg-white"
             />
             <div>
-              <h1 className="text-2xl font-bold">TechCore Solutions</h1>
-              <p>Leading Digital Innovation Partner</p>
-              <div className="flex space-x-2 text-sm mt-1 items-center">
-                <MapPin className="w-4 h-4" /> San Francisco, CA
-                <span>• Enterprise • 250+ employees • Founded 2019</span>
+              <h1 className="text-2xl font-bold ">{name}</h1>
+
+
+              <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
+                {industry && (
+                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+
+                    <Briefcase className="w-4 h-4 text-[#8B0000]" />
+                    <span>{industry}</span>
+                  </div>
+                )}
+                {founded && (
+                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+
+                    <Calendar className="w-4 h-4 text-[#8B0000]" />
+                    <span>Founded: {founded}</span>
+                  </div>
+                )}
+                {location && (
+                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+
+                    <MapPin className="w-4 h-4 text-[#8B0000]" />
+                    <span>{location}</span>
+                  </div>
+                )}
+                {phone && (
+                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+
+                    <Phone className="w-4 h-4 text-[#8B0000]" />
+                    <span>{phone}</span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
 
+          </div>
           <div className="text-right">
             <p className="flex items-center justify-end gap-1">
-              <Star className="w-4 h-4 text-yellow-300" /> 4.9
+              <Star className="w-4 h-4 text-yellow-300" /> {rating}
             </p>
-            <p className="text-sm">127 reviews</p>
-            <button className="mt-2 px-4 py-1 bg-white text-blue-700 rounded shadow">
-              Follow Company
-            </button>
+            <p className="text-sm">{reviewsCount} reviews</p>
+            {session?.user?.id !== companyId && (
+              <button className="mt-2 px-4 py-1 bg-white text-[#b30000] border border-[#b30000] rounded shadow hover:bg-[#b30000] hover:text-white transition">
+                Follow Company
+              </button>
+            )}
           </div>
         </div>
       </div>
 
+
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-        {/* Jobs */}
         <div className="md:col-span-2">
           <h2 className="text-xl font-semibold mb-2">
-            Active Job Postings{" "}
-            <span className="text-sm text-gray-500">(4 open positions)</span>
+            Active Job Postings {" "}
+            <span className="text-sm text-gray-500">
+              ({jobs.filter(job => job.status?.toLowerCase() === "active" || job.status?.toLowerCase() === "open").length} open positions)
+
+            </span>
           </h2>
-          <div className="space-y-2">
-            {jobs.map((job, idx) => (
-              <div key={idx} className="bg-white shadow rounded p-3">
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="font-medium">{job.title}</h3>
-                    <p className="text-sm text-gray-600 flex gap-2">
-                      {job.rate} • {job.duration} • {job.proposals} proposals
-                    </p>
-                    <div className="space-x-2 mt-1">
-                      {job.tags.map((tag) => (
+          <div className="space-y-4">
+  {jobs.length === 0 ? (
+   <div className="bg-white mt-20  rounded-xl p-8 text-center mr-20">
+  <div className="flex justify-center items-center mb-4">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-10 w-10 text-[#b30000]"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  </div>
+  <h3 className="text-xl font-semibold text-[#333] mb-2">
+    No Job Postings Yet
+  </h3>
+  <p className="text-sm text-gray-700 max-w-md mx-auto mb-6">
+    You haven’t posted any jobs yet. Start attracting top ITI talents by
+    creating your first job posting now.
+  </p>
+  <Link href="/PostJob"
+   className="px-6 py-2 rounded-full bg-gradient-to-r from-[#b30000] to-[#8B0000] text-white font-medium shadow hover:scale-105 transform transition">
+    Post Your First Job
+  </Link>
+</div>
+
+  ) : (
+    currentJobs.map((job) => (
+      <div
+        key={job.id}
+        className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
+      >
+        {/* View Details */}
+        <div>
+          <h3 className="text-lg font-semibold">{job.title}</h3>
+          <p className="text-sm text-gray-500">Type: {job.type}</p>
+          <p className="text-sm text-gray-500">Level: {job.level}</p>
+          <p className="text-sm text-gray-500">
+            Applications: {job.applicants?.length || 0}
+          </p>
+          <button
+            onClick={() => setSelectedJob(job)}
+            className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
+          >
+            View Details
+          </button>
+        </div>
+        <div className="text-xs text-gray-400">
+          {job.createdAt?.toDate() && formatRelativeTime(job.createdAt.toDate())}
+        </div>
+      </div>
+    ))
+  )}
+
+  {jobs.length > 0 && (
+    <ReactPaginate
+      breakLabel="..."
+      nextLabel={<ChevronRight size={16} />}
+      previousLabel={<ChevronLeft size={16} />}
+      onPageChange={(e) => goToPage(e.selected + 1)}
+      pageRangeDisplayed={3}
+      marginPagesDisplayed={1}
+      pageCount={totalPages}
+      forcePage={currentPage - 1}
+      containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
+      pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+      activeClassName="bg-[#b30000] text-white border-[#b30000]"
+      previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+      nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+      breakClassName="px-2 py-1"
+    />
+  )}
+</div>
+
+        </div>
+        <div className="space-y-4">
+          {/* Stats Section */}
+          <div className="bg-white shadow rounded p-3">
+            <h2 className="font-semibold mb-2 text-[#203947]">
+              Company Statistics</h2>
+            <ul className="text-sm mt-2 space-y-1 text-[#333]">
+              <li className="flex gap-2 items-center">
+                <Briefcase className="w-4 h-4 text-[#b30000]" />
+                {stats?.activeProjects ?? 0} Active Jobs
+              </li>
+              <li className="flex gap-2 items-center">
+                <Users className="w-4 h-4 text-[#b30000]" />
+                {stats?.totalHired ?? 0}+ Total Hired
+              </li>
+              <li className="flex gap-2 items-center">
+                <CheckCircle className="w-4 h-4 text-[#b30000]" />
+                {stats?.successRate ?? 0} Success Rate
+              </li>
+            </ul>
+          </div>
+
+          {/* About Section */}
+          <div className="bg-white shadow rounded p-3">
+            <h2 className="font-semibold mb-2 text-[#203947]">
+              About {name}</h2>
+            <p className="text-sm mt-1 text-[#333]">
+              {description || "No description provided."}
+            </p>
+          </div>
+
+          {/* Core Services */}
+          <div className="bg-white shadow rounded p-3">
+            <h2 className="font-semibold mb-2 text-[#203947]">
+              Core Services</h2>
+            {services?.length > 0 ? (
+              <ul className="text-sm mt-1 space-y-1 columns-2 text-[#333]">
+                {services.map((service) => (
+                  <li key={service}>{service}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500 mt-1">No core services listed.</p>
+            )}
+          </div>
+
+          {/* Technologies */}
+          <div className="bg-white shadow rounded p-3">
+            <h2 className="font-semibold mb-2 text-[#203947]">
+              Technologies We Use</h2>
+            {technologies?.length > 0 ? (
+              <div className="grid grid-cols-3 gap-2 text-sm text-[#333]">
+                {technologies.map((tech) => (
+                  <div
+                    key={tech}
+                    className="px-2 py-1 bg-gray-100 rounded text-center"
+                  >
+                    {tech}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No technologies listed.</p>
+            )}
+            
+          </div>
+
+          {/* Contact Info */}
+          <div className="bg-white shadow rounded p-3">
+            <h2 className="font-semibold mb-2 text-[#203947]">
+              Contact Information</h2>
+            <div className="text-sm mt-2 space-y-2 text-[#333]">
+              {website ? (
+                <p>
+                  <FaGlobe className="inline w-4 h-4 mr-1 text-[#b30000]" />
+                  <a href={website} target="_blank" rel="noopener noreferrer" className="hover:underline text-[#203947]">
+                    {website}
+                  </a>
+                </p>
+              ) : (
+                <p className="text-gray-500">No website provided.</p>
+              )}
+
+              {email ? (
+                <p>
+                  <FaEnvelope className="inline w-4 h-4 mr-1 text-[#b30000]" />
+                  <a href={`mailto:${email}`} className="hover:underline text-[#203947]">
+                    {email}
+                  </a>
+                </p>
+              ) : (
+                <p className="text-gray-500">No email provided.</p>
+              )}
+
+              {linkedin ? (
+                <p>
+                  <FaLinkedin className="inline w-4 h-4 mr-1 text-[#b30000]" />
+                  <a href={linkedin} target="_blank" rel="noopener noreferrer" className="hover:underline text-[#203947]">
+                    {linkedin}
+                  </a>
+                </p>
+              ) : (
+                <p className="text-gray-500">No LinkedIn profile provided.</p>
+              )}
+
+              {facebook ? (
+                <p>
+                  <FaFacebook className="inline w-4 h-4 mr-1 text-[#b30000]" />
+                  <a href={facebook} target="_blank" rel="noopener noreferrer" className="hover:underline text-[#203947]">
+                    {facebook}
+                  </a>
+                </p>
+              ) : (
+                <p className="text-gray-500">No Facebook page provided.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {selectedJob && (
+            <div className="fixed inset-0 z-50 bg-black/40 flex justify-center items-center px-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative overflow-y-auto max-h-[90vh] space-y-6">
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    style: {
+                      background: "#fff",
+                      color: "#203947",
+                      border: "1px solid #ddd",
+                      padding: "12px 16px",
+                    },
+                  }}
+                />
+
+                {/* Job Title */}
+                <h2 className="text-2xl font-bold mb-4 text-[#203947]">{selectedJob.title}</h2>
+
+                {/* Job Details */}
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+                  <p><Briefcase className="inline w-4 h-4 mr-1   text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Type:</span> {selectedJob.type}</p>
+                  <p><BadgeCheck className="inline w-4 h-4 mr-1  text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Level:</span> {selectedJob.level}</p>
+                  <p><DollarSign className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Salary:</span> {selectedJob.salary}</p>
+                  <p><MapPin className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Location:</span> {selectedJob.location}</p>
+                  <p><Calendar className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Deadline:</span> {selectedJob.deadline?.toDate().toLocaleDateString()}</p>
+                </div>
+
+
+                {/* Description */}
+                {selectedJob.description && (
+                  <section className="space-y-2">
+                    <h3 className="text-md font-semibold text-[#8B0000] flex items-center gap-2">
+                      <FileText className="w-4 h-4" /> Description
+                    </h3>
+                    <p className="text-gray-700 text-sm leading-relaxed">{selectedJob.description}</p>
+                  </section>
+                )}
+
+                {/* Requirements */}
+                {selectedJob.requirements && (
+                  <section className="space-y-2">
+                    <h3 className="text-md font-semibold text-[#8B0000] flex items-center gap-2">
+                      <ListChecks className="w-4 h-4" /> Requirements
+                    </h3>
+                    <p className="text-gray-700 text-sm leading-relaxed">{selectedJob.requirements}</p>
+                  </section>
+                )}
+
+                {/* Skills */}
+                {selectedJob.skills && (
+                  <section className="space-y-2">
+                    <h3 className="text-md font-semibold text-[#8B0000] flex items-center gap-2">
+                      <Star className="w-4 h-4" /> Skills Required
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedJob.skills.split(",").map((skill, index) => (
                         <span
-                          key={tag}
-                          className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs"
+                          key={index}
+                          className="bg-[#203947] text-white px-3 py-1 rounded-full text-xs font-medium"
                         >
-                          {tag}
+                          {skill.trim()}
                         </span>
                       ))}
                     </div>
-                  </div>
-                  <div className="text-sm text-gray-400">{job.posted}</div>
-                </div>
-                <button className="text-blue-600 text-sm mt-1">
-                  View Details →
+                  </section>
+                )}
+
+                {/* Comments */}
+                <section className="mt-6">
+                  <button
+                    onClick={() => setShowComments((prev) => !prev)}
+                    className="text-md font-semibold text-[#8B0000] mb-3 flex items-center gap-2 focus:outline-none"
+                  >
+                    <MessageCircle className="w-5 h-5 text-[#8B0000]" />
+                    Comments
+                    {showComments ? (
+                      <ChevronDown className="w-4 h-4 text-[#203947]" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-[#203947]" />
+                    )}
+                  </button>
+
+                  {showComments && (
+                    <>
+                      {selectedJob?.comments?.length > 0 ? (
+                        <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                          {selectedJob.comments.map((comment, index) => (
+                            <li
+                              key={index}
+                              className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm flex gap-4 items-start"
+                            >
+                              <img
+                                src={comment.avatar || "/default-user.png"}
+                                alt={comment.userName}
+                                className="w-10 h-10 rounded-full object-cover mt-1 border"
+                              />
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <p className="font-semibold text-[#203947]">{comment.userName}</p>
+                                  <p className="text-gray-400 text-xs">
+                                    {comment.timestamp?.seconds
+                                      ? formatRelativeTime(new Date(comment.timestamp.seconds * 1000))
+                                      : ""}
+                                  </p>
+
+                                </div>
+                                <p className="text-gray-700 text-sm">{comment.text}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">No comments yet.</p>
+                      )}
+                    </>
+                  )}
+                </section>
+                {/* Copy Job Link */}
+                <button
+                  className="text-[#203947] flex items-center gap-2 text-sm hover:underline"
+                  onClick={() => {
+                    const link = `${window.location.origin}/jobs/${selectedJob.id}`;
+                    navigator.clipboard.writeText(link);
+                    toast.success("Job link copied to clipboard!");
+                  }}
+                >
+                  <Hand className="w-4 h-4" />
+                  Copy Job Link
                 </button>
+
+
+                {/* Close Button */}
+                <div className="flex justify-between items-center pt-4">
+                  {user?.role === "freelancer" ? (
+                    <button
+                      onClick={handleApply}
+                      className="bg-[#8B0000] text-white px-4 py-2 rounded-md hover:bg-[#a30000] text-sm transition-all"
+                    >
+                      Apply Now
+                    </button>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Only freelancers can apply for jobs.</p>
+                  )}
+                   <Toaster position="top-right" />
+
+
+                  <button
+                    className="bg-[#203947] text-white px-4 py-2 rounded-md hover:bg-[#8B0000] text-sm transition-all"
+                    onClick={() => setSelectedJob(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold">Company Statistics</h2>
-            <ul className="text-sm mt-2 space-y-1">
-              <li className="flex gap-2 items-center">
-                <Briefcase className="w-4 h-4" /> 45 Active Projects
-              </li>
-              <li className="flex gap-2 items-center">
-                <Users className="w-4 h-4" /> 320+ Total Hired
-              </li>
-              <li className="flex gap-2 items-center">
-                <CheckCircle className="w-4 h-4" /> 98% Success Rate
-              </li>
-              <li className="flex gap-2 items-center">
-                <Clock className="w-4 h-4" /> 2 hours Avg Response
-              </li>
-            </ul>
-          </div>
-
-          <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold">About TechCore Solutions</h2>
-            <p className="text-sm mt-1">
-              TechCore Solutions is a leading digital transformation company
-              specializing in cutting-edge web and mobile applications. We
-              partner with businesses of all sizes to deliver innovative
-              technology solutions that drive growth and efficiency.
-            </p>
-          </div>
-
-          <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold">Core Services</h2>
-            <ul className="text-sm mt-1 space-y-1 columns-2">
-              <li>Web Development</li>
-              <li>Cloud Architecture</li>
-              <li>UI/UX Design</li>
-              <li>Mobile App Development</li>
-              <li>DevOps</li>
-              <li>Database Design</li>
-              <li>API Development</li>
-            </ul>
-          </div>
-
-          <div className="bg-white shadow rounded p-3">
-  <h2 className="font-semibold mb-2">Technologies We Use</h2>
-  <div className="grid grid-cols-3 gap-2 text-sm">
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">React</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">Node.js</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">Python</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">Flutter</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">AWS</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">Docker</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">MongoDB</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">PostgreSQL</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">GraphQL</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">TypeScript</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">Next.js</div>
-    <div className="px-2 py-1 bg-gray-100 rounded text-center">Kubernetes</div>
-  </div>
-</div>
+            </div>
+          )}
 
 
-          <div className="bg-white shadow rounded p-3">
-  <h2 className="font-semibold">Contact Information</h2>
-  <div className="text-sm mt-1 space-y-1">
-    <p>
-      <Globe className="inline w-4 h-4 mr-1" />
-      <a
-        href="https://www.techcore-solutions.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 hover:underline"
-      >
-        www.techcore-solutions.com
-      </a>
-    </p>
-    <p>
-      <Mail className="inline w-4 h-4 mr-1" />
-      <a
-        href="mailto:info@techcore-solutions.com"
-        className="text-blue-600 hover:underline"
-      >
-        info@techcore-solutions.com
-      </a>
-    </p>
-    <p>
-      <Linkedin className="inline w-4 h-4 mr-1" />
-      <a
-        href="https://linkedin.com/company/techcore-solutions"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 hover:underline"
-      >
-        linkedin.com/company/techcore-solutions
-      </a>
-    </p>
-  </div>
-</div>
+
 
         </div>
       </div>
-      
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
