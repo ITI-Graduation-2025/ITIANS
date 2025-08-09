@@ -12,7 +12,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, initializeFCM } from "@/config/firebase";
 import { toast } from "sonner";
 
-export default function LoginForm() {
+export default function LoginForm({ onAuthenticationStart }) {
   const {
     register,
     handleSubmit,
@@ -41,6 +41,12 @@ export default function LoginForm() {
   const handleLogin = async (data) => {
     // console.log(data);
     setIsLoading(true);
+
+    // Call onAuthenticationStart to show loading screen
+    if (onAuthenticationStart) {
+      onAuthenticationStart();
+    }
+
     try {
       const result = await signIn("credentials", {
         email: data.email,
@@ -56,6 +62,10 @@ export default function LoginForm() {
               : result.error || "Invalid email or password";
         toast.error(errorMessage);
         console.log("SignIn error:", result.error);
+        setIsLoading(false);
+        if (onAuthenticationStart) {
+          onAuthenticationStart(false);
+        }
       } else {
         const session = await getSession();
 
@@ -107,16 +117,19 @@ export default function LoginForm() {
         toast.success("Login successful");
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Authentication failed");
       console.log(error);
-    } finally {
       setIsLoading(false);
+      if (onAuthenticationStart) {
+        onAuthenticationStart(false);
+      }
     }
   };
 
   const handleErrors = (errors) => {
     console.error(errors);
   };
+
   return (
     <form
       onSubmit={handleSubmit(handleLogin, handleErrors)}

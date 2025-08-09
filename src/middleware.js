@@ -3,19 +3,34 @@ import { NextResponse, NextRequest } from "next/server";
 import { withAuth } from "next-auth/middleware";
 // import { getAllUsers } from "./services/firebase";
 import { getAllUsers } from "./services/userServices";
+import { toast } from "sonner";
 // This function can be marked `async` if using `await` inside
 
 export default withAuth(
   async function middleware(request) {
     const pathname = request.nextUrl.pathname;
     const isAuth = await getToken({ req: request });
+    const role = isAuth?.role;
+    if (role === "admin") {
+      if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+      return NextResponse.next();
+    }
     const protectedRoutes = [
       "/dashboard",
+      "/dashboard/:path*",
       "/mentor",
+      "/mentor/:path*",
       "/profile",
+      "/profile/:path*",
+      "/settings",
       "/mentors",
       "/users",
-      "chat",
+      "/chat",
+      "/chat/:path*",
+      "/pending",
+      "/rejected",
     ];
     const isAuthRoute = pathname.startsWith("/login");
     const isProtectedRoute = protectedRoutes.some(
@@ -28,6 +43,7 @@ export default withAuth(
 
     const token = await getToken({ req: request });
     const userStatus = token?.verificationStatus;
+    const userRole = token?.role;
 
     if (userStatus === "Pending" && pathname !== "/pending") {
       return NextResponse.redirect(new URL("/pending", request.url));
@@ -41,6 +57,9 @@ export default withAuth(
     }
 
     if (isAuthRoute && isAuth) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    if (pathname.startsWith("/dashboard") && role !== "admin") {
       return NextResponse.redirect(new URL("/", request.url));
     }
   },
@@ -66,6 +85,8 @@ export const config = {
     "/mentor",
     "/",
     "/profile",
+    "/profile/:path*",
+    "/settings",
     "/pending",
     "/rejected",
     "/mentorData",

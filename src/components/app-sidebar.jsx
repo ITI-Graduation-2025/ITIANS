@@ -7,6 +7,7 @@ import {
   MessageCircle,
   LayoutDashboard,
   Settings,
+  LogOut,
   Building2,
 } from "lucide-react";
 
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 const menuItems = [
   {
@@ -105,6 +107,14 @@ export function AppSidebar() {
             <SidebarMenuButton>
               <Settings />
               <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => signOut({ callbackUrl: "/login" })}
+            >
+              <LogOut />
+              <span>Sign out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
