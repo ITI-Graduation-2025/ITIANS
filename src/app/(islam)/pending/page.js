@@ -21,13 +21,17 @@ export default async function PendingPage() {
     notFound(); // Show 404 page
   }
 
-  // ✅ 3. Check if user is actually pending
-  if (user.verificationStatus !== "Pending" && !user.profileUnderReview) {
-    // Redirect to appropriate page based on user role
-    if (user.role === "mentor") {
-      redirect("/mentor");
-    } else if (user.role === "freelancer") {
-      redirect("/profile");
+  if (session.user.verificationStatus === "Pending") {
+    return <PendingClient user={user} />;
+  } else {
+    // ✅ 3. Check if user is actually pending
+    if (user.verificationStatus !== "Pending" && !user.profileUnderReview) {
+      // Redirect to appropriate page based on user role
+      if (user.role === "mentor") {
+        redirect("/mentor");
+      } else if (user.role === "freelancer") {
+        redirect("/profile");
+      }
     }
   }
 
