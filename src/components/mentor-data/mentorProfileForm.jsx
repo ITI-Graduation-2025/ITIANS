@@ -43,7 +43,7 @@ export default function MentorProfileForm({
     mode: "onChange",
     defaultValues: {
       ...initialData,
-      photo: initialData.photo || null,
+      profileImage: initialData.profileImage || null,
       country: initialData.country || "",
       customCountry: initialData.customCountry || "",
       nationality: initialData.nationality || "",
@@ -85,7 +85,7 @@ export default function MentorProfileForm({
   const getStepFields = (step) => {
     switch (step) {
       case 1:
-        return ["photo", "country", "nationality", "gender"];
+        return ["profileImage", "country", "nationality", "gender"];
       case 2:
         return [
           "company",
@@ -149,9 +149,9 @@ export default function MentorProfileForm({
       }
 
       const uid = session.user.id;
-      const res = await upload({ target: { files: [data.photo] } });
+      const res = await upload({ target: { files: [data.profileImage] } });
 
-      data.photo = res;
+      data.profileImage = res;
       const updateData = {
         ...data,
         profileUnderReview: true, // بدلاً من profileCompleted: true

@@ -194,6 +194,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import Link from "next/link";
 import { db } from "@/config/firebase";
 import { Linkedin, Github, User, Calendar } from "lucide-react";
+import Image from "next/image";
 
 export default function MentorsPage() {
   const [mentors, setMentors] = useState([]);
@@ -276,7 +277,7 @@ export default function MentorsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-12 text-[var(--primary)] text-center">
         Our Mentors
       </h1>
@@ -310,11 +311,13 @@ export default function MentorsPage() {
           >
             {/* Profile Image */}
             <div className="relative mb-6">
-              <div className="w-24 h-24 mx-auto rounded-full border-4 border-transparent overflow-hidden">
-                <img
+              <div className="w-40 h-40 mx-auto rounded-full border-4 border-transparent overflow-hidden">
+                <Image
                   src={mentor.profileImage || "/default-avatar.avif"}
                   alt={mentor.name}
                   className="w-full h-full object-cover hover:grayscale-0 transition-all duration-300"
+                  width={100}
+                  height={100}
                 />
               </div>
             </div>

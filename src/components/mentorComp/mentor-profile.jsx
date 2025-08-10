@@ -44,7 +44,7 @@ export function MentorProfile({ mentor, isOwner }) {
           <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
             <div className="w-24 sm:w-32 h-24 sm:h-32 bg-[var(--card)] rounded-full p-1">
               <Image
-                src={mentor.photo || "https://picsum.photos/200/300"}
+                src={mentor.profileImage || "https://picsum.photos/200/300"}
                 width={200}
                 height={200}
                 alt={mentor.name}

@@ -165,7 +165,9 @@ export default function UserInfo() {
               href={
                 data?.user?.role === "mentor"
                   ? `/mentor/${data?.user?.id}`
-                  : `/profile/${data?.user?.id}`
+                  : data?.user?.role === "company"
+                    ? `/companies/${data?.user?.id}`
+                    : `/profile/${data?.user?.id}`
               }
               className="flex items-center gap-3"
             >

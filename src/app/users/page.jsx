@@ -17,6 +17,7 @@ import { db } from "@/config/firebase";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { MessageCircle, User } from "lucide-react";
 import { generateChatId } from "@/lib/chatFunctions";
+import Image from "next/image";
 const ITEMS_PER_PAGE = 6;
 
 export default function UsersList() {
@@ -144,7 +145,7 @@ export default function UsersList() {
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="max-w-6xl mx-auto mt-10 mb-20 px-4">
+    <div className="min-h-screen max-w-6xl mx-auto mt-10 mb-20 px-4">
       <h2 className="text-4xl font-bold mb-12 text-center text-[var(--primary)]">
         Available Users
       </h2>
@@ -157,11 +158,13 @@ export default function UsersList() {
           >
             {/* Profile Image with circular border */}
             <div className="relative mb-6">
-              <div className="w-24 h-24 mx-auto rounded-full border-4 border-transparent overflow-hidden">
-                <img
+              <div className="w-40 h-40 mx-auto rounded-full border-4 border-transparent overflow-hidden">
+                <Image
                   src={user.profileImage || getDefaultAvatar(user.role)}
                   alt={user.name}
                   className="w-full h-full object-cover hover:grayscale-0 transition-all duration-300"
+                  width={100}
+                  height={100}
                 />
               </div>
             </div>

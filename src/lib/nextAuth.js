@@ -33,6 +33,7 @@ export const authOptions = {
             email: userCredential.user.email,
             verificationStatus: userData?.verificationStatus,
             name: userData?.name || userCredential.user.displayName,
+            username: userData?.username || null,
             role: userData?.role || "freelancer",
             profileCompleted: userData?.profileCompleted || false,
             profileUnderReview: userData?.profileUnderReview || false,
@@ -60,6 +61,7 @@ export const authOptions = {
       if (user) {
         token.role = user.role;
         token.verificationStatus = user.verificationStatus;
+        token.username = user.username;
         token.profileCompleted = user.profileCompleted;
         token.profileUnderReview = user.profileUnderReview;
         token.adminComment = user.adminComment;
@@ -72,6 +74,7 @@ export const authOptions = {
         session.user.id = token.sub;
         session.user.role = token.role;
         session.user.verificationStatus = token.verificationStatus;
+        session.user.username = token.username;
         session.user.profileCompleted = token.profileCompleted;
         session.user.profileUnderReview = token.profileUnderReview;
         session.user.adminComment = token.adminComment;
