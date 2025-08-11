@@ -1,16 +1,16 @@
 // app/(islam)/mentor/page.js
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/nextAuth";
+import { getServerSession } from "next-auth";
 // import { getUser } from "@/services/firebase";
 import { getUser } from "@/services/userServices";
 import { notFound, redirect } from "next/navigation";
 
+import { CommunityStats } from "@/components/mentorComp/commuintyStats";
 import { Header } from "@/components/mentorComp/header";
-import { Sidebar } from "@/components/mentorComp/sidebar";
 import { MentorProfile } from "@/components/mentorComp/mentor-profile";
+import { Sidebar } from "@/components/mentorComp/sidebar";
 import { TabsSection } from "@/components/mentorComp/tabs-section";
 import { Testimonials } from "@/components/mentorComp/testimonials";
-import { CommunityStats } from "@/components/mentorComp/commuintyStats";
 
 export default async function MentorHome() {
   // ✅ 1. Get the current session
@@ -28,6 +28,9 @@ export default async function MentorHome() {
   if (!mentor?.profileCompleted) {
     redirect("/mentorData");
   }
+
+  // Ensure mentor.education is always an array
+  mentor.education = Array.isArray(mentor.education) ? mentor.education : [];
 
   // ✅ 3. Pass mentor as props to all components
   return (
