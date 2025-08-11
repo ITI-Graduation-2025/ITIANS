@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 // import { getUser } from "@/services/firebase";
 import { getUser } from "@/services/userServices";
 import { useSession } from "next-auth/react";
@@ -9,12 +9,11 @@ export const UserContext = createContext();
 export function UserProvider({ children, initialUser }) {
   const { data: session } = useSession();
   const [user, setUser] = useState(initialUser || null);
-  console.log(user, "user");
 
   const fetchUser = async () => {
     if (session?.user?.id) {
       const fetchedUser = await getUser(session.user.id);
-      console.log(fetchedUser, "fetchedUser");
+
       // تحويل createdAt لـ string باستخدام toISOString إذا كان Timestamp
       if (
         fetchedUser &&
