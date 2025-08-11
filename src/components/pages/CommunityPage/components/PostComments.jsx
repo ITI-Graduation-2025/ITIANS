@@ -2,8 +2,15 @@ import { UsersContext } from "@/context/usersContext";
 import { updatePost } from "@/services/postServices";
 import { upload } from "@/utils/upload";
 import Image from "next/image";
-import { useContext, useState, useRef, useEffect } from "react";
-import { HiOutlinePencil, HiOutlineTrash, HiOutlineXMark, HiOutlinePhoto, HiOutlinePaperClip, HiOutlineChevronDown, HiOutlineChevronUp } from "react-icons/hi2";
+import { useContext, useEffect, useRef, useState } from "react";
+import {
+  HiOutlineChevronDown,
+  HiOutlineChevronUp,
+  HiOutlinePencil,
+  HiOutlinePhoto,
+  HiOutlineTrash,
+  HiOutlineXMark,
+} from "react-icons/hi2";
 
 export default function PostComments({
   post,
@@ -19,7 +26,10 @@ export default function PostComments({
   const [editingComment, setEditingComment] = useState(null);
   const [editContent, setEditContent] = useState("");
   const [editImage, setEditImage] = useState(null);
-  const [deleteModal, setDeleteModal] = useState({ show: false, commentIndex: null });
+  const [deleteModal, setDeleteModal] = useState({
+    show: false,
+    commentIndex: null,
+  });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [commentImage, setCommentImage] = useState(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -99,11 +109,10 @@ export default function PostComments({
         {
           name: selectedUser.name,
           id: selectedUser.id,
-          fcmToken: selectedUser.fcmToken||"",
+          fcmToken: selectedUser.fcmToken || "",
         },
       ]);
-     
-      
+
       setComment(newComment);
       setCommentInputs((inputs) => ({
         ...inputs,
@@ -121,7 +130,7 @@ export default function PostComments({
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       alert("Please select a valid image file");
       return;
     }
@@ -158,7 +167,7 @@ export default function PostComments({
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       alert("Please select a valid image file");
       return;
     }
@@ -239,7 +248,9 @@ export default function PostComments({
     if (deleteModal.commentIndex === null) return;
 
     try {
-      const updatedComments = post.comments.filter((_, index) => index !== deleteModal.commentIndex);
+      const updatedComments = post.comments.filter(
+        (_, index) => index !== deleteModal.commentIndex,
+      );
       await updatePost(post.id, {
         comments: updatedComments,
       });
@@ -287,7 +298,7 @@ export default function PostComments({
       await updatePost(post.id, {
         comments: updatedComments,
       });
-
+      onAddComment(newComment.content, mentions);
       // Reset form
       setCommentInputs((inputs) => ({ ...inputs, [post.id]: "" }));
       setCommentImage(null);
@@ -314,12 +325,10 @@ export default function PostComments({
     // Find the word at the cursor position (allowing spaces in usernames)
     const textBeforeCursor = value.slice(0, cursor);
     const lastAtIndex = textBeforeCursor.lastIndexOf("@");
-   
+
     if (lastAtIndex !== -1) {
       const query = textBeforeCursor.slice(lastAtIndex + 1).trimStart();
       if (query || query === "") {
-       
-
         const filteredSuggestions = users.filter((user) =>
           user.name.toLowerCase().includes(query.toLowerCase()),
         );
@@ -348,7 +357,9 @@ export default function PostComments({
     <div className="bg-muted px-4 py-3 border-t border-border">
       {/* Comments Header with Toggle */}
       <div className="flex items-center justify-between mb-3">
-        <h5 className="font-semibold text-primary">Comments ({commentCount})</h5>
+        <h5 className="font-semibold text-primary">
+          Comments ({commentCount})
+        </h5>
         {commentCount > 0 && (
           <button
             onClick={toggleComments}
@@ -371,177 +382,186 @@ export default function PostComments({
 
       {/* Comments List - Scrollable when open */}
       {commentsOpen && (
-        <div 
+        <div
           ref={commentsContainerRef}
           className="max-h-96 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
         >
           {Array.isArray(post.comments) && post.comments.length > 0 ? (
             <ul className="space-y-3">
-              {post.comments.slice().reverse().map((comment, idx) => {
-                if (typeof comment === "object" && comment !== null) {
-                  const isOwner = isCommentOwner(comment);
-                  const isEditing = editingComment === idx;
+              {post.comments
+                .slice()
+                .reverse()
+                .map((comment, idx) => {
+                  if (typeof comment === "object" && comment !== null) {
+                    const isOwner = isCommentOwner(comment);
+                    const isEditing = editingComment === idx;
 
-                  return (
-                    <li key={idx} className="flex items-start space-x-2">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
-                        {comment.authorProfileImage ? (
-                          <Image
-                            src={comment.authorProfileImage}
-                            className="h-8 w-8 rounded-full object-cover"
-                            width={32}
-                            height={32}
-                            alt={comment.authorName || "Comment author"}
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                            {(comment.authorName || "U").charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
-                        <div className="flex justify-between items-start">
-                          <div className="font-medium text-sm">
-                            {comment.authorName || "Unknown"}
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              {comment.createdAt
-                                ? new Date(comment.createdAt).toLocaleString()
-                                : ""}
-                            </span>
-                            {comment.editedAt && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                (edited)
-                              </span>
-                            )}
-                          </div>
-                          {isOwner && !isEditing && (
-                            <div className="flex space-x-1">
-                              <button
-                                onClick={() => handleEditComment(idx, comment)}
-                                className="text-muted-foreground hover:text-foreground p-1 rounded"
-                                title="Edit comment"
-                              >
-                                <HiOutlinePencil className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => showDeleteModal(idx)}
-                                className="text-red-500 hover:text-red-700 p-1 rounded"
-                                title="Delete comment"
-                              >
-                                <HiOutlineTrash className="w-3 h-3" />
-                              </button>
+                    return (
+                      <li key={idx} className="flex items-start space-x-2">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
+                          {comment.authorProfileImage ? (
+                            <Image
+                              src={comment.authorProfileImage}
+                              className="h-8 w-8 rounded-full object-cover"
+                              width={32}
+                              height={32}
+                              alt={comment.authorName || "Comment author"}
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                              {(comment.authorName || "U").charAt(0)}
                             </div>
                           )}
                         </div>
-                        
-                        {isEditing ? (
-                          <div className="mt-2">
-                            <textarea
-                              value={editContent}
-                              onChange={(e) => setEditContent(e.target.value)}
-                              className="w-full border border-input rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
-                              rows={2}
-                              placeholder="Edit your comment..."
-                            />
-                            
-                            {/* Edit Image Section */}
-                            <div className="mt-3">
-                              {editImage && (
-                                <div className="relative inline-block mb-2">
-                                  <img
-                                    src={editImage}
-                                    alt="Comment image"
-                                    className="max-h-32 rounded-lg border"
+                        <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
+                          <div className="flex justify-between items-start">
+                            <div className="font-medium text-sm">
+                              {comment.authorName || "Unknown"}
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                {comment.createdAt
+                                  ? new Date(comment.createdAt).toLocaleString()
+                                  : ""}
+                              </span>
+                              {comment.editedAt && (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  (edited)
+                                </span>
+                              )}
+                            </div>
+                            {isOwner && !isEditing && (
+                              <div className="flex space-x-1">
+                                <button
+                                  onClick={() =>
+                                    handleEditComment(idx, comment)
+                                  }
+                                  className="text-muted-foreground hover:text-foreground p-1 rounded"
+                                  title="Edit comment"
+                                >
+                                  <HiOutlinePencil className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => showDeleteModal(idx)}
+                                  className="text-red-500 hover:text-red-700 p-1 rounded"
+                                  title="Delete comment"
+                                >
+                                  <HiOutlineTrash className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {isEditing ? (
+                            <div className="mt-2">
+                              <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full border border-input rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
+                                rows={2}
+                                placeholder="Edit your comment..."
+                              />
+
+                              {/* Edit Image Section */}
+                              <div className="mt-3">
+                                {editImage && (
+                                  <div className="relative inline-block mb-2">
+                                    <img
+                                      src={editImage}
+                                      alt="Comment image"
+                                      className="max-h-32 rounded-lg border"
+                                    />
+                                    <button
+                                      onClick={removeEditImage}
+                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                      title="Remove image"
+                                    >
+                                      <HiOutlineXMark className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    ref={editImageRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleEditImageUpload}
+                                    className="hidden"
+                                    disabled={uploadingImage}
                                   />
                                   <button
-                                    onClick={removeEditImage}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                                    title="Remove image"
+                                    type="button"
+                                    onClick={() =>
+                                      editImageRef.current?.click()
+                                    }
+                                    disabled={uploadingImage}
+                                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80"
                                   >
-                                    <HiOutlineXMark className="w-3 h-3" />
+                                    <HiOutlinePhoto className="w-3 h-3" />
+                                    {editImage ? "Change Image" : "Add Image"}
                                   </button>
+                                  {uploadingImage && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Uploading...
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex space-x-2 mt-2">
+                                <button
+                                  onClick={() => handleSaveEdit(idx)}
+                                  className="px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/80"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={cancelEdit}
+                                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-xs hover:bg-muted/80"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mt-1">
+                              {comment.content && (
+                                <div className="text-foreground text-sm mb-2">
+                                  {renderCommentText(comment.content)}
                                 </div>
                               )}
-                              
-                              <div className="flex items-center gap-2">
-                                <input
-                                  ref={editImageRef}
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleEditImageUpload}
-                                  className="hidden"
-                                  disabled={uploadingImage}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => editImageRef.current?.click()}
-                                  disabled={uploadingImage}
-                                  className="flex items-center gap-1 text-xs text-primary hover:text-primary/80"
-                                >
-                                  <HiOutlinePhoto className="w-3 h-3" />
-                                  {editImage ? "Change Image" : "Add Image"}
-                                </button>
-                                {uploadingImage && (
-                                  <span className="text-xs text-muted-foreground">Uploading...</span>
-                                )}
-                              </div>
+                              {comment.image && (
+                                <div className="mt-2">
+                                  <img
+                                    src={comment.image}
+                                    alt="Comment attachment"
+                                    className="max-h-48 rounded-lg border"
+                                  />
+                                </div>
+                              )}
                             </div>
-                            
-                            <div className="flex space-x-2 mt-2">
-                              <button
-                                onClick={() => handleSaveEdit(idx)}
-                                className="px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/80"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={cancelEdit}
-                                className="px-3 py-1 bg-muted text-muted-foreground rounded text-xs hover:bg-muted/80"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="mt-1">
-                            {comment.content && (
-                              <div className="text-foreground text-sm mb-2">
-                                {renderCommentText(comment.content)}
-                              </div>
-                            )}
-                            {comment.image && (
-                              <div className="mt-2">
-                                <img
-                                  src={comment.image}
-                                  alt="Comment attachment"
-                                  className="max-h-48 rounded-lg border"
-                                />
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                } else {
-                  // Fallback for old string comments
-                  return (
-                    <li key={idx} className="flex items-start space-x-2">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                          U
+                          )}
                         </div>
-                      </div>
-                      <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
-                        <div className="font-medium text-sm">Unknown</div>
-                        <div className="text-foreground text-sm mt-1">
-                          {comment}
+                      </li>
+                    );
+                  } else {
+                    // Fallback for old string comments
+                    return (
+                      <li key={idx} className="flex items-start space-x-2">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
+                          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                            U
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  );
-                }
-              })}
+                        <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
+                          <div className="font-medium text-sm">Unknown</div>
+                          <div className="text-foreground text-sm mt-1">
+                            {comment}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  }
+                })}
             </ul>
           ) : (
             <div className="text-center text-muted-foreground text-sm py-4">
@@ -550,12 +570,9 @@ export default function PostComments({
           )}
         </div>
       )}
-      
+
       {/* Comment Input Form - Always visible */}
-      <form
-        className="flex flex-col gap-3 mt-3"
-        onSubmit={handleSubmitComment}
-      >
+      <form className="flex flex-col gap-3 mt-3" onSubmit={handleSubmitComment}>
         <div className="flex items-center gap-2">
           <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold flex-shrink-0">
             {currentUser.profileImage ? (
@@ -583,7 +600,10 @@ export default function PostComments({
           <button
             type="submit"
             className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/80 disabled:opacity-50"
-            disabled={!(commentInputs[post.id] && commentInputs[post.id].trim()) && !commentImage}
+            disabled={
+              !(commentInputs[post.id] && commentInputs[post.id].trim()) &&
+              !commentImage
+            }
           >
             ➤
           </button>
@@ -608,7 +628,7 @@ export default function PostComments({
               </button>
             </div>
           )}
-          
+
           <div className="flex items-center gap-2">
             <input
               ref={commentImageRef}
@@ -628,7 +648,9 @@ export default function PostComments({
               {commentImage ? "Change Image" : "Add Image"}
             </button>
             {uploadingImage && (
-              <span className="text-xs text-muted-foreground">Uploading...</span>
+              <span className="text-xs text-muted-foreground">
+                Uploading...
+              </span>
             )}
           </div>
         </div>
@@ -658,20 +680,21 @@ export default function PostComments({
             >
               <HiOutlineXMark className="w-5 h-5" />
             </button>
-            
+
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
                 <HiOutlineTrash className="h-6 w-6 text-red-600" />
               </div>
-              
+
               <h3 className="text-lg font-semibold text-foreground mb-2">
                 Delete Comment
               </h3>
-              
+
               <p className="text-muted-foreground mb-6">
-                Are you sure you want to delete this comment? This action cannot be undone.
+                Are you sure you want to delete this comment? This action cannot
+                be undone.
               </p>
-              
+
               <div className="flex space-x-3">
                 <button
                   onClick={hideDeleteModal}
