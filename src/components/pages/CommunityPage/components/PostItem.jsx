@@ -5,17 +5,17 @@ import { upload } from "@/utils/upload";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import {
+  HiOutlineArrowDownTray,
   HiOutlineArrowPath,
   HiOutlineChatBubbleLeftRight,
   HiOutlineEllipsisHorizontal,
   HiOutlineHandThumbUp,
   HiOutlinePaperClip,
   HiOutlinePencil,
-  HiOutlineTrash,
   HiOutlinePhoto,
-  HiOutlineArrowDownTray,
+  HiOutlineTrash,
 } from "react-icons/hi2";
 import PostComments from "./PostComments";
 
@@ -115,23 +115,23 @@ export default function PostItem({ post, currentUser }) {
         comments: updatedComments,
       });
       if (post.authorFcmToken && post.authorId !== currentUser.id) {
-          await sendPushNotification({
-            token: post.authorFcmToken,
-            title: `${currentUser.name} commented on your post`,
-            body: comment,
-            data: { url: `/community` },
-          });
-          var acceptedNotification = {
-            recipientId: post.authorId,
-            senderId: newComment.authorId,
-            type: "comment",
-            message: `${currentUser.name} commented on your post`,
-            relatedId: post.id,
-            read: false,
-            createdAt: serverTimestamp(),
-          };
-          await addDoc(collection(db, "notifications"), acceptedNotification);
-        }
+        await sendPushNotification({
+          token: post.authorFcmToken,
+          title: `${currentUser.name} commented on your post`,
+          body: comment,
+          data: { url: `/community` },
+        });
+        var acceptedNotification = {
+          recipientId: post.authorId,
+          senderId: newComment.authorId,
+          type: "comment",
+          message: `${currentUser.name} commented on your post`,
+          relatedId: post.id,
+          read: false,
+          createdAt: serverTimestamp(),
+        };
+        await addDoc(collection(db, "notifications"), acceptedNotification);
+      }
       mentions.forEach(async (user) => {
         if (user.fcmToken && user.id !== currentUser.id) {
           await sendPushNotification({
@@ -187,7 +187,7 @@ export default function PostItem({ post, currentUser }) {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       alert("Please select a valid image file");
       return;
     }
@@ -209,7 +209,7 @@ export default function PostItem({ post, currentUser }) {
 
       // Upload to Cloudinary
       const imageUrl = await upload(e);
-      
+
       // Update the post with new image
       await updatePost(post.id, {
         attachment: {
@@ -258,22 +258,22 @@ export default function PostItem({ post, currentUser }) {
     try {
       // Use our API endpoint to handle the download
       const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
-      
-      const link = document.createElement('a');
+
+      const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = filename || 'download';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      
+      link.download = filename || "download";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       console.log("Download started for:", filename);
     } catch (err) {
       console.error("Download error:", err);
       // Fallback: open in new tab
-      window.open(url, '_blank');
+      window.open(url, "_blank");
       alert("File opened in new tab. You can save it from there.");
     }
   };
@@ -282,10 +282,10 @@ export default function PostItem({ post, currentUser }) {
     try {
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
-      const extension = pathname.split('.').pop();
-      return extension || 'jpg'; // Default to jpg for images
+      const extension = pathname.split(".").pop();
+      return extension || "jpg"; // Default to jpg for images
     } catch {
-      return 'jpg';
+      return "jpg";
     }
   };
 
@@ -293,13 +293,16 @@ export default function PostItem({ post, currentUser }) {
     if (attachment?.name) {
       return attachment.name;
     }
-    
-    const extension = getFileExtension(attachment?.url || '');
+
+    const extension = getFileExtension(attachment?.url || "");
     const timestamp = new Date().getTime();
     return `post_${post.id}_${timestamp}.${extension}`;
   };
 
-  const isImageAttachment = post.attachment && post.attachment.type && post.attachment.type.startsWith("image");
+  const isImageAttachment =
+    post.attachment &&
+    post.attachment.type &&
+    post.attachment.type.startsWith("image");
   const isPostOwner = post.authorId === (currentUser?.uid || currentUser?.id);
 
   return (
@@ -409,7 +412,12 @@ export default function PostItem({ post, currentUser }) {
                       className="max-h-48 w-auto rounded-lg border"
                     />
                     <button
-                      onClick={() => downloadFile(post.repostOf.attachment.url, getFileName(post, post.repostOf.attachment))}
+                      onClick={() =>
+                        downloadFile(
+                          post.repostOf.attachment.url,
+                          getFileName(post, post.repostOf.attachment),
+                        )
+                      }
                       className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
                       title="Download image"
                     >
@@ -427,7 +435,12 @@ export default function PostItem({ post, currentUser }) {
                       {post.repostOf.attachment.name}
                     </a>
                     <button
-                      onClick={() => downloadFile(post.repostOf.attachment.url, post.repostOf.attachment.name)}
+                      onClick={() =>
+                        downloadFile(
+                          post.repostOf.attachment.url,
+                          post.repostOf.attachment.name,
+                        )
+                      }
                       className="text-primary hover:text-primary/80 p-1 rounded"
                       title="Download file"
                     >
@@ -478,7 +491,12 @@ export default function PostItem({ post, currentUser }) {
                       className="max-h-96 w-full object-contain rounded-lg border"
                     />
                     <button
-                      onClick={() => downloadFile(post.attachment.url, getFileName(post, post.attachment))}
+                      onClick={() =>
+                        downloadFile(
+                          post.attachment.url,
+                          getFileName(post, post.attachment),
+                        )
+                      }
                       className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
                       title="Download image"
                     >
@@ -507,7 +525,9 @@ export default function PostItem({ post, currentUser }) {
                       </span>
                     </a>
                     <button
-                      onClick={() => downloadFile(post.attachment.url, post.attachment.name)}
+                      onClick={() =>
+                        downloadFile(post.attachment.url, post.attachment.name)
+                      }
                       className="text-primary hover:text-primary/80 p-2 rounded-lg border border-border"
                       title="Download file"
                     >
@@ -569,10 +589,8 @@ export default function PostItem({ post, currentUser }) {
             >
               ×
             </button>
-            <h2 className="text-2xl font-bold mb-6 text-center">
-              Edit Image
-            </h2>
-            
+            <h2 className="text-2xl font-bold mb-6 text-center">Edit Image</h2>
+
             <div className="space-y-4">
               <div className="flex flex-col items-center space-y-4">
                 {/* Current Image */}
@@ -588,7 +606,7 @@ export default function PostItem({ post, currentUser }) {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Upload Controls */}
                 <div className="flex gap-2">
                   <input
@@ -608,7 +626,7 @@ export default function PostItem({ post, currentUser }) {
                     {uploadingImage ? "Uploading..." : "Upload New Image"}
                   </button>
                 </div>
-                
+
                 <p className="text-sm text-muted-foreground text-center">
                   Supported formats: JPG, PNG, GIF. Max size: 5MB
                 </p>
