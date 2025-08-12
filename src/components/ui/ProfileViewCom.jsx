@@ -44,6 +44,8 @@ import { FaFacebook, FaLinkedin, FaGlobe, FaEnvelope } from "react-icons/fa";
 import NavbarProfileCom from "./NavbarProfileCom";
 import ReactPaginate from "react-paginate";
 import Link from "next/link";
+import LogoClickable from "./LogoClickable";
+import BackgroundClickable from "./BackgroundClickable";
 
 
 function formatRelativeTime(date) {
@@ -108,7 +110,12 @@ export default function ProfileViewCom() {
   const totalPages = Math.ceil(jobs.length / jobsPerPage);
 
 
- useEffect(() => {
+  const logoUrl = company?.logoUrl || "/default-logo.png";
+const backgroundUrl = company?.backgroundUrl || "https://img.freepik.com/free-photo/business-people-working-office_23-2148902353.jpg";
+
+
+
+
   async function fetchCompanyAndJobs() {
     if (!companyId) return;
 
@@ -178,6 +185,7 @@ const successRate = totalApplicants > 0
     }
   }
 
+ useEffect(() => {
   fetchCompanyAndJobs();
 }, [companyId]);
 
@@ -230,72 +238,64 @@ const successRate = totalApplicants > 0
     <main className="min-h-screen bg-[#f9f9f9] text-[#333]">
       <NavbarProfileCom />
 
-      <div
-        className="text-white p-6 bg-cover bg-center"
-        style={{
-          backgroundImage:
-            "url('https://img.freepik.com/free-photo/business-people-working-office_23-2148902353.jpg')",
-        }}
-      >
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex gap-4 items-center">
-            <Image
-              src={logo || "/default-logo.png"}
-              alt={`${name || "Company"} Logo`}
-              width={48}
-              height={48}
-              className="rounded-md shadow bg-white"
-            />
-            <div>
-              <h1 className="text-2xl font-bold ">{name}</h1>
+     <BackgroundClickable
+  currentBackgroundUrl={company?.backgroundUrl || ""}
 
+  onUploadSuccess={fetchCompanyAndJobs}
+  className="text-white p-6 bg-cover bg-center max-w-6xl mx-auto flex justify-between items-center"
+  style={{ height: 250 }}
+>
+  <div className="flex gap-4 items-center">
+    <LogoClickable
+      currentLogoUrl={company?.logo || "/default-logo.png"}
+      onUploadSuccess={fetchCompanyAndJobs}
+    />
 
-              <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
-                {industry && (
-                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+    <div>
+      <h1 className="text-2xl font-bold">{name}</h1>
 
-                    <Briefcase className="w-4 h-4 text-[#8B0000]" />
-                    <span>{industry}</span>
-                  </div>
-                )}
-                {founded && (
-                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
-
-                    <Calendar className="w-4 h-4 text-[#8B0000]" />
-                    <span>Founded: {founded}</span>
-                  </div>
-                )}
-                {location && (
-                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
-
-                    <MapPin className="w-4 h-4 text-[#8B0000]" />
-                    <span>{location}</span>
-                  </div>
-                )}
-                {phone && (
-                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
-
-                    <Phone className="w-4 h-4 text-[#8B0000]" />
-                    <span>{phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
+      <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
+        {industry && (
+          <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+            <Briefcase className="w-4 h-4 text-[#8B0000]" />
+            <span>{industry}</span>
           </div>
-          <div className="text-right">
-            <p className="flex items-center justify-end gap-1">
-              <Star className="w-4 h-4 text-yellow-300" /> {rating}
-            </p>
-            <p className="text-sm">{reviewsCount} reviews</p>
-            {session?.user?.id !== companyId && (
-              <button className="mt-2 px-4 py-1 bg-white text-[#b30000] border border-[#b30000] rounded shadow hover:bg-[#b30000] hover:text-white transition">
-                Follow Company
-              </button>
-            )}
+        )}
+        {founded && (
+          <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+            <Calendar className="w-4 h-4 text-[#8B0000]" />
+            <span>Founded: {founded}</span>
           </div>
-        </div>
+        )}
+        {location && (
+          <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+            <MapPin className="w-4 h-4 text-[#8B0000]" />
+            <span>{location}</span>
+          </div>
+        )}
+        {phone && (
+          <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+            <Phone className="w-4 h-4 text-[#8B0000]" />
+            <span>{phone}</span>
+          </div>
+        )}
       </div>
+    </div>
+  </div>
+
+  <div className="text-right">
+    <p className="flex items-center justify-end gap-1">
+      <Star className="w-4 h-4 text-yellow-300" /> {rating}
+    </p>
+    <p className="text-sm">{reviewsCount} reviews</p>
+    {session?.user?.id !== companyId && (
+      <button className="mt-2 px-4 py-1 bg-white text-[#b30000] border border-[#b30000] rounded shadow hover:bg-[#b30000] hover:text-white transition">
+        Follow Company
+      </button>
+    )}
+  </div>
+</BackgroundClickable>
+
 
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 p-4">

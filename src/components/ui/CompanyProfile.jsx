@@ -35,7 +35,7 @@ export default function CompanyProfile() {
 
   const companyId = session?.user?.id;
 
-  // ✅ حماية الصفحة - السماح فقط للشركات
+  
   useEffect(() => {
     if (status === 'loading') return;
 
@@ -44,7 +44,7 @@ export default function CompanyProfile() {
     }
   }, [session, status]);
 
-  // ✅ تحميل بيانات الشركة
+  
   useEffect(() => {
     const fetchCompanyData = async () => {
       try {
@@ -105,7 +105,7 @@ export default function CompanyProfile() {
     }
   }, [companyId]);
 
-  // ✅ Skeleton أثناء التحميل
+  
   if (!company) {
     return (
       <div className="min-h-screen bg-[#f9f9f9] p-6 animate-pulse">
@@ -122,8 +122,6 @@ export default function CompanyProfile() {
       </div>
     );
   }
-
-  // ✅ محتوى الصفحة
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
       <CompanyNavbar />
@@ -139,20 +137,7 @@ export default function CompanyProfile() {
           Manage your job postings and find the best ITI talent
         </p>
 
-        <div className="flex gap-4 border-b mb-6">
-          <Link href="/dashboardCompany" className="px-4 py-2 flex items-center gap-1 text-[#203947] font-medium hover:text-[#b30000] transition">
-            <LayoutDashboard className="w-4 h-4" /> Overview
-          </Link>
-          <Link href="/companyjobs" className="px-4 py-2 flex items-center gap-1 text-[#203947] hover:text-[#b30000] font-medium">
-            <FileText className="w-4 h-4" /> My Jobs
-          </Link>
-          <Link href="/AllCompanyApplicants" className="px-4 py-2 flex items-center font-medium gap-1 text-[#203947] hover:text-[#b30000]">
-            <Users2 className="w-4 h-4" /> Applications
-          </Link>
-          <Link href="/companyprofile" className="text-[#b30000] border-b-2 border-[#b30000] px-4 py-2 font-medium flex items-center gap-1 hover:text-[#b30000] transition">
-            <Building2 className="w-4 h-4" /> Company Profile
-          </Link>
-        </div>
+        
 
         <section className="bg-white p-6 rounded-xl shadow-md border">
           <div className="flex justify-between items-start mb-6">

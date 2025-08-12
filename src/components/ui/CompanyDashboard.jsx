@@ -152,12 +152,7 @@ export default function DashboardPage() {
   const recentActivities =
     companyStats?.recentActivities?.filter((activity) => activity?.text && activity?.type)?.slice(0, 5) || [];
 
-  const navTabs = [
-    { label: "Overview", href: "/dashboardCompany", icon: LayoutDashboard },
-    { label: "My Jobs", href: "/companyjobs", icon: FileText },
-    { label: "Applications", href: "/AllCompanyApplicants", icon: Users2 },
-    { label: "CompanyProfile", href: "/companyprofile", icon: Building2 },
-  ];
+ 
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
@@ -167,29 +162,9 @@ export default function DashboardPage() {
           {companyStats?.name} <span className="text-[#203947] text-2xl">Dashboard</span>
         </h1>
 
-        <p className="text-gray-600 mb-6">Manage your job postings and find the best ITI talent</p>
+        <p className="text-gray-600 mb-6">Welcome back! Here's what's happening with your ITI freelance platform.</p>
 
-        {/* Tabs */}
-        <nav className="flex gap-4 border-b mb-6 overflow-x-auto whitespace-nowrap">
-          {navTabs.map(({ label, href, icon: Icon, badge }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`relative px-4 py-2 flex items-center gap-1 font-medium ${isActive(href)
-                  ? "text-[#b30000] border-b-2 border-[#b30000]"
-                  : "text-[#203947] hover:text-[#b30000]"
-                }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-              {badge && (
-                <span className="absolute -top-1 -right-2 text-xs bg-red-500 text-white rounded-full px-1.5">
-                  +{badge}
-                </span>
-              )}
-            </Link>
-          ))}
-        </nav>
+        
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

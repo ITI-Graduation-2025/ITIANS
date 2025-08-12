@@ -13,16 +13,20 @@ export default function LayoutWrapper({ children }) {
     "/mentor",
     "/dashboardCompany",
     "/dashboard",
-    "/mentor/[id]",
     "/pending",
     "/rejected",
+    "/companyjobs",
+    "/AllCompanyApplicants",
+    "/companyprofile",
+    "/ProfileViewCom",
   ];
 
   const hideBoth =
     hideBothExactPaths.includes(pathname) ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/mentor/") ||
-    pathname.startsWith("/rejected");
+    pathname.startsWith("/rejected") ||
+    pathname.startsWith("/Applicationjob/");
 
   const hideNavbar = pathname === "/profile";
 
@@ -34,3 +38,4 @@ export default function LayoutWrapper({ children }) {
     </>
   );
 }
+

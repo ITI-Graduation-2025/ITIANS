@@ -166,13 +166,13 @@ export default function UserInfo() {
                 data?.user?.role === "mentor"
                   ? `/mentor/${data?.user?.id}`
                   : data?.user?.role === "company"
-                    ? `/companies/${data?.user?.id}`
+                    ? "/dashboardCompany"
                     : `/profile/${data?.user?.id}`
               }
               className="flex items-center gap-3"
             >
               <FaRegUser className="text-[#B71C1C] group-hover:text-white" />
-              <span>Profile</span>
+              <span>My Dashboard</span>
             </Link>
           </DropdownMenuItem>
 
