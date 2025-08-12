@@ -23,7 +23,7 @@ const categories = [
   { name: "Messages", href: "/chat", icon: <MdChat className="w-6 h-6" /> },
 ];
 
-export default function Navbar() {
+export default function Navbar({onSearch}) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchScope, setSearchScope] = useState("all");
@@ -178,6 +178,7 @@ export default function Navbar() {
     const term = e.target.value;
     setSearchQuery(term);
     performSearch(term, searchScope);
+    onSearch?.(term)
   };
 
   const handleScopeChange = (scope) => {
