@@ -610,14 +610,6 @@ export default function SessionDetails() {
           <CardContent className="p-0">
             <div className="flex flex-col h-[600px] border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-500 dark:bg-gray-800 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-lg font-semibold bg-red-700">
-                  S
-                </div>
-                <h2 className="text-lg font-semibold text-white dark:text-white">
-                  Session Chat
-                </h2>
-              </div>
 
               {/* Messages Area */}
               <div className="flex-1 relative overflow-hidden">

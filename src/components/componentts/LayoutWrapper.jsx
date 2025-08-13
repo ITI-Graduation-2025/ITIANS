@@ -24,7 +24,7 @@ export default function LayoutWrapper({ children }) {
     pathname.startsWith("/mentor/") ||
     pathname.startsWith("/rejected");
 
-  const hideNavbar = pathname === "/profile";
+  const hideNavbar = pathname === "/profile" || pathname==="/community";
 
   return (
     <>

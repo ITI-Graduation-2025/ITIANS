@@ -10,9 +10,11 @@ import CommunityRightSidebar from "./components/CommunityRightSidebar";
 import CommunitySidebar from "./components/CommunitySidebar";
 import PostCreation from "./components/PostCreation";
 import PostList from "./components/PostList";
+import Navbar from "@/components/componentts/Navbar";
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState([]);
+  const [allPosts, setAllPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
@@ -28,6 +30,7 @@ export default function CommunityPage() {
         setLoading(true);
         const postsData = await getAllPosts();
         setPosts(postsData);
+        setAllPosts(postsData);
       } catch (err) {
         setError("Failed to load posts");
         console.error("Error loading posts:", err);
@@ -41,6 +44,7 @@ export default function CommunityPage() {
     // Subscribe to real-time updates
     const unsubscribe = subscribeToPosts((updatedPosts) => {
       setPosts(updatedPosts);
+      setAllPosts(updatedPosts);
     });
 
     return () => unsubscribe();
@@ -51,15 +55,15 @@ export default function CommunityPage() {
   }, [currentUser]);
 
   const filteredPosts = useMemo(() => {
-    if (!search.trim()) return posts;
-    return posts.filter(
+    if (!search.trim()) return allPosts;
+    return allPosts.filter(
       (post) =>
         (post.content &&
           post.content.toLowerCase().includes(search.toLowerCase())) ||
         (post.author &&
           post.author.toLowerCase().includes(search.toLowerCase())),
     );
-  }, [search, posts]);
+  }, [search, posts, allPosts]);
 
   const filteredFreelancers = useMemo(() => {
     const freelancers = users
@@ -73,7 +77,7 @@ export default function CommunityPage() {
   const filteredCompanies = useMemo(() => {
     const companies = users
       .filter((user) => user?.role === "company")
-      .slice(0, 6); 
+      .slice(0, 6);
 
     return companies;
   }, [users]);
@@ -87,6 +91,9 @@ export default function CommunityPage() {
     return mentors;
   }, [users]);
 
+  const onSearch = (term) => {
+    setSearch(term);
+  };
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
@@ -100,6 +107,7 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Navbar onSearch={onSearch} />
       <Head>
         <title>ITI Freelancers Community</title>
         <meta
@@ -124,7 +132,11 @@ export default function CommunityPage() {
       /> */}
 
       <main className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
-        <CommunitySidebar currentUser={currentUser} posts={posts} companies={filteredCompanies} />
+        <CommunitySidebar
+          currentUser={currentUser}
+          posts={posts}
+          companies={filteredCompanies}
+        />
 
         <div className="w-full md:w-2/4 space-y-6">
           <PostCreation currentUser={currentUser} />
