@@ -985,7 +985,7 @@ export default function UsersPage() {
                                 )}
                                 {user?.verificationStatus === "Pending" && (
                                   <>
-                                    <DropdownMenuItem
+                                    {/* <DropdownMenuItem
                                       onClick={() => handleApprove(user?.id)}
                                     >
                                       <Check className="mr-2 h-4 w-4" />
@@ -996,7 +996,7 @@ export default function UsersPage() {
                                     >
                                       <X className="mr-2 h-4 w-4" />
                                       Reject
-                                    </DropdownMenuItem>
+                                    </DropdownMenuItem> */}
                                   </>
                                 )}
                                 {user?.verificationStatus === "Approved" &&

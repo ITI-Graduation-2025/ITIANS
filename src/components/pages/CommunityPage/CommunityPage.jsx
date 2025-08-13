@@ -61,7 +61,7 @@ export default function CommunityPage() {
         (post.author &&
           post.author.toLowerCase().includes(search.toLowerCase())),
     );
-  }, [search, posts,allPosts]);
+  }, [search, posts, allPosts]);
 
   const filteredFreelancers = useMemo(() => {
     const freelancers = users
@@ -75,7 +75,7 @@ export default function CommunityPage() {
   const filteredCompanies = useMemo(() => {
     const companies = users
       .filter((user) => user?.role === "company")
-      .slice(0, 6); 
+      .slice(0, 6);
 
     return companies;
   }, [users]);
@@ -91,7 +91,7 @@ export default function CommunityPage() {
 
   const onSearch = (term) => {
     setSearch(term);
-  }
+  };
   if (loading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
@@ -105,7 +105,7 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar onSearch={onSearch}/>
+      <Navbar onSearch={onSearch} />
       <Head>
         <title>ITI Freelancers Community</title>
         <meta
@@ -130,7 +130,11 @@ export default function CommunityPage() {
       /> */}
 
       <main className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
-        <CommunitySidebar currentUser={currentUser} posts={posts} companies={filteredCompanies} />
+        <CommunitySidebar
+          currentUser={currentUser}
+          posts={posts}
+          companies={filteredCompanies}
+        />
 
         <div className="w-full md:w-2/4 space-y-6">
           <PostCreation currentUser={currentUser} />

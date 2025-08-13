@@ -12,17 +12,38 @@ import {
   getBookedSessionsSnapshot,
   getSessionRequestsForSession,
   withdrawSessionRequest,
+  getCompletedSessionsSnapshot,
 } from "@/services/sessionServices";
 import { useUserContext } from "@/context/userContext";
 
 export function CommunityStats({ mentor, isOwner }) {
   const [communitySessions, setCommunitySessions] = useState([]);
   const [userRequests, setUserRequests] = useState({});
+  const [completedSessions, setCompletedSessions] = useState([]);
   const [isLoadingCommunitySessions, setIsLoadingCommunitySessions] =
     useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [requestingSessionId, setRequestingSessionId] = useState(null);
   const { user } = useUserContext();
   const router = useRouter();
+
+  // Calculate statistics from completed sessions
+  const calculateStats = (sessions) => {
+    const totalDuration = sessions.reduce((total, session) => {
+      const duration = session.duration || "1h";
+      const hours = duration.includes("h") ? parseInt(duration) : 0;
+      const minutes =
+        duration.includes("m") && !duration.includes("h")
+          ? parseInt(duration)
+          : 0;
+      return total + hours * 60 + minutes;
+    }, 0);
+
+    return {
+      totalMentoringTime: totalDuration,
+      sessionsCompleted: sessions.length,
+    };
+  };
 
   const fetchRequests = async (sessions) => {
     if (user?.id && !isOwner) {
@@ -42,7 +63,9 @@ export function CommunityStats({ mentor, isOwner }) {
 
   useEffect(() => {
     setIsLoadingCommunitySessions(true);
+    setIsLoadingStats(true);
     let unsubscribe = () => {};
+    let statsUnsubscribe = () => {};
 
     const setupSnapshot = async () => {
       try {
@@ -58,22 +81,39 @@ export function CommunityStats({ mentor, isOwner }) {
           setIsLoadingCommunitySessions(false);
         };
 
+        const statsCallback = (sessions) => {
+          setCompletedSessions(sessions);
+          setIsLoadingStats(false);
+        };
+
         if (isOwner) {
           unsubscribe = await getBookedSessionsSnapshot(mentor.id, callback);
+          statsUnsubscribe = await getCompletedSessionsSnapshot(
+            mentor.id,
+            statsCallback,
+          );
         } else {
           unsubscribe = await getAvailableSessionsSnapshot(mentor.id, callback);
+          statsUnsubscribe = await getCompletedSessionsSnapshot(
+            mentor.id,
+            statsCallback,
+          );
         }
       } catch (err) {
         console.error("Error setting up snapshot:", err);
         toast.error("Failed to load sessions.");
         setCommunitySessions([]);
         setIsLoadingCommunitySessions(false);
+        setIsLoadingStats(false);
       }
     };
 
     setupSnapshot();
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      statsUnsubscribe();
+    };
   }, [mentor.id, user?.id, isOwner]);
 
   const handleRequestSession = async (session) => {
@@ -132,6 +172,8 @@ export function CommunityStats({ mentor, isOwner }) {
     }
   };
 
+  const stats = calculateStats(completedSessions);
+
   return (
     <div className="w-full sm:w-80 sm:p-6 space-y-4 sm:space-y-6 lg:overflow-hidden lg:col-span-2 md:w-full">
       {/* Statistics */}
@@ -144,26 +186,36 @@ export function CommunityStats({ mentor, isOwner }) {
           </div>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-between text-xs sm:text-sm">
-            <div className="flex items-center space-x-2">
-              <span className="text-[var(--primary)]">🚀</span>
-              <span className="text-[var(--muted-foreground)]">
-                Total mentoring time
-              </span>
+          {isLoadingStats ? (
+            <div className="flex justify-center items-center h-[60px]">
+              <LucideLoader2 className="w-4 h-4 animate-spin text-[var(--primary)]" />
             </div>
-            <span className="font-semibold text-[var(--foreground)]">
-              165 mins
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-xs sm:text-sm">
-            <div className="flex items-center space-x-2">
-              <span className="text-[var(--destructive)]">🎯</span>
-              <span className="text-[var(--muted-foreground)]">
-                Sessions completed
-              </span>
-            </div>
-            <span className="font-semibold text-[var(--foreground)]">5</span>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[var(--primary)]">🚀</span>
+                  <span className="text-[var(--muted-foreground)]">
+                    Total mentoring time
+                  </span>
+                </div>
+                <span className="font-semibold text-[var(--foreground)]">
+                  {stats.totalMentoringTime} mins
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[var(--destructive)]">🎯</span>
+                  <span className="text-[var(--muted-foreground)]">
+                    Sessions completed
+                  </span>
+                </div>
+                <span className="font-semibold text-[var(--foreground)]">
+                  {stats.sessionsCompleted}
+                </span>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

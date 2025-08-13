@@ -541,3 +541,27 @@ export const getAllSessionRequests = async () => {
   const snapshot = await getDocs(collection(db, "sessionRequests"));
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
+
+// Get completed sessions for statistics
+export const getCompletedSessionsSnapshot = async (mentorId, callback) => {
+  const q = query(
+    collection(db, "bookedSessions"),
+    where("mentorId", "==", mentorId),
+    where("status", "==", "Completed"),
+  );
+  const unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      const sessions = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      callback(sessions);
+    },
+    (error) => {
+      console.error("Snapshot error:", error);
+      callback([]);
+    },
+  );
+  return unsubscribe;
+};

@@ -11,6 +11,7 @@ import { Sidebar } from "@/components/mentorComp/sidebar";
 import { TabsSection } from "@/components/mentorComp/tabs-section";
 import { Testimonials } from "@/components/mentorComp/testimonials";
 import { authOptions } from "@/lib/nextAuth";
+import Navbar from "@/components/componentts/Navbar";
 
 export default async function MentorProfilePage({ params }) {
   const mentorIdFromUrl = params.id;
@@ -55,6 +56,7 @@ export default async function MentorProfilePage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* <Navbar /> */}
       <Header />
       <div className="flex flex-col md:flex-row">
         <Sidebar />

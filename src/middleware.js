@@ -31,6 +31,7 @@ export default withAuth(
       "/chat/:path*",
       "/pending",
       "/rejected",
+      "/complete-profile",
     ];
     const isAuthRoute = pathname.startsWith("/login");
     const isProtectedRoute = protectedRoutes.some(
@@ -93,5 +94,6 @@ export const config = {
     "/mentors",
     "/users",
     "/chat",
+    "/complete-profile",
   ],
 };
