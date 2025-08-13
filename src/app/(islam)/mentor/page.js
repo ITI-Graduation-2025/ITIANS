@@ -11,6 +11,7 @@ import { MentorProfile } from "@/components/mentorComp/mentor-profile";
 import { TabsSection } from "@/components/mentorComp/tabs-section";
 import { Testimonials } from "@/components/mentorComp/testimonials";
 import { CommunityStats } from "@/components/mentorComp/commuintyStats";
+import Navbar from "@/components/componentts/Navbar";
 
 export default async function MentorHome() {
   // ✅ 1. Get the current session
@@ -32,6 +33,7 @@ export default async function MentorHome() {
   // ✅ 3. Pass mentor as props to all components
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* <Navbar /> */}
       <Header />
       <div className="flex flex-col md:flex-row">
         <Sidebar />
