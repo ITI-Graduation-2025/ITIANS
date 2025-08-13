@@ -4,8 +4,6 @@ import { UsersContext } from "@/context/usersContext";
 import { getAllPosts, subscribeToPosts } from "@/services/postServices";
 import Head from "next/head";
 import { useContext, useEffect, useMemo, useState } from "react";
-import CommunityFooter from "./components/CommunityFooter";
-import CommunityHeader from "./components/CommunityHeader";
 import CommunityRightSidebar from "./components/CommunityRightSidebar";
 import CommunitySidebar from "./components/CommunitySidebar";
 import PostCreation from "./components/PostCreation";
@@ -44,6 +42,7 @@ export default function CommunityPage() {
     // Subscribe to real-time updates
     const unsubscribe = subscribeToPosts((updatedPosts) => {
       setPosts(updatedPosts);
+      setAllPosts(updatedPosts);
     });
 
     return () => unsubscribe();
