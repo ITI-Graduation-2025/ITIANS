@@ -742,3 +742,88 @@ export const getAllJobs = async () => {
     ...doc.data(),
   }));
 };
+
+// get job by id
+export const getJobById = async (jobId) => {
+  const jobRef = doc(db, "jobs", jobId);
+  const snapshot = await getDoc(jobRef);
+  if (snapshot.exists()) {
+    return { id: snapshot.id, ...snapshot.data() };
+  }
+  return null;
+};
+
+// create new job
+export const createJob = async (jobData) => {
+  const jobsRef = collection(db, "jobs");
+  const newJob = {
+    ...jobData,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    status: jobData.status || "Open",
+    applications: jobData.applications || 0,
+  };
+  const docRef = await addDoc(jobsRef, newJob);
+  return { id: docRef.id, ...newJob };
+};
+
+// update job
+export const updateJob = async (jobId, updateData) => {
+  const jobRef = doc(db, "jobs", jobId);
+  const updatePayload = {
+    ...updateData,
+    updatedAt: serverTimestamp(),
+  };
+  await updateDoc(jobRef, updatePayload);
+  return { id: jobId, ...updatePayload };
+};
+
+// delete job
+export const deleteJob = async (jobId) => {
+  const jobRef = doc(db, "jobs", jobId);
+  await deleteDoc(jobRef);
+  return { success: true };
+};
+
+// get jobs by company
+export const getJobsByCompany = async (companyId) => {
+  const jobsRef = collection(db, "jobs");
+  const q = query(
+    jobsRef,
+    where("companyId", "==", companyId),
+    orderBy("createdAt", "desc"),
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};
+
+// get jobs by status
+export const getJobsByStatus = async (status) => {
+  const jobsRef = collection(db, "jobs");
+  const q = query(
+    jobsRef,
+    where("status", "==", status),
+    orderBy("createdAt", "desc"),
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};
+
+// subscribe to jobs changes
+export const subscribeToJobs = (callback) => {
+  const jobsRef = collection(db, "jobs");
+  const q = query(jobsRef, orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const jobs = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    callback(jobs);
+  });
+};
