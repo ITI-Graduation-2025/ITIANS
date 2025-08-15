@@ -50,142 +50,367 @@ export default function TopRatedMentors() {
 
   if (loading) {
     return (
-      <section className="py-16 px-4 bg-[var(--background)] relative overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: "url('/background.svg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        ></div>
-        <p className="text-gray-800 text-center text-lg relative z-10">
-          Loading mentors...
-        </p>
+      <section className="relative py-16 px-4 overflow-hidden min-h-[500px]">
+        {/* Your SVG Background */}
+        <div className="absolute inset-0 w-full h-full">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            version="1.1"
+            xmlnsXlink="http://www.w3.org/1999/xlink"
+            xmlnssvgjs="http://svgjs.dev/svgjs"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="xMidYMid slice"
+            viewBox="0 0 1440 560"
+            className="w-full h-full object-cover"
+          >
+            <g mask="url(#SvgjsMask1016)" fill="none">
+              <rect
+                width="1440"
+                height="560"
+                x="0"
+                y="0"
+                fill="rgba(144, 27, 32, 1)"
+              ></rect>
+              <path
+                d="M1440 0L1402.57 0L1440 142.41z"
+                fill="rgba(255, 255, 255, .1)"
+              ></path>
+              <path
+                d="M1402.57 0L1440 142.41L1440 242.45L943.06 0z"
+                fill="rgba(255, 255, 255, .075)"
+              ></path>
+              <path
+                d="M943.06 0L1440 242.45L1440 242.97L390.90999999999997 0z"
+                fill="rgba(255, 255, 255, .05)"
+              ></path>
+              <path
+                d="M390.9100000000001 0L1440 242.97L1440 456.35L296.1400000000001 0z"
+                fill="rgba(255, 255, 255, .025)"
+              ></path>
+              <path
+                d="M0 560L529.81 560L0 352.84000000000003z"
+                fill="rgba(0, 0, 0, .1)"
+              ></path>
+              <path
+                d="M0 352.84000000000003L529.81 560L994.77 560L0 311.23z"
+                fill="rgba(0, 0, 0, .075)"
+              ></path>
+              <path
+                d="M0 311.23L994.77 560L1153.31 560L0 221.38000000000002z"
+                fill="rgba(0, 0, 0, .05)"
+              ></path>
+              <path
+                d="M0 221.38L1153.31 560L1183.01 560L0 144.98z"
+                fill="rgba(0, 0, 0, .025)"
+              ></path>
+            </g>
+            <defs>
+              <mask id="SvgjsMask1016">
+                <rect width="1440" height="560" fill="#ffffff"></rect>
+              </mask>
+            </defs>
+          </svg>
+        </div>
+        <div className="relative z-10 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-white text-lg font-medium">Loading mentors...</p>
+          </div>
+        </div>
       </section>
     );
   }
 
   if (error) {
     return (
-      <section className="py-16 px-4 bg-[var(--background)] relative overflow-hidden">
-        <div
-          className="absolute inset-0  pointer-events-none"
-          style={{
-            backgroundImage: "url('/background.svg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        ></div>
-        <p className="text-gray-800 text-center text-lg relative z-10">
-          {error}
-        </p>
+      <section className="relative py-16 px-4 overflow-hidden min-h-[500px]">
+        {/* Your SVG Background */}
+        <div className="absolute inset-0 w-full h-full">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            version="1.1"
+            xmlnsXlink="http://www.w3.org/1999/xlink"
+            xmlnssvgjs="http://svgjs.dev/svgjs"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="xMidYMid slice"
+            viewBox="0 0 1440 560"
+            className="w-full h-full object-cover"
+          >
+            <g mask="url(#SvgjsMask1016)" fill="none">
+              <rect
+                width="1440"
+                height="560"
+                x="0"
+                y="0"
+                fill="rgba(144, 27, 32, 1)"
+              ></rect>
+              <path
+                d="M1440 0L1402.57 0L1440 142.41z"
+                fill="rgba(255, 255, 255, .1)"
+              ></path>
+              <path
+                d="M1402.57 0L1440 142.41L1440 242.45L943.06 0z"
+                fill="rgba(255, 255, 255, .075)"
+              ></path>
+              <path
+                d="M943.06 0L1440 242.45L1440 242.97L390.90999999999997 0z"
+                fill="rgba(255, 255, 255, .05)"
+              ></path>
+              <path
+                d="M390.9100000000001 0L1440 242.97L1440 456.35L296.1400000000001 0z"
+                fill="rgba(255, 255, 255, .025)"
+              ></path>
+              <path
+                d="M0 560L529.81 560L0 352.84000000000003z"
+                fill="rgba(0, 0, 0, .1)"
+              ></path>
+              <path
+                d="M0 352.84000000000003L529.81 560L994.77 560L0 311.23z"
+                fill="rgba(0, 0, 0, .075)"
+              ></path>
+              <path
+                d="M0 311.23L994.77 560L1153.31 560L0 221.38000000000002z"
+                fill="rgba(0, 0, 0, .05)"
+              ></path>
+              <path
+                d="M0 221.38L1153.31 560L1183.01 560L0 144.98z"
+                fill="rgba(0, 0, 0, .025)"
+              ></path>
+            </g>
+            <defs>
+              <mask id="SvgjsMask1016">
+                <rect width="1440" height="560" fill="#ffffff"></rect>
+              </mask>
+            </defs>
+          </svg>
+        </div>
+        <div className="relative z-10 flex items-center justify-center min-h-[400px]">
+          <p className="text-white text-center text-lg bg-black/20 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg">
+            {error}
+          </p>
+        </div>
       </section>
     );
   }
 
   if (mentors.length === 0) {
     return (
-      <section className="py-16 px-4 bg-[var(--background)] relative overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: "url('/background.svg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        ></div>
-        <p className="text-gray-800 text-center text-lg relative z-10">
-          No mentors found.
-        </p>
+      <section className="relative py-16 px-4 overflow-hidden min-h-[500px]">
+        {/* Your SVG Background */}
+        <div className="absolute inset-0 w-full h-full">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            version="1.1"
+            xmlnsXlink="http://www.w3.org/1999/xlink"
+            xmlnssvgjs="http://svgjs.dev/svgjs"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="xMidYMid slice"
+            viewBox="0 0 1440 560"
+            className="w-full h-full object-cover"
+          >
+            <g mask="url(#SvgjsMask1016)" fill="none">
+              <rect
+                width="1440"
+                height="560"
+                x="0"
+                y="0"
+                fill="rgba(144, 27, 32, 1)"
+              ></rect>
+              <path
+                d="M1440 0L1402.57 0L1440 142.41z"
+                fill="rgba(255, 255, 255, .1)"
+              ></path>
+              <path
+                d="M1402.57 0L1440 142.41L1440 242.45L943.06 0z"
+                fill="rgba(255, 255, 255, .075)"
+              ></path>
+              <path
+                d="M943.06 0L1440 242.45L1440 242.97L390.90999999999997 0z"
+                fill="rgba(255, 255, 255, .05)"
+              ></path>
+              <path
+                d="M390.9100000000001 0L1440 242.97L1440 456.35L296.1400000000001 0z"
+                fill="rgba(255, 255, 255, .025)"
+              ></path>
+              <path
+                d="M0 560L529.81 560L0 352.84000000000003z"
+                fill="rgba(0, 0, 0, .1)"
+              ></path>
+              <path
+                d="M0 352.84000000000003L529.81 560L994.77 560L0 311.23z"
+                fill="rgba(0, 0, 0, .075)"
+              ></path>
+              <path
+                d="M0 311.23L994.77 560L1153.31 560L0 221.38000000000002z"
+                fill="rgba(0, 0, 0, .05)"
+              ></path>
+              <path
+                d="M0 221.38L1153.31 560L1183.01 560L0 144.98z"
+                fill="rgba(0, 0, 0, .025)"
+              ></path>
+            </g>
+            <defs>
+              <mask id="SvgjsMask1016">
+                <rect width="1440" height="560" fill="#ffffff"></rect>
+              </mask>
+            </defs>
+          </svg>
+        </div>
+        <div className="relative z-10 flex items-center justify-center min-h-[400px]">
+          <p className="text-white text-center text-lg bg-black/20 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg">
+            No mentors found.
+          </p>
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="py-16 px-4 md:px-8 bg-[var(--background)] relative overflow-hidden">
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "url('/background.svg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      ></div>
+    <section className="relative py-16 px-4 md:px-8 overflow-hidden min-h-[600px]">
+      {/* Your SVG Background */}
+      <div className="absolute inset-0 w-full h-full">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          version="1.1"
+          xmlnsXlink="http://www.w3.org/1999/xlink"
+          xmlnssvgjs="http://svgjs.dev/svgjs"
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid slice"
+          viewBox="0 0 1440 560"
+          className="w-full h-full object-cover"
+        >
+          <g mask="url(#SvgjsMask1016)" fill="none">
+            <rect
+              width="1440"
+              height="560"
+              x="0"
+              y="0"
+              fill="rgba(144, 27, 32, 1)"
+            ></rect>
+            <path
+              d="M1440 0L1402.57 0L1440 142.41z"
+              fill="rgba(255, 255, 255, .1)"
+            ></path>
+            <path
+              d="M1402.57 0L1440 142.41L1440 242.45L943.06 0z"
+              fill="rgba(255, 255, 255, .075)"
+            ></path>
+            <path
+              d="M943.06 0L1440 242.45L1440 242.97L390.90999999999997 0z"
+              fill="rgba(255, 255, 255, .05)"
+            ></path>
+            <path
+              d="M390.9100000000001 0L1440 242.97L1440 456.35L296.1400000000001 0z"
+              fill="rgba(255, 255, 255, .025)"
+            ></path>
+            <path
+              d="M0 560L529.81 560L0 352.84000000000003z"
+              fill="rgba(0, 0, 0, .1)"
+            ></path>
+            <path
+              d="M0 352.84000000000003L529.81 560L994.77 560L0 311.23z"
+              fill="rgba(0, 0, 0, .075)"
+            ></path>
+            <path
+              d="M0 311.23L994.77 560L1153.31 560L0 221.38000000000002z"
+              fill="rgba(0, 0, 0, .05)"
+            ></path>
+            <path
+              d="M0 221.38L1153.31 560L1183.01 560L0 144.98z"
+              fill="rgba(0, 0, 0, .025)"
+            ></path>
+          </g>
+          <defs>
+            <mask id="SvgjsMask1016">
+              <rect width="1440" height="560" fill="#ffffff"></rect>
+            </mask>
+          </defs>
+        </svg>
+      </div>
 
-      <motion.h2
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        viewport={{ once: true, amount: 0.3 }}
-        className="text-3xl md:text-4xl font-bold text-[var(--primary)] text-center mb-12 relative z-10"
-      >
-        Mentors
-      </motion.h2>
+      {/* Content */}
+      <div className="relative z-10">
+        <motion.h2
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true, amount: 0.3 }}
+          className="text-3xl md:text-4xl font-bold text-white text-center mb-12"
+        >
+          Top Mentors
+        </motion.h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-6xl mx-auto relative z-10">
-        {mentors.map((mentor, index) => (
-          <motion.div
-            key={mentor.id}
-            initial={{ opacity: 0, y: 60 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.2 }}
-            whileHover={{
-              scale: 1.03,
-              boxShadow: "0 10px 20px rgba(0, 0, 0, 0.15)",
-              transition: { type: "spring", stiffness: 400 },
-            }}
-            className="relative group overflow-hidden rounded-xl bg-white shadow-md hover:shadow-xl transition-shadow duration-300"
-          >
-            {/* Mentor Image */}
-            <div className="relative w-full h-[350px]">
-              <Image
-                src={mentor.profileImage}
-                alt={mentor.name}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            </div>
-
-            {/* Hover Overlay */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {mentors.map((mentor, index) => (
             <motion.div
-              initial={{ opacity: 0 }}
-              whileHover={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0 bg-gradient-to-t from-[var(--primary)]/80 to-transparent flex flex-col justify-end p-6"
+              key={mentor.id}
+              initial={{ opacity: 0, y: 60 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.2 }}
+              whileHover={{
+                scale: 1.03,
+                y: -5,
+                transition: { type: "spring", stiffness: 400 },
+              }}
+              className="relative group overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/20"
             >
-              <div className="text-white">
-                <h3 className="text-xl md:text-2xl font-semibold mb-1">
+              {/* Mentor Image */}
+              <div className="relative w-full h-[280px] overflow-hidden rounded-t-2xl">
+                <Image
+                  src={mentor.profileImage}
+                  alt={mentor.name}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                />
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              </div>
+
+              {/* Content Section */}
+              <div className="p-6 relative">
+                <h3 className="text-xl font-bold text-[#901B20] mb-2 group-hover:text-[#7A1619] transition-colors duration-300">
                   {mentor.name}
                 </h3>
-                <p className="text-sm md:text-base opacity-90">
-                  {mentor.jobTitle || "Mentor"}
+                <p className="text-gray-600 text-sm mb-4 group-hover:text-gray-700 transition-colors duration-300">
+                  {mentor.jobTitle || "Professional Mentor"}
                 </p>
+
+                {/* View Profile Button */}
+                <Link
+                  href={`/mentors/${mentor.id}`}
+                  className="inline-flex items-center gap-2 bg-[#901B20] text-white px-4 py-2 rounded-full hover:bg-[#7A1619] transition-all duration-300 transform hover:scale-105 text-sm font-medium"
+                >
+                  <FaEye className="w-4 h-4" />
+                  View Profile
+                </Link>
               </div>
 
-              {/* View Profile Icon */}
-              <div className="absolute top-4 right-4">
-                <motion.div
-                  whileHover={{ y: -3, scale: 1.1 }}
-                  transition={{ type: "spring", stiffness: 400 }}
+              {/* Floating Action Button */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0 }}
+                whileHover={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", stiffness: 400 }}
+                className="absolute top-4 right-4"
+              >
+                <Link
+                  href={`/mentors/${mentor.id}`}
+                  className="bg-white/90 backdrop-blur-sm text-[#901B20] p-3 rounded-full shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300"
+                  title="View Profile"
+                  aria-label={`View profile of ${mentor.name}`}
                 >
-                  <Link
-                    href={`/mentors/${mentor.id}`}
-                    className="text-white bg-[var(--primary)]/30 p-3 rounded-full hover:bg-[var(--primary)]/50 transition"
-                    title="View Profile"
-                    aria-label={`View profile of ${mentor.name}`}
-                  >
-                    <FaEye className="w-5 h-5" />
-                  </Link>
-                </motion.div>
-              </div>
+                  <FaEye className="w-5 h-5" />
+                </Link>
+              </motion.div>
+
+              {/* Decorative Element */}
+              <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-gradient-to-br from-[#901B20]/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </motion.div>
-          </motion.div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );

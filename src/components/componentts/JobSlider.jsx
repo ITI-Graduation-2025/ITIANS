@@ -76,12 +76,12 @@ export default function JobsSection() {
   };
 
   return (
-    <section className="py-16 px-4 md:px-8 bg-[#fafafa]">
+    <section className="py-16 px-4 md:px-8 bg-[var(--background)]">
       <motion.h2
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-3xl md:text-4xl font-bold text-[#B71C1C] text-center mb-12"
+        className="text-3xl md:text-4xl font-bold text-[var(--primary)] text-center mb-12"
       >
         Job Opportunities
       </motion.h2>
@@ -164,7 +164,7 @@ export default function JobsSection() {
                       ${job.salary || "N/A"}
                     </p>
                     <p className="text-sm text-gray-600 flex items-center">
-                      <FaMapMarkerAlt className="mr-1 text-[#B71C1C]" />
+                      <FaMapMarkerAlt className="mr-1 text-[var(--primary)]" />
                       {job.location || "N/A"}
                     </p>
                   </div>
@@ -174,7 +174,7 @@ export default function JobsSection() {
                   >
                     <Link
                       href={`/jobs/${job.id}`}
-                      className="bg-[#B71C1C] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#7e1e22] transition"
+                      className="bg-[var(--primary)] text-gray-100 px-4 py-2 rounded-full text-sm font-medium hover:bg-opacity-80 transition"
                       aria-label={`View details for ${job.title} at ${job.company}`}
                     >
                       Details
@@ -241,3 +241,208 @@ export default function JobsSection() {
     </section>
   );
 }
+///////////////////
+
+// "use client";
+
+// import { CardCarousel } from "@/components/ui/card-carousel";
+// import { motion } from "framer-motion";
+// import Link from "next/link";
+// import { useEffect, useState, useCallback } from "react";
+// import {
+//   collection,
+//   getDocs,
+//   query,
+//   orderBy,
+//   limit,
+//   where,
+// } from "firebase/firestore";
+// import { db } from "@/config/firebase";
+// import { FaMapMarkerAlt } from "react-icons/fa";
+
+// export default function JobsSection() {
+//   const [jobs, setJobs] = useState([]);
+//   const [users, setUsers] = useState({});
+//   const [isLoading, setIsLoading] = useState(true);
+
+//   const getCardColor = useCallback((index) => {
+//     const colors = ["bg-[#f5f5f5]", "bg-[#e3f2fd]", "bg-[#fce4ec]"];
+//     return colors[index % colors.length];
+//   }, []);
+
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         const [jobsSnapshot, usersSnapshot] = await Promise.all([
+//           getDocs(
+//             query(
+//               collection(db, "jobs"),
+//               orderBy("createdAt", "desc"),
+//               limit(5),
+//             ),
+//           ),
+//           getDocs(
+//             query(collection(db, "users"), where("role", "==", "company")),
+//           ),
+//         ]);
+
+//         const jobsData = jobsSnapshot.docs.map((doc) => ({
+//           id: doc.id,
+//           ...doc.data(),
+//           createdAt: doc.data().createdAt?.toDate(),
+//         }));
+
+//         const companyUsers = {};
+//         usersSnapshot.forEach((doc) => {
+//           const data = doc.data();
+//           companyUsers[data.name || data.email] =
+//             data.profileImage || "/default-logo.avif";
+//         });
+
+//         setJobs(jobsData);
+//         setUsers(companyUsers);
+//       } catch (error) {
+//         console.error("Error fetching data:", error);
+//       } finally {
+//         setIsLoading(false);
+//       }
+//     };
+
+//     fetchData();
+//   }, []);
+
+//   const formatDate = (date) => {
+//     if (!date || !(date instanceof Date) || isNaN(date.getTime())) return "N/A";
+//     const day = date.getDate();
+//     const month = date.toLocaleString("en-US", { month: "short" });
+//     const year = date.getFullYear();
+//     return `${day} ${month}, ${year}`;
+//   };
+
+//   if (isLoading) {
+//     return (
+//       <div className="flex justify-center items-center py-16">
+//         <div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
+//       </div>
+//     );
+//   }
+
+//   if (jobs.length === 0) {
+//     return (
+//       <div className="text-center py-16">No job opportunities available.</div>
+//     );
+//   }
+
+//   const jobCards = jobs.map((job, index) => ({
+//     content: (
+//       <motion.div
+//         key={job.id}
+//         initial={{ opacity: 0, y: 30 }}
+//         whileInView={{ opacity: 1, y: 0 }}
+//         transition={{ duration: 0.5, delay: index * 0.2 }}
+//         className="w-full max-w-sm h-auto overflow-hidden rounded-2xl shadow-md border border-gray-200 bg-white p-1 mx-auto"
+//       >
+//         <div className={`p-4 ${getCardColor(index)} mx-2 my-2 rounded-xl`}>
+//           <div className="flex items-center justify-between">
+//             <div>
+//               <div className="bg-white w-fit px-3 py-1 rounded-full shadow-sm mb-4">
+//                 <span className="text-sm font-medium text-gray-700">
+//                   {formatDate(job.createdAt)}
+//                 </span>
+//               </div>
+//               <p className="text-lg font-medium text-gray-700 mb-3">
+//                 {job.company.charAt(0).toUpperCase() + job.company.slice(1)}
+//               </p>
+//               <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+//                 {job.title.charAt(0).toUpperCase() + job.title.slice(1)}
+//               </h3>
+//               <p className="text-sm text-gray-600 description mb-3">
+//                 {job.description || "No description available"}...
+//               </p>
+//               <div className="flex gap-2 text-sm text-gray-600">
+//                 <span className="px-2 py-1 border border-gray-300 rounded-full">
+//                   {job.type || "N/A"}
+//                 </span>
+//                 <span className="px-2 py-1 border border-gray-300 rounded-full">
+//                   {job.level || "N/A"}
+//                 </span>
+//               </div>
+//             </div>
+//             <motion.img
+//               src={users[job.company] || "/default-logo.avif"}
+//               alt={`${job.company} logo`}
+//               className="w-16 h-16 rounded-full object-cover"
+//               onError={(e) => (e.target.src = "/default-logo.avif")}
+//               whileHover={{
+//                 rotate: 10,
+//                 transition: { type: "spring", stiffness: 200 },
+//               }}
+//             />
+//           </div>
+//         </div>
+//         <div className="p-4 bg-white">
+//           <div className="flex justify-between items-center space-x-4">
+//             <div>
+//               <p className="text-sm font-medium text-gray-800 mb-1">
+//                 ${job.salary || "N/A"}
+//               </p>
+//               <p className="text-sm text-gray-600 flex items-center">
+//                 <FaMapMarkerAlt className="mr-1 text-[var(--primary)]" />
+//                 {job.location || "N/A"}
+//               </p>
+//             </div>
+//             <Link
+//               href={`/jobs/${job.id}`}
+//               className="bg-[var(--primary)] text-gray-100 px-4 py-2 rounded-full text-sm font-medium hover:bg-opacity-80 transition"
+//             >
+//               Details
+//             </Link>
+//           </div>
+//         </div>
+//       </motion.div>
+//     ),
+//   }));
+
+//   return (
+//     <section className="relative py-16 px-4 md:px-8 bg-[var(--background)]">
+//       {/* خلفية SVG */}
+//       <div className="absolute inset-0 -z-10 opacity-30">
+//         <svg
+//           xmlns="http://www.w3.org/2000/svg"
+//           preserveAspectRatio="none"
+//           viewBox="0 0 800 400"
+//           className="w-full h-full"
+//         >
+//           <circle cx="200" cy="200" r="300" fill="#e3f2fd" />
+//           <circle cx="600" cy="300" r="250" fill="#fce4ec" />
+//         </svg>
+//       </div>
+
+//       <motion.h2
+//         initial={{ opacity: 0, y: 30 }}
+//         whileInView={{ opacity: 1, y: 0 }}
+//         transition={{ duration: 0.6 }}
+//         className="text-3xl md:text-4xl font-bold text-[var(--primary)] text-center mb-12"
+//       >
+//         Job Opportunities
+//       </motion.h2>
+
+//       <CardCarousel
+//         items={jobCards}
+//         autoplayDelay={4000}
+//         showPagination={true}
+//         showNavigation={true}
+//       />
+
+//       <style jsx global>{`
+//         .description {
+//           display: -webkit-box;
+//           -webkit-line-clamp: 2;
+//           -webkit-box-orient: vertical;
+//           overflow: hidden;
+//           text-overflow: ellipsis;
+//         }
+//       `}</style>
+//     </section>
+//   );
+// }

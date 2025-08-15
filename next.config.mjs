@@ -100,6 +100,9 @@ messaging.onBackgroundMessage((payload) => {
     console.log("✅ تم إنشاء: public/firebase-messaging-sw.js");
   } catch (error) {
     console.error("❌ فشل في إنشاء ملف الـ Service Worker:", error);
+    console.log("✅  public/firebase-messaging-sw.js");
+  // } catch (error) {
+  //   console.error("❌ Service Worker:", error);
   }
 };
 

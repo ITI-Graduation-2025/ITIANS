@@ -20,7 +20,7 @@ export default function TracksMarquee() {
 
   return (
     <section className="bg-[var(--background)] py-12 overflow-hidden">
-      <h2 className="text-3xl md:text-4xl font-bold text-[#B71C1C] text-center mb-8">
+      <h2 className="text-3xl md:text-4xl font-bold text-[var(--primary)] text-center mb-8">
         Graduate Tracks
       </h2>
 
@@ -38,7 +38,7 @@ export default function TracksMarquee() {
           {repeatedTracks.map((track, index) => (
             <span
               key={`track1-${index}`}
-              className="mx-4 px-6 py-2 rounded-full text-base md:text-xl font-medium bg-[#B71C1C] text-white hover:bg-[#7F1D1D] transition duration-300"
+              className="mx-4 px-6 py-2 rounded-full text-base md:text-xl font-medium bg-[var(--primary)] text-gray-100 hover:bg-opacity-80 transition duration-300"
             >
               {track}
             </span>
@@ -60,7 +60,7 @@ export default function TracksMarquee() {
           {repeatedTracks.map((track, index) => (
             <span
               key={`track2-${index}`}
-              className="mx-4 px-6 py-2 rounded-full text-base md:text-xl font-medium bg-[#B71C1C] text-white hover:bg-[#7F1D1D] transition duration-300"
+              className="mx-4 px-6 py-2 rounded-full text-base md:text-xl font-medium bg-[var(--primary)] text-gray-100 hover:bg-opacity-80 transition duration-300"
             >
               {track}
             </span>

@@ -14,16 +14,14 @@ export default function Home() {
   return (
     <>
       <LandingSection />
-
       <JobSlider />
       <TopRatedMentors />
-      <TracksMarquee />
 
       <AboutUsSection />
-
-      <QuoteSection />
-      <CompaniesTicker />
+      <TracksMarquee />
       <OurImpactSection />
+      <CompaniesTicker />
+      <QuoteSection />
       <ContactUs />
     </>
   );
