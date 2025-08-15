@@ -6,14 +6,28 @@ export const upload = async (e) => {
   formData.append("file", file);
   formData.append("upload_preset", "next-upload-preset");
 
-  const res = await fetch(
-    "https://api.cloudinary.com/v1_1/dnhbcvgfb/image/upload",
-    {
-      method: "POST",
-      body: formData,
-    },
-  );
+  try {
+    const res = await fetch(
+      "https://api.cloudinary.com/v1_1/dnhbcvgfb/image/upload",
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
 
-  const data = await res.json();
-  return data.secure_url;
+    if (!res.ok) {
+      throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    
+    if (data.error) {
+      throw new Error(`Cloudinary error: ${data.error.message}`);
+    }
+
+    return data.secure_url;
+  } catch (error) {
+    console.error("Upload error:", error);
+    throw error;
+  }
 };
