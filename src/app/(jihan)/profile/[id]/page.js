@@ -15,10 +15,16 @@ export default function Profile() {
     getUser(id).then((res) => setUser(res));
   }, []);
 
+  const refetchUser = async () => {
+    const updatedUser = await getUser(id);
+    setUser(updatedUser);
+    return updatedUser;
+  };
+
   return (
     <FreelancerProfile
       user={id!==currentUser?.id ? user : currentUser}
-      refetchUser={() => getUser(id)}
+      refetchUser={refetchUser}
     />
   );
 }

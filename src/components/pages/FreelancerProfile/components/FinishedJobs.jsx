@@ -22,8 +22,7 @@ export const FinishedJobs = ({
           <div className="text-sm">No finished jobs</div>
         )
       }
-      onEdit={isOwner ? () => setIsModalOpen("work") : undefined}
-      editable={isOwner}
+   
     />
   );
 };

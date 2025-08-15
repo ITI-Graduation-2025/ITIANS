@@ -315,7 +315,7 @@ export default function PostItem({ post, currentUser }) {
 
       <div className="p-4">
         <div className="flex items-start space-x-3">
-          <Link href={`/profile/${post.authorId}`}>
+          <Link href={`/${post.role?.toLowerCase() === "mentor" ? "mentor" : post.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.authorId}`}>
             {post.authorProfileImage ? (
               <Image
                 src={post.authorProfileImage || ""}
@@ -333,7 +333,7 @@ export default function PostItem({ post, currentUser }) {
           <div className="flex-1">
             <div className="flex justify-between items-start">
               <div>
-                <Link href={`/profile/${post.authorId}`}>
+                <Link href={`/${post.role?.toLowerCase() === "mentor" ? "mentor" : post.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.authorId}`}>
                   <h4 className="font-bold cursor-pointer hover:underline">
                     {post.author}
                   </h4>
@@ -371,7 +371,7 @@ export default function PostItem({ post, currentUser }) {
         {post.repostOf && (
           <div className="mt-3 bg-muted border border-border rounded-lg p-3">
             <div className="flex items-start space-x-3">
-              <Link href={`/profile/${post.repostOf?.authorId}`}>
+              <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
                 {post.repostOf.authorProfileImage ? (
                   <Image
                     src={post.repostOf.authorProfileImage || ""}
@@ -386,7 +386,7 @@ export default function PostItem({ post, currentUser }) {
                   </div>
                 )}
               </Link>
-              <Link href={`/profile/${post.repostOf?.authorId}`}>
+              <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
                 <h5 className="font-semibold text-sm cursor-pointer hover:underline">
                   {post.repostOf.author}
                 </h5>

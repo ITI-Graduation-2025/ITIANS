@@ -85,15 +85,14 @@ export default function UsersList() {
 
   const handleViewProfile = (user) => {
     const role = user.role?.toLowerCase();
-
     if (role === "mentor") {
-      window.location.href = `/mentors/${user.id}`;
+      window.location.href = `/mentor/${user.id}`;
     } else if (role === "freelancer") {
-      window.location.href = `/profile`;
+      window.location.href = `/profile/${user.id}`;
     } else if (role === "company") {
-      window.location.href = `/company`;
+      window.location.href = `/companies/${user.id}`;
     } else {
-      window.location.href = `/profile`;
+      window.location.href = `/profile/${user.id}`;
     }
   };
 

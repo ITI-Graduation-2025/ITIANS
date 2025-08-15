@@ -1,5 +1,7 @@
 export * from "./PersonalInfo";
 export * from "./FinishedJobs";
+export * from "./InProgressJobs";
+export * from "./Experience";
 export * from "./ResumeSection";
 export * from "./Posts";
 export * from "./SectionCard";

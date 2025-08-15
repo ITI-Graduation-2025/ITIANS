@@ -27,6 +27,12 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
     else if (type === "education")
       setTempValue(user.education || { school: "", degree: "", year: "" });
     else if (type === "work") setTempValue(user.finishedJobs || []);
+    else if (type === "experience")
+      setTempValue(
+        user.workExperiences || [
+          { jobTitle: "", company: "", startDate: "", endDate: "", tasks: "" },
+        ],
+      );
     else if (type === "certificates") setTempValue(user.certificates || []);
     else if (type === "profileImage") {
       setTempValue(user.profileImage || "");
@@ -91,6 +97,10 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
         await updateUser(user.id, { education: tempValue });
       } else if (type === "work") {
         await updateUser(user.id, { finishedJobs: tempValue });
+      } else if (type === "experience") {
+        await updateUser(user.id, { workExperiences: tempValue });
+        // Update local user context immediately
+        setUser({ ...user, workExperiences: tempValue });
       } else if (type === "certificates") {
         await updateUser(user.id, { certificates: tempValue });
       } else if (type === "profileImage") {
@@ -246,6 +256,114 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
               className="w-full border-2 border-[#B71C1C] px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
               disabled={loading}
             />
+          </div>
+        )}
+        {type === "experience" && (
+          <div className="space-y-4">
+            {(Array.isArray(tempValue) ? tempValue : []).map((exp, i) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    className="w-full border-2 border-[#B71C1C] px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none"
+                    placeholder="Job Title"
+                    value={exp.jobTitle || ""}
+                    onChange={(e) => {
+                      const arr = [...tempValue];
+                      arr[i] = { ...arr[i], jobTitle: e.target.value };
+                      setTempValue(arr);
+                    }}
+                    disabled={loading}
+                  />
+                  <input
+                    type="text"
+                    className="w-full border-2 border-[#B71C1C] px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none"
+                    placeholder="Company"
+                    value={exp.company || ""}
+                    onChange={(e) => {
+                      const arr = [...tempValue];
+                      arr[i] = { ...arr[i], company: e.target.value };
+                      setTempValue(arr);
+                    }}
+                    disabled={loading}
+                  />
+                </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                     <input
+                       type="date"
+                       className="w-full border-2 border-[#B71C1C] px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none"
+                       value={exp.startDate || ""}
+                       onChange={(e) => {
+                         const arr = [...tempValue];
+                         arr[i] = { ...arr[i], startDate: e.target.value };
+                         setTempValue(arr);
+                       }}
+                       disabled={loading}
+                     />
+                   </div>
+                                       <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                      <input
+                        type="date"
+                        className="w-full border-2 border-[#B71C1C] px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none"
+                        value={exp.endDate === "Present" ? "" : (exp.endDate || "")}
+                        onChange={(e) => {
+                          const arr = [...tempValue];
+                          arr[i] = { ...arr[i], endDate: e.target.value };
+                          setTempValue(arr);
+                        }}
+                        disabled={loading || exp.endDate === "Present"}
+                      />
+                      <div className="flex items-center mt-1">
+                        <input
+                          type="checkbox"
+                          id={`present-${i}`}
+                          checked={exp.endDate === "Present"}
+                          onChange={(e) => {
+                            const arr = [...tempValue];
+                            arr[i] = { ...arr[i], endDate: e.target.checked ? "Present" : "" };
+                            setTempValue(arr);
+                          }}
+                          className="mr-2"
+                          disabled={loading}
+                        />
+                        <label htmlFor={`present-${i}`} className="text-sm text-gray-600">Currently working here</label>
+                      </div>
+                    </div>
+                 </div>
+                <textarea
+                  className="w-full border-2 border-[#B71C1C] px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none min-h-[80px]"
+                  placeholder="Key tasks, responsibilities, or achievements"
+                  value={exp.tasks || ""}
+                  onChange={(e) => {
+                    const arr = [...tempValue];
+                    arr[i] = { ...arr[i], tasks: e.target.value };
+                    setTempValue(arr);
+                  }}
+                  disabled={loading}
+                />
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setTempValue(tempValue.filter((_, idx) => idx !== i))}
+                    className="text-red-500 hover:text-red-700 px-2 py-1 rounded-lg"
+                    disabled={loading}
+                  >
+                    Delete Experience
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={() =>
+                setTempValue([...(tempValue || []), { jobTitle: "", company: "", startDate: "", endDate: "", tasks: "" }])
+              }
+              className="text-[#B71C1C] underline hover:text-[#B71C1C]/80"
+              disabled={loading}
+            >
+              Add Experience
+            </button>
           </div>
         )}
         {type === "certificates" && (

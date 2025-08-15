@@ -9,7 +9,9 @@ import {
   Certificates,
   EditModal,
   FinishedJobs,
+  InProgressJobs,
   Header,
+  Experience,
   PersonalInfo,
   Posts,
   ResumeSection,
@@ -70,6 +72,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
   const mainTrack = user.mainTrack || "";
   const skills = user.skills || [];
   const finishedJobs = user.finishedJobs || [];
+  const inProgressJobs = user.inProgressJobs || [];
   const currentJob = user.currentJob;
   const linkedIn = user.linkedIn || "";
   const github = user.github || "";
@@ -113,12 +116,26 @@ const FreelancerProfile = ({ user, refetchUser }) => {
           isOwner={isOwner}
           setIsModalOpen={setIsModalOpen}
         />
-        <Posts userPosts={userPosts} currentUser={session?.user} isOwner={isOwner} />
-        <FinishedJobs
+        <Experience
+          workExperiences={user.workExperiences || []}
+          experienceYears={user.experienceYears}
+          experienceMonths={user.experienceMonths}
+          isOwner={isOwner}
+          setIsModalOpen={setIsModalOpen}
+        />
+         <FinishedJobs
           finishedJobs={finishedJobs}
           isOwner={isOwner}
           setIsModalOpen={setIsModalOpen}
         />
+        <InProgressJobs
+          inProgressJobs={inProgressJobs}
+          currentJob={currentJob}
+          isOwner={isOwner}
+          setIsModalOpen={setIsModalOpen}
+        />
+        <Posts userPosts={userPosts} currentUser={session?.user} isOwner={isOwner} />
+       
       </main>
       {isModalOpen && (
         <EditModal
