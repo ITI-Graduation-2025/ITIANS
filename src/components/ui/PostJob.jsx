@@ -1,9 +1,10 @@
-"use client";  
+"use client";
 
-import React, { useState , useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/config/firebase";
+import CompanyNavbar from "./CompanyNavbar";
 import {
   collection,
   addDoc,
@@ -18,7 +19,6 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-
 
 export default function PostJob() {
   const { data: session } = useSession();
@@ -38,7 +38,7 @@ export default function PostJob() {
 
   const [loading, setLoading] = useState(false);
   const params = useParams();
-const jobId = params?.jobId;
+  const jobId = params?.jobId;
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -92,7 +92,6 @@ const jobId = params?.jobId;
       const deadlineDate = new Date(formData.deadline);
       const deadlineTimestamp = Timestamp.fromDate(deadlineDate);
 
-      // إنشاء الوظيفة
       await addDoc(collection(db, "jobs"), {
         ...formData,
         deadline: deadlineTimestamp,
@@ -165,31 +164,31 @@ const jobId = params?.jobId;
   };
 
   useEffect(() => {
-  const clearNewApplications = async () => {
-    const jobRef = doc(db, "jobs", jobId);
-    await updateDoc(jobRef, {
-      newApplications: [],
-    });
-  };
+    const clearNewApplications = async () => {
+      if (!jobId) return;
+      const jobRef = doc(db, "jobs", jobId);
+      await updateDoc(jobRef, {
+        newApplications: [],
+      });
+    };
 
-  clearNewApplications();
-}, [jobId]);
-
+    clearNewApplications();
+  }, [jobId]);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
+      <CompanyNavbar />
       <Toaster position="top-right" />
       <main className="p-6 max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold text-gray-800">Post a New Job</h1>
           <Link
             href="/companyjobs"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#b30000] text-white font-semibold text-sm  transition-all duration-300 shadow-sm hover:shadow-md group"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#b30000] text-white font-semibold text-sm transition-all duration-300 shadow-sm hover:shadow-md group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
             <span>Back to My Jobs</span>
           </Link>
-
         </div>
         <p className="text-gray-600 mb-6">
           Connect with skilled ITI graduates for your projects
@@ -221,13 +220,12 @@ const jobId = params?.jobId;
             <button
               type="submit"
               disabled={loading}
-              className={`group relative overflow-hidden bg-[#b30000] text-white px-6 py-2 rounded-full shadow-md hover:from-red-700 hover:to-red-800 transition-all duration-300 ease-in-out flex items-center justify-center gap-2 mx-auto ${loading ? 'opacity-60 cursor-not-allowed' : ''
+              className={`group relative overflow-hidden bg-[#b30000] text-white px-6 py-2 rounded-full shadow-md hover:from-red-700 hover:to-red-800 transition-all duration-300 ease-in-out flex items-center justify-center gap-2 mx-auto ${loading ? "opacity-60 cursor-not-allowed" : ""
                 }`}
             >
               <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               {loading ? "Posting..." : "Post Job"}
             </button>
-
           </div>
         </form>
       </main>
@@ -235,7 +233,7 @@ const jobId = params?.jobId;
   );
 }
 
-//  دالة لتحديث حالة المتقدم (قبول/رفض) داخل الوظيفة
+// ✅ تحديث حالة المتقدم
 export async function updateApplicantStatus(jobId, applicantId, status) {
   try {
     const jobRef = doc(db, "jobs", jobId);
@@ -251,7 +249,7 @@ export async function updateApplicantStatus(jobId, applicantId, status) {
       app.applicantId === applicantId ? { ...app, status } : app
     );
 
-    await updateDoc(jobRef, { applicants: updatedApplicants ,newApplications: arrayUnion(user.id), });
+    await updateDoc(jobRef, { applicants: updatedApplicants });
     toast.success(`Applicant ${status} successfully`);
   } catch (error) {
     console.error("Failed to update applicant status:", error);
@@ -259,8 +257,48 @@ export async function updateApplicantStatus(jobId, applicantId, status) {
   }
 }
 
-// ✅ مثال استخدام الدالة:
-// updateApplicantStatus("job123", "applicant456", "accepted");
+// ✅ وضع حالة الجوب كمكتمل
+export async function markJobCompleted(jobId, applicantId) {
+  const jobRef = doc(db, "jobs", jobId);
+  const jobSnap = await getDoc(jobRef);
+  if (!jobSnap.exists()) return;
+
+  const jobData = jobSnap.data();
+  const updatedApplicants = jobData.applicants.map(app =>
+    app.applicantId === applicantId ? { ...app, status: "completed" } : app
+  );
+
+  await updateDoc(jobRef, { applicants: updatedApplicants });
+  toast.success("تم تحديث حالة الجوب إلى مكتملة");
+}
+
+// ✅ دفع وهمي من الشركة للإدمن
+export async function handlePaymentToAdmin(jobId, applicantId, companyId, adminId, amount) {
+  try {
+    await addDoc(collection(db, "payments"), {
+      from: companyId,
+      to: adminId,
+      jobId,
+      applicantId,
+      amount,
+      status: "pending",
+      createdAt: serverTimestamp()
+    });
+
+    const jobRef = doc(db, "jobs", jobId);
+    const jobSnap = await getDoc(jobRef);
+    const jobData = jobSnap.data();
+    const updatedApplicants = jobData.applicants.map(app =>
+      app.applicantId === applicantId ? { ...app, paidToAdmin: true } : app
+    );
+
+    await updateDoc(jobRef, { applicants: updatedApplicants });
+    toast.success("تم ارسال الفلوس للإدمن (وهمي)");
+  } catch (err) {
+    console.error(err);
+    toast.error("فشل ارسال الدفعة");
+  }
+}
 
 function InputField({ label, name, value, onChange, type = "text" }) {
   return (
@@ -315,6 +353,7 @@ function TextAreaField({ label, name, value, onChange, max = 500 }) {
     </div>
   );
 }
+
 
 
 

@@ -19,6 +19,11 @@ export default function LayoutWrapper({ children }) {
     "/AllCompanyApplicants",
     "/companyprofile",
     "/ProfileViewCom",
+    "/PostJob",
+    "/settingsform",
+    "/ProfileEdit",
+    "/Activejobs"
+   
   ];
 
   const hideBoth =
@@ -38,4 +43,5 @@ export default function LayoutWrapper({ children }) {
     </>
   );
 }
+
 

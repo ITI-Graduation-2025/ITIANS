@@ -6,22 +6,9 @@ import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { db } from "@/config/firebase";
 import Link from "next/link"; 
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  collection,
-  getDocs,
-} from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
-import {
-  Users,
-  Clock,
-  CheckCircle,
-  XCircle,
-  BarChart3,
-  Search,
-} from "lucide-react";
+import { Users, Clock, CheckCircle, XCircle, BarChart3, Search } from "lucide-react";
 
 const STATUS_LIST = [
   { key: "all", label: "All Freelancers", icon: Users, color: "text-blue-600", bg: "bg-blue-600" },
@@ -32,7 +19,7 @@ const STATUS_LIST = [
 
 const STATUS_BADGES = {
   pending: { text: "New", bg: "bg-blue-100 text-blue-700" },
-  approved: { text: "Shortlisted", bg: "bg-green-100 text-green-700" },
+  approved: { text: "Approved", bg: "bg-green-100 text-green-700" },
   rejected: { text: "Reviewed", bg: "bg-yellow-100 text-yellow-700" },
 };
 
@@ -71,20 +58,17 @@ export default function AllCompanyApplicants() {
 
                 const userRef = doc(db, "users", userId);
                 const userSnap = await getDoc(userRef);
-
                 if (!userSnap.exists()) return null;
 
                 return {
                   id: userId,
                   status,
                   jobId,
-                  jobTitle: job.title,
-                  appliedAt: job.createdAt || new Date(),
-                  salary: job.salary || null,
                   skills: userSnap.data().skills || [],
-                  gradStatus: userSnap.data().gradStatus || "ITI Graduate", 
-                  experience: userSnap.data().experience || "2 years experience", 
+                  gradStatus: userSnap.data().gradStatus || "ITI Graduate",
+                  experience: userSnap.data().experience || "2 years experience",
                   ...userSnap.data(),
+                  jobTitle: job.title || "Untitled Job"
                 };
               })
             );
@@ -155,19 +139,9 @@ export default function AllCompanyApplicants() {
           (a) => (a.status?.toLowerCase() || "pending") === tab
         );
 
-  // Apply search filter
   const searchFilteredApplicants = filteredApplicants.filter((a) =>
     a.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Format time ago (simple version)
-  function timeAgo(date) {
-    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    if (seconds < 60) return "just now";
-    if (seconds < 3600) return Math.floor(seconds / 60) + " minutes ago";
-    if (seconds < 86400) return Math.floor(seconds / 3600) + " hours ago";
-    return Math.floor(seconds / 86400) + " days ago";
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -263,25 +237,22 @@ export default function AllCompanyApplicants() {
 
           {loading ? (
             <div className="space-y-4">
-              {Array(3)
-                .fill(0)
-                .map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-white p-4 rounded-lg shadow flex gap-4 animate-pulse"
-                  >
-                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="w-1/3 h-4 bg-gray-200 rounded"></div>
-                      <div className="w-1/2 h-4 bg-gray-200 rounded"></div>
-                    </div>
+              {Array(3).fill(0).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white p-4 rounded-lg shadow flex gap-4 animate-pulse"
+                >
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="w-1/3 h-4 bg-gray-200 rounded"></div>
+                    <div className="w-1/2 h-4 bg-gray-200 rounded"></div>
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
           ) : searchFilteredApplicants.length > 0 ? (
             <div className="space-y-4">
               {searchFilteredApplicants.map((applicant) => {
-                const badge = STATUS_BADGES[applicant.status] || STATUS_BADGES.pending;
                 return (
                   <div
                     key={applicant.id + applicant.jobId}
@@ -325,14 +296,7 @@ export default function AllCompanyApplicants() {
                       </div>
                     </div>
 
-                    {/* Middle: Salary */}
-                    {applicant.salary && (
-                      <div className="text-sm text-gray-600 min-w-[90px] text-center whitespace-nowrap">
-                        <span className="font-semibold">${applicant.salary}</span>/hr
-                      </div>
-                    )}
-
-                    {/* Right: Actions and time */}
+                    {/* Right: Actions */}
                     <div className="flex flex-col items-end gap-2 min-w-[130px]">
                       <div className="flex gap-4 text-sm whitespace-nowrap">
                         <Link
@@ -381,16 +345,13 @@ export default function AllCompanyApplicants() {
                           </span>
                         )}
                       </div>
-                      <time className="text-xs text-gray-400">
-                        {timeAgo(applicant.appliedAt)}
-                      </time>
                     </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <p>No applications found.</p>
+            <p className="text-gray-500">No applicants found.</p>
           )}
         </div>
       </div>

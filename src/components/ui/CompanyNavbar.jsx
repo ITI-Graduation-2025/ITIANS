@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
 import { MdWork, MdSchool, MdPeople, MdChat } from "react-icons/md";
 import { signOut } from "next-auth/react";
-import { ChevronDown, User, Settings, LogOut, Bell } from "lucide-react";
+import { ChevronDown, User, Settings, LogOut, Bell,Briefcase } from "lucide-react";
 import { useUserContext } from "@/context/userContext";
 import UserInfo from "../pages/userInfo";
 
@@ -35,11 +35,13 @@ const categories = [
 
 // تبويبات الشركة المضافة
 const companyTabs = [
-  { name: "Overview", href: "/dashboardCompany", icon: <LayoutDashboard className="w-4 h-4" /> },
-  { name: "My Jobs", href: "/companyjobs", icon: <FileText className="w-4 h-4" /> },
-  { name: "Applications", href: "/AllCompanyApplicants", icon: <Users2 className="w-4 h-4" /> },
-  { name: "Company Profile", href: "/companyprofile", icon: <Building2 className="w-4 h-4" /> },
+  { name: "Overview", href: "/dashboardCompany"},
+  { name: "My Jobs", href: "/companyjobs" },
+  { name: "Active Jobs", href: "/Activejobs"}, // 👈 الإضافة الجديدة
+  { name: "Applications", href: "/AllCompanyApplicants"},
+  { name: "Company Profile", href: "/companyprofile" },
 ];
+
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);

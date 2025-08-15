@@ -36,14 +36,16 @@ export default function CompanyJobs() {
   const [editJob, setEditJob] = useState(null);
   const [showConfirm, setShowConfirm] = useState(null);
 
-  // filters state
+  // filters state 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [experienceFilter, setExperienceFilter] = useState("");
 
-  const categories = ["Design", "IT", "Marketing", "Finance", "HR"];
+  const experienceLevels = [
+    "Entry Level (0-2 years)",
+    "Mid Level (2-5 years)",
+    "Senior Level (5+ years)"
+  ];
 
   const itemsPerPage = 6;
   const offset = currentPage * itemsPerPage;
@@ -72,12 +74,12 @@ export default function CompanyJobs() {
   useEffect(() => {
     let result = jobs;
 
-    // Search filter
+    // Search filter (title + experienceLevel)
     if (search.trim() !== "") {
       result = result.filter(
         (job) =>
-          job.title.toLowerCase().includes(search.toLowerCase()) ||
-          job.category?.toLowerCase().includes(search.toLowerCase())
+          job.title?.toLowerCase().includes(search.toLowerCase()) ||
+          job.level?.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -86,28 +88,21 @@ export default function CompanyJobs() {
       result = result.filter((job) => job.status === statusFilter);
     }
 
-    // Category filter
-    if (categoryFilter) {
-      result = result.filter((job) => job.category === categoryFilter);
-    }
+    // Experience filter (مطابقة تامة مع تجاهل المسافات وحالة الحروف)
+  if (experienceFilter) {
+      result = result.filter((job) => {
+        const jobExp = job.level?.trim().toLowerCase();
+        const selectedExp = experienceFilter.trim().toLowerCase();
 
-    // Date range filter
-    if (dateFrom) {
-      result = result.filter(
-        (job) =>
-          job.createdAt?.seconds * 1000 >= new Date(dateFrom).getTime()
-      );
-    }
-    if (dateTo) {
-      result = result.filter(
-        (job) =>
-          job.createdAt?.seconds * 1000 <= new Date(dateTo).getTime()
-      );
+        console.log("Comparing:", jobExp, "with", selectedExp);
+
+        return jobExp === selectedExp;
+      });
     }
 
     setFilteredJobs(result);
     setCurrentPage(0);
-  }, [search, statusFilter, categoryFilter, dateFrom, dateTo, jobs]);
+  }, [search, statusFilter, experienceFilter, jobs]);
 
   const handleDelete = async (id) => {
     try {
@@ -130,6 +125,13 @@ export default function CompanyJobs() {
     }
   };
 
+  const daysAgo = (date) => {
+    if (!date) return "";
+    const now = new Date();
+    const jobDate = date.toDate ? date.toDate() : new Date(date);
+    const diff = Math.floor((now - jobDate) / (1000 * 60 * 60 * 24));
+    return diff === 0 ? "Today" : `${diff} day${diff > 1 ? "s" : ""} ago`;
+  };
   const stats = [
     {
       label: "All Jobs",
@@ -197,7 +199,7 @@ export default function CompanyJobs() {
         <div className="bg-white p-4 rounded-lg shadow mb-4 flex flex-wrap gap-3 items-center">
           <input
             type="text"
-            placeholder="Search by title or category..."
+            placeholder="Search by title or experience..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-2 rounded w-full md:w-1/4"
@@ -213,29 +215,17 @@ export default function CompanyJobs() {
             <option value="Closed">Closed</option>
           </select>
           <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            value={experienceFilter}
+            onChange={(e) => setExperienceFilter(e.target.value)}
             className="border px-3 py-2 rounded w-full md:w-1/6"
           >
-            <option value="">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+            <option value="">All Experience Levels</option>
+            {experienceLevels.map((level) => (
+              <option key={level} value={level}>
+                {level}
               </option>
             ))}
           </select>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="border px-3 py-2 rounded w-full md:w-1/6"
-          />
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="border px-3 py-2 rounded w-full md:w-1/6"
-          />
         </div>
 
         {/* Jobs Table */}
@@ -260,7 +250,7 @@ export default function CompanyJobs() {
                         {job.title}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {job.category} • {daysAgo(job.createdAt)}
+                        {job.experienceLevel} • {daysAgo(job.createdAt)}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center text-blue-600 font-medium flex justify-center items-center gap-1">

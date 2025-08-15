@@ -48,6 +48,7 @@ import {
 
 import ReactPaginate from "react-paginate";
 import { toast, Toaster } from "sonner";
+import BackgroundClickable from "./BackgroundClickable";
 
 import { useSession } from "next-auth/react";
 import { use } from "react";
@@ -74,6 +75,7 @@ function formatRelativeTime(date) {
 export default function CompanyPublicProfile({ params }) {
   const { companyId } = use(params);
   const { data: session } = useSession();
+  
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
@@ -82,6 +84,7 @@ export default function CompanyPublicProfile({ params }) {
   const [selectedJob, setSelectedJob] = useState(null);
   const [showComments, setShowComments] = useState(false);
   const [user, setUser] = useState(null);
+    const [bannerUrl, setBannerUrl] = useState(null);
   {
     /*apply job  */
   }
@@ -120,6 +123,7 @@ export default function CompanyPublicProfile({ params }) {
         id: session.user.id,
         email: session.user.email,
         name: session.user.name,
+        role: session.user.role, 
       });
     }
   }, [session]);
@@ -230,6 +234,27 @@ export default function CompanyPublicProfile({ params }) {
   const goToPage = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
+
+useEffect(() => {
+    if (!companyId) return;
+
+    const companyRef = doc(db, "users", companyId);
+
+    const unsubscribe = onSnapshot(companyRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setCompany(data);
+        setBannerUrl(data.backgroundUrl || "https://res.cloudinary.com/dtn4wkie9/image/upload/v1692100000/default-banner.jpg");
+        setLoading(false);
+      } else {
+        setCompany(null);
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [companyId]);
+
   {
     /*apply jobs  */
   }
@@ -321,65 +346,77 @@ export default function CompanyPublicProfile({ params }) {
     founded,
     phone,
     facebook,
+    banner,
   } = company || {};
 
-  return (
-    <div className="min-h-screen bg-[#f9f9f9] text-[#333]">
-      {/* Banner Section */}
-      <div
-        className="text-white p-6 bg-cover bg-center"
-        style={{
-          backgroundImage:
-            "url('https://img.freepik.com/free-photo/business-people-working-office_23-2148902353.jpg')",
-        }}
-      >
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex gap-4 items-center">
-            <Image
-              src={logo || "/default-logo.png"}
-              alt={`${name || "Company"} Logo`}
-              width={48}
-              height={48}
-              className="rounded-md shadow bg-white"
-            />
-            <div>
-              <h1 className="text-2xl font-bold">{name}</h1>
-              <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
-                {industry && (
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-                    <Briefcase className="w-4 h-4 text-[#8B0000]" />
-                    <span>{industry}</span>
-                  </div>
-                )}
-                {founded && (
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-                    <Calendar className="w-4 h-4 text-[#8B0000]" />
-                    <span>Founded: {founded}</span>
-                  </div>
-                )}
-                {location && (
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-                    <MapPin className="w-4 h-4 text-[#8B0000]" />
-                    <span>{location}</span>
-                  </div>
-                )}
-                {phone && (
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-                    <Phone className="w-4 h-4 text-[#8B0000]" />
-                    <span>{phone}</span>
-                  </div>
-                )}
-              </div>
+  
+
+const BannerContent = () => (
+  <div className="max-w-6xl mx-auto flex justify-between items-center h-full">
+    <div className="flex gap-4 items-center">
+      <Image
+        src={logo || "https://res.cloudinary.com/dtn4wkie9/image/upload/v1692100000/default-logo.png"}
+        alt={`${name || "Company"} Logo`}
+        width={48}
+        height={48}
+        className="rounded-md shadow bg-white"
+      />
+      <div>
+        <h1 className="text-2xl font-bold">{name}</h1>
+        <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
+          {industry && (
+            <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
+              <Briefcase className="w-4 h-4 text-[#8B0000]" />
+              <span>{industry}</span>
             </div>
-          </div>
-          <div className="text-right">
-            <p className="flex items-center justify-end gap-1">
-              <Star className="w-4 h-4 text-yellow-300" /> {rating}
-            </p>
-            <p className="text-sm">{reviewsCount} reviews</p>
-          </div>
+          )}
+          {founded && (
+            <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
+              <Calendar className="w-4 h-4 text-[#8B0000]" />
+              <span>Founded: {founded}</span>
+            </div>
+          )}
+          {location && (
+            <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
+              <MapPin className="w-4 h-4 text-[#8B0000]" />
+              <span>{location}</span>
+            </div>
+          )}
+          {phone && (
+            <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
+              <Phone className="w-4 h-4 text-[#8B0000]" />
+              <span>{phone}</span>
+            </div>
+          )}
         </div>
       </div>
+    </div>
+    <div className="text-right">
+      <p className="flex items-center justify-end gap-1">
+        <Star className="w-4 h-4 text-yellow-300" /> {rating}
+      </p>
+      <p className="text-sm">{reviewsCount} reviews</p>
+    </div>
+  </div>
+);
+
+return (
+  <div className="min-h-screen bg-[#f9f9f9] text-[#333]">
+    {/* Banner Section */}
+    <div
+      className="bg-cover bg-center h-[250px] text-white"
+      style={{
+        backgroundImage: `url('${bannerUrl}')`,
+      }}
+    >
+      <BannerContent />
+    </div>
+  
+
+  
+
+
+      
 
       {/* Content */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
@@ -794,69 +831,62 @@ export default function CompanyPublicProfile({ params }) {
               </button>
 
               <div className="flex justify-between items-center pt-4 gap-3">
-                {user &&
-                  (() => {
-                    const deadlinePassed =
-                      selectedJob.deadline &&
-                      selectedJob.deadline.toDate() < new Date();
+             {user?.role?.toLowerCase() === "freelancer" && selectedJob && (
+  <button
+    onClick={
+      !(
+        selectedJob.deadline?.toDate() < new Date() ||
+        selectedJob.status?.toLowerCase() === "paused" ||
+        hasAlreadyApplied ||
+        selectedJob.applicants?.some(
+          (applicant) =>
+            applicant.userId === user.id &&
+            applicant.status?.toLowerCase() === "rejected"
+        )
+      )
+        ? handleApply
+        : undefined
+    }
+    disabled={
+      selectedJob.deadline?.toDate() < new Date() ||
+      selectedJob.status?.toLowerCase() === "paused" ||
+      hasAlreadyApplied ||
+      selectedJob.applicants?.some(
+        (applicant) =>
+          applicant.userId === user.id &&
+          applicant.status?.toLowerCase() === "rejected"
+      )
+    }
+    className={`px-4 py-2 rounded-md text-white text-sm min-w-[120px] text-center ${
+      selectedJob.deadline?.toDate() < new Date() ||
+      selectedJob.status?.toLowerCase() === "paused" ||
+      hasAlreadyApplied ||
+      selectedJob.applicants?.some(
+        (applicant) =>
+          applicant.userId === user.id &&
+          applicant.status?.toLowerCase() === "rejected"
+      )
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-[#8B0000] hover:bg-[#a30000]"
+    }`}
+  >
+    {selectedJob.deadline?.toDate() < new Date()
+      ? "Deadline Passed"
+      : selectedJob.status?.toLowerCase() === "paused"
+      ? "Job Paused"
+      : hasAlreadyApplied ||
+        selectedJob.applicants?.some(
+          (applicant) =>
+            applicant.userId === user.id &&
+            applicant.status?.toLowerCase() === "rejected"
+        )
+      ? "Already Applied"
+      : "Apply Now"}
+  </button>
+)}
 
-                    const isPaused =
-                      selectedJob?.status?.toLowerCase() === "paused";
 
-                    const isRejected =
-                      Array.isArray(selectedJob?.applicants) &&
-                      selectedJob.applicants.some(
-                        (applicant) =>
-                          typeof applicant === "object" &&
-                          applicant.userId === user.id &&
-                          applicant.status?.toLowerCase() === "rejected",
-                      );
 
-                    const baseBtnClasses =
-                      "px-4 py-2 rounded-md text-white text-sm min-w-[120px] text-center";
-
-                    if (deadlinePassed) {
-                      return (
-                        <button
-                          disabled
-                          className={`${baseBtnClasses} bg-gray-400 cursor-not-allowed`}
-                        >
-                          Deadline Passed
-                        </button>
-                      );
-                    }
-
-                    if (isPaused) {
-                      return (
-                        <button
-                          disabled
-                          className={`${baseBtnClasses} bg-orange-500 cursor-not-allowed`}
-                        >
-                          Job Paused
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <button
-                        onClick={
-                          hasAlreadyApplied || isRejected
-                            ? undefined
-                            : handleApply
-                        }
-                        disabled={hasAlreadyApplied || isRejected}
-                        className={`${baseBtnClasses} ${
-                          hasAlreadyApplied || isRejected
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-[#8B0000] hover:bg-[#a30000]"
-                        }`}
-                      >
-                        {isRejected || hasAlreadyApplied
-                          ? "Already Applied"
-                          : "Apply Now"}
-                      </button>
-                    );
-                  })()}
 
                 <button
                   className="px-4 py-2 rounded-md text-white text-sm min-w-[120px] text-center bg-[#203947] hover:bg-[#8B0000] transition-all"
