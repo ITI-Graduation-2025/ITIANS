@@ -14,29 +14,47 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
   const [changed, setChanged] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [originalValue, setOriginalValue] = useState(null);
   const { user , setUser} = useUserContext();
   const fileInputRef = useRef();
 
   useEffect(() => {
-    if (type === "about") setTempValue(user.bio || "");
-    else if (type === "links")
+    if (type === "about") {
+      setTempValue(user.bio || "");
+      setOriginalValue(user.bio || "");
+    } else if (type === "links") {
       setTempValue({
         github: user.github || "",
         linkedIn: user.linkedIn || "",
       });
-    else if (type === "education")
+      setOriginalValue({
+        github: user.github || "",
+        linkedIn: user.linkedIn || "",
+      });
+    } else if (type === "education") {
       setTempValue(user.education || { school: "", degree: "", year: "" });
-    else if (type === "work") setTempValue(user.finishedJobs || []);
-    else if (type === "experience")
+      setOriginalValue(user.education || { school: "", degree: "", year: "" });
+    } else if (type === "work") {
+      setTempValue(user.finishedJobs || []);
+      setOriginalValue(user.finishedJobs || []);
+    } else if (type === "experience") {
       setTempValue(
         user.workExperiences || [
           { jobTitle: "", company: "", startDate: "", endDate: "", tasks: "" },
         ],
       );
-    else if (type === "certificates") setTempValue(user.certificates || []);
-    else if (type === "profileImage") {
+      setOriginalValue(
+        user.workExperiences || [
+          { jobTitle: "", company: "", startDate: "", endDate: "", tasks: "" },
+        ],
+      );
+    } else if (type === "certificates") {
+      setTempValue(user.certificates || []);
+      setOriginalValue(user.certificates || []);
+    } else if (type === "profileImage") {
       setTempValue(user.profileImage || "");
       setImagePreview(user.profileImage || null);
+      setOriginalValue(user.profileImage || "");
     }
     setChanged(false);
   }, [type, user]);
@@ -44,6 +62,8 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
   useEffect(() => {
     setChanged(true);
   }, [tempValue]);
+
+
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -77,9 +97,21 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
   const handleRemoveImage = () => {
     setImagePreview(null);
     setTempValue("");
+    // Update local user context immediately for instant UI update
+    setUser({ ...user, profileImage: "" });
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    // Mark as changed so user knows they have unsaved changes
+    setChanged(true);
+  };
+
+  const handleCancel = () => {
+    // Revert to original values
+    if (type === "profileImage") {
+      setUser({ ...user, profileImage: originalValue });
+    }
+    onClose();
   };
 
   const handleSave = async () => {
@@ -105,6 +137,8 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
         await updateUser(user.id, { certificates: tempValue });
       } else if (type === "profileImage") {
         await updateUser(user.id, { profileImage: tempValue });
+        // Update local user context to ensure consistency
+        setUser({ ...user, profileImage: tempValue });
       }
       await refetchUser();
       toast.success("Profile updated successfully!");
@@ -123,7 +157,7 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative border-2 border-[#B71C1C] max-h-[90vh] overflow-auto animate-fadeIn">
         <button
           aria-label="Close"
-          onClick={onClose}
+          onClick={handleCancel}
           className="absolute top-4 right-4 text-gray-400 hover:text-[#B71C1C] text-2xl focus:outline-none"
         >
           <FiX />
@@ -421,7 +455,7 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
             <div className="text-red-500 text-sm mb-2 w-full">{error}</div>
           )}
           <button
-            onClick={onClose}
+            onClick={handleCancel}
             className="px-4 py-2 border-2 border-[#B71C1C] rounded-lg text-[#B71C1C] font-semibold bg-white hover:bg-[#B71C1C]/10 transition-colors text-lg"
             disabled={loading}
           >
