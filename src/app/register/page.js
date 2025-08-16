@@ -16,12 +16,12 @@ export default function RegisterPage() {
           <RegisterForm />
           <div className="text-center text-sm text-gray-600">
             Already have an account?{" "}
-            <a
+            <Link
               href="/login"
               className="text-primary hover:text-primary/80 font-medium"
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>

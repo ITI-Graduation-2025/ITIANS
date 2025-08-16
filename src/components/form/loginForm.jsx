@@ -11,6 +11,7 @@ import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, initializeFCM } from "@/config/firebase";
 import { toast } from "sonner";
+import ForgotPassword from "@/components/ForgotPassword";
 
 export default function LoginForm({ onAuthenticationStart }) {
   const {
@@ -127,7 +128,10 @@ export default function LoginForm({ onAuthenticationStart }) {
   };
 
   const handleErrors = (errors) => {
-    console.error(errors);
+    // Only log validation errors, not form submission errors
+    if (Object.keys(errors).length > 0) {
+      console.log("Form validation errors:", errors);
+    }
   };
 
   return (
@@ -176,9 +180,7 @@ export default function LoginForm({ onAuthenticationStart }) {
             Remember me
           </Label>
         </div>
-        <a href="#" className="text-sm text-primary hover:text-primary/80">
-          Forgot password?
-        </a>
+        <ForgotPassword />
       </div>
       <Button
         type="submit"
