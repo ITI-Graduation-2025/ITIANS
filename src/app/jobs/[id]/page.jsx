@@ -526,7 +526,7 @@ export default function JobDetailsPage() {
           className="space-y-8"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-5xl md:text-5xl font-bold text-[#901b20] tracking-tight">
+            <h2 className="text-4xl md:text-4xl font-bold text-[#901b20] tracking-tight me-2">
               {job.title.charAt(0).toUpperCase() + job.title.slice(1)}
             </h2>
             <div className="flex items-center gap-3">

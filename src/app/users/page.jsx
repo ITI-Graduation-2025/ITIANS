@@ -95,7 +95,7 @@ export default function UsersList() {
       window.location.href = `/profile`;
     }
   };
-
+//EDIT HERE 
   const getRoleTitle = (role) => {
     switch (role?.toLowerCase()) {
       case "mentor":
@@ -105,7 +105,7 @@ export default function UsersList() {
       case "company":
         return "Company";
       default:
-        return "User";
+        return "USER";
     }
   };
 
@@ -144,7 +144,7 @@ export default function UsersList() {
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="max-w-6xl mx-auto mt-10 mb-20 px-4">
+    <div className="min-h-screen max-w-6xl mx-auto mt-10 mb-20 px-4">
       <h2 className="text-4xl font-bold mb-12 text-center text-[var(--primary)]">
         Available Users
       </h2>

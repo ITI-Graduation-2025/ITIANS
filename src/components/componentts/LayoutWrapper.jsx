@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/componentts/Navbar";
 import Footer from "@/components/componentts/Footer";
+import ChatbotWidget from "@/components/ChatbotWidget";
 
 export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
@@ -14,6 +15,7 @@ export default function LayoutWrapper({ children }) {
     "/dashboardCompany",
     "/dashboard",
     "/mentor/[id]",
+    "/chatbot",
   ];
 
   const hideBoth =
@@ -28,6 +30,7 @@ export default function LayoutWrapper({ children }) {
       {!hideBoth && !hideNavbar && <Navbar />}
       {children}
       {!hideBoth && <Footer />}
+      <ChatbotWidget />
     </>
   );
 }
