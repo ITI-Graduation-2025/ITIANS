@@ -34,6 +34,8 @@ export default function PostJob() {
     requirements: "",
     email: "",
     deadline: "",
+    
+
   });
 
   const [loading, setLoading] = useState(false);
@@ -175,6 +177,23 @@ export default function PostJob() {
     clearNewApplications();
   }, [jobId]);
 
+  function InputField({ label, name, value, onChange, type = "text", placeholder }) {
+  return (
+    <div>
+      <label className="text-sm text-gray-500">{label} *</label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder || label} 
+        className="w-full border rounded px-3 py-2 mt-1"
+      />
+    </div>
+  );
+}
+
+
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
       <CompanyNavbar />
@@ -214,6 +233,7 @@ export default function PostJob() {
           <div className="grid md:grid-cols-2 gap-4">
             <InputField label="Contact Email" name="email" value={formData.email} onChange={handleChange} type="email" />
             <InputField label="Application Deadline" name="deadline" value={formData.deadline} onChange={handleChange} type="date" />
+            <InputField label="Job Duration" name="duration" value={formData.duration} onChange={handleChange} placeholder="e.g., 3 months, 6 months, 1 year" />         
           </div>
 
           <div className="pt-4 text-center">

@@ -1,16 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Lock, ArrowLeft, Home, ChevronRight, User, LogOut } from "lucide-react";
+import { Lock, ArrowLeft, Home, ChevronRight, User, LogOut,Settings,ChevronDown } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useUserContext } from "@/context/userContext";
 import { getAuth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 export default function CompanySettings() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("password");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+   const { user } = useUserContext();
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -43,15 +52,15 @@ export default function CompanySettings() {
 
     setLoading(true);
     try {
-      // إعادة التحقق من الباسورد الحالي
+      
       const credential = EmailAuthProvider.credential(user.email, formData.currentPassword);
       await reauthenticateWithCredential(user, credential);
 
-      // تحديث الباسورد الجديد
+      
       await updatePassword(user, formData.newPassword);
       toast.success("Password updated successfully!");
 
-      // إعادة تعيين الحقول
+      
       setFormData({
         currentPassword: "",
         newPassword: "",
@@ -78,39 +87,62 @@ export default function CompanySettings() {
       <Toaster />
 
       {/* Navbar */}
-      <nav className="bg-white dark:bg-gray-800 shadow px-6 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-2 text-xl font-bold text-[#b30000]">
-          <h1 className="text-xl md:text-2xl font-semibold text-[#b30000]">
-            Settings <span className="text-[#203947] text-xl">Dashboard</span>
-          </h1>
-        </div>
+<nav className="bg-white dark:bg-gray-800 shadow px-6 py-3 flex justify-between items-center">
+  {/* العنوان أو القسم الأيسر */}
+  <div className="flex items-center gap-2 text-xl font-bold text-[#b30000]">
+    <h1 className="text-xl md:text-2xl font-semibold text-[#003366] flex items-center gap-2">
+      <Settings size={24} />
+      Settings
+    </h1>
+  </div>
 
-        <div className="flex gap-4 items-center">
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-1 text-[#333] dark:text-gray-300 transition-colors"
-            >
-              <User size={16} /> Admin
-            </button>
+  {/* القسم الأيمن */}
+  <div className="flex gap-4 items-center">
+    <div className="relative">
+      
 
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 bg-white dark:bg-gray-700 shadow rounded-md py-1 w-40 text-sm">
-                <Link
-                  href="/ProfileViewCom"
-                  className="flex items-center gap-2 w-full px-3 py-2 hover:bg-gray-100 hover:text-black dark:hover:bg-gray-600 dark:hover:text-white transition-colors"
-                >
-                  <User size={14} /> My Profile
-                </Link>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="flex items-center gap-2 bg-transparent border-none cursor-pointer focus:outline-none"
+            type="button"
+          >
+            <User size={18} className="text-gray-600" />
+            <span className="text-gray-800 font-medium">{name}</span>
+            <ChevronDown size={16} />
+          </button>
+        </DropdownMenuTrigger>
 
-                <button className="flex items-center gap-2 w-full px-3 py-2 text-[#b30000] hover:bg-gray-100 hover:text-[#b30000] dark:hover:bg-gray-600 dark:hover:text-white transition-colors">
-                  <LogOut size={14} /> Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+        <DropdownMenuContent className="w-48" align="end">
+          <Link href="/dashboardCompany">
+            <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
+              <User size={16} />
+              My Dashboard
+            </DropdownMenuItem>
+          </Link>
+
+           <Link href="/ProfileViewCom">
+                            <DropdownMenuItem className="cursor-pointer">
+                              <User size={16} />
+                              My Profile
+                            </DropdownMenuItem>
+                          </Link>
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="cursor-pointer text-red-600 flex items-center gap-2"
+          >
+            <LogOut size={16} />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  </div>
+</nav>
+
 
       <div className="px-8 py-2 flex items-center text-sm text-gray-600 gap-1">
         <Home size={14} /> <ChevronRight size={14} /> Change Password

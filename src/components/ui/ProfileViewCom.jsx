@@ -175,33 +175,7 @@ export default function ProfileViewCom() {
 
   const goToPage = (pageNumber) => setCurrentPage(pageNumber);
 
-  async function handleApply() {
-    if (!user?.id || !selectedJob) {
-      toast.error("You must be logged in and select a job to apply.");
-      return;
-    }
-
-    const hasAlreadyApplied = selectedJob?.applicants?.some(applicant =>
-      typeof applicant === "string" ? applicant === user?.id : applicant?.userId === user?.id
-    );
-
-    if (hasAlreadyApplied) {
-      toast.error("You have already applied to this job.");
-      return;
-    }
-
-    try {
-      const jobRef = doc(db, "jobs", selectedJob.id);
-      await updateDoc(jobRef, {
-        applicants: arrayUnion({ userId: user.id, status: "pending", appliedAt: new Date().toISOString() }),
-      });
-      toast.success("Application submitted successfully!");
-    } catch (error) {
-      console.error("Application error:", error);
-      toast.error("Something went wrong. Please try again.");
-    }
-  }
-
+ 
   return (
     <main className="min-h-screen bg-[#f9f9f9] text-[#333]">
       <Toaster position="top-right" />
@@ -224,44 +198,52 @@ export default function ProfileViewCom() {
         </div>
       ) : (
         <>
-       <BackgroundClickable
-  currentBackgroundUrl={company?.backgroundUrl || ""}
-  onUploadSuccess={fetchCompanyAndJobs}
-  className="relative w-full h-80 sm:h-96 md:h-96 lg:h-[28rem] rounded-2xl overflow-hidden shadow-lg"
->
-  {/* Gradient Overlay */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/30"></div>
+       <div className="relative w-full h-56  sm:h-64">
+  {/* الخلفية */}
+  <BackgroundClickable
+    currentBackgroundUrl={company?.backgroundUrl || ""}
+    onUploadSuccess={fetchCompanyAndJobs}
+    width="100%"
+    height="100%"
+  >
+    
+  </BackgroundClickable>
 
-  {/* المحتوى */}
-  <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 sm:px-6 gap-3">
+  
+  <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+    <LogoClickable
+      currentLogoUrl={company?.logo || "/default-logo.png"}
+      onUploadSuccess={fetchCompanyAndJobs}
+    />
+  </div>
 
-    {/* Logo + زرار */}
-    <div className="absolute flex flex-col items-center">
-      <div className="w-32 h-42 rounded-full overflow-hidden absolute mb-270">
-        <LogoClickable
-          currentLogoUrl={company?.logo || "/default-logo.png"}
-          onUploadSuccess={fetchCompanyAndJobs}
-        />
-      </div>
-
+  {/* info*/}
+  <div className="absolute top-[57%] left-1/2 transform -translate-x-1/2 z-20 text-center text-white">
+    <h1 className="text-3xl font-bold ">{company?.name || "Company Name"}</h1>
+    <div className="flex flex-wrap justify-center gap-2 mt-2 text-sm">
+      {company?.industry && (
+        <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+                  <Briefcase className="w-4 h-4 text-[#8B0000]" />
+        <span >{company.industry}</span>
+        </div>
+      )}
+      {founded && (
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+                    <Calendar className="w-4 h-4 text-[#8B0000]" />
+                    <span>Founded: {founded}</span>
+                  </div>
+                )}
+      {company?.location && (
+        <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+                  <MapPin className="w-4 h-4 text-[#8B0000]" />
+        <span >{company.location}</span>
+        </div>
+      )}
       
     </div>
-    
-    {/* اسم الشركة */}
-    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white break-words max-w-[90%]  ">
-      {name || "Company Name"}
-    </h1>
-
-    {/* المعلومات */}
-    <div className="flex flex-wrap justify-center gap-2 sm:gap-3 text-xs sm:text-sm md:text-base text-white/90 max-w-[90%] mb-20 ">
-      {industry && <span className="bg-white/20 px-3 py-1 rounded-full">{industry}</span>}
-      {founded && <span className="bg-white/20 px-3 py-1 rounded-full">Founded: {founded}</span>}
-      {location && <span className="bg-white/20 px-3 py-1 rounded-full">{location}</span>}
-      {phone && <span className="bg-white/20 px-3 py-1 rounded-full">{phone}</span>}
-    </div>
-
   </div>
-</BackgroundClickable>
+</div>
+
 
 
 
@@ -454,19 +436,9 @@ export default function ProfileViewCom() {
         Copy Job Link
       </button>
 
-      {/* Apply / Close */}
+      {/* Close */}
       <div className="flex justify-between items-center pt-4">
-        {user?.role === "freelancer" ? (
-          <button
-            onClick={() => selectedJob && handleApply()}
-            className="bg-[#8B0000] text-white px-4 py-2 rounded-md hover:bg-[#a30000] text-sm transition-all"
-          >
-            Apply Now
-          </button>
-        ) : (
-          <p className="text-sm text-gray-400 italic">Only freelancers can apply for jobs.</p>
-        )}
-
+        
         <button
           className="bg-[#203947] text-white px-4 py-2 rounded-md hover:bg-[#8B0000] text-sm transition-all"
           onClick={() => setSelectedJob(null)}

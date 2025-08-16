@@ -163,10 +163,7 @@ export default function AllCompanyApplicants() {
           </div>
 
           <section>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-indigo-700">
-              <BarChart3 className="w-6 h-6" />
-              Filter by Status
-            </h2>
+            
             <div className="flex flex-col gap-3">
               {STATUS_LIST.map((s) => {
                 const Icon = s.icon;
@@ -180,7 +177,7 @@ export default function AllCompanyApplicants() {
                         isActive
                           ? `${s.bg} shadow-md text-white flex-row-reverse gap-4`
                           : "bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700"
-                      } cursor-pointer`}
+                      } cursor-pointer `}
                   >
                     <span className="flex items-center gap-3">
                       <Icon
@@ -194,7 +191,7 @@ export default function AllCompanyApplicants() {
                       className={`text-sm font-medium px-3 py-1 rounded-full
                         ${
                           isActive
-                            ? "bg-white bg-opacity-30 text-white"
+                            ? " bg-opacity-30 text-white"
                             : "bg-gray-300 text-gray-700"
                         }`}
                     >
@@ -274,8 +271,9 @@ export default function AllCompanyApplicants() {
                             {applicant.name}
                           </h3>
                           <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">
-                            {applicant.gradStatus || "ITI Graduate"}
+                            {applicant.mainTrack ? `Main Track: ${applicant.mainTrack}` : "No Track Assigned"}
                           </span>
+
                         </div>
                         <p className="text-sm text-gray-600 truncate max-w-md">
                           Applied for: <span className="font-medium">{applicant.jobTitle}</span>

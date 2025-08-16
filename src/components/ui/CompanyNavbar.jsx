@@ -33,11 +33,11 @@ const categories = [
   { name: "Messages", href: "/chat", icon: <MdChat className="w-6 h-6" /> },
 ];
 
-// تبويبات الشركة المضافة
+
 const companyTabs = [
   { name: "Overview", href: "/dashboardCompany"},
   { name: "My Jobs", href: "/companyjobs" },
-  { name: "Active Jobs", href: "/Activejobs"}, // 👈 الإضافة الجديدة
+  { name: "Active Jobs", href: "/Activejobs"}, 
   { name: "Applications", href: "/AllCompanyApplicants"},
   { name: "Company Profile", href: "/companyprofile" },
 ];

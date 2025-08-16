@@ -172,7 +172,7 @@ export default function UserInfo() {
               className="flex items-center gap-3"
             >
               <FaRegUser className="text-[#B71C1C] group-hover:text-white" />
-              <span>My Dashboard</span>
+              <span>My Profile</span>
             </Link>
           </DropdownMenuItem>
 

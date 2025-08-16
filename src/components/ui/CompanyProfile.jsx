@@ -126,16 +126,16 @@ export default function CompanyProfile() {
     <div className="min-h-screen bg-[#f9f9f9]">
       <CompanyNavbar />
 
-      <main className="p-6 max-w-7xl mx-auto">
+      <main className="p-6 max-w-7xl mx-auto ">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-[#b30000]">
-            {company?.name}{' '}
-            <span className="text-[#203947] text-2xl">Dashboard</span>
-          </h1>
-        </div>
-        <p className="text-gray-600 mb-6">
-          Manage your job postings and find the best ITI talent
-        </p>
+         <h1 className="text-2xl font-bold text-[#003366] ml-2">
+   Profile Details
+</h1>
+</div>
+<p className=" text-gray-600 p-3">
+  Access and manage all your company details.
+</p>
+
 
         
 

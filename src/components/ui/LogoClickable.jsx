@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useSession } from "next-auth/react";
@@ -33,7 +27,6 @@ export default function LogoClickable({ currentLogoUrl, onUploadSuccess }) {
         });
 
         const data = await res.json();
-        console.log("Uploaded URL:", data.url);
 
         if (data.url && companyId) {
           const companyRef = doc(db, "users", companyId);
@@ -57,13 +50,12 @@ export default function LogoClickable({ currentLogoUrl, onUploadSuccess }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // عرض الصورة فورًا
     setLogoPreview(URL.createObjectURL(file));
     handleUpload(file);
   };
 
   return (
-    <div style={{ position: "relative", width: 120, height: 120 }}>
+    <div className="relative w-32 h-32">
       <input
         type="file"
         accept="image/*"
@@ -73,71 +65,28 @@ export default function LogoClickable({ currentLogoUrl, onUploadSuccess }) {
         disabled={uploading}
       />
 
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          borderRadius: "50%",
-          overflow: "hidden",
-          border: "2px solid #1877F2",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <img
-          src={logoPreview || "/default-logo.png"}
-          alt="Company Logo"
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-        {uploading && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundColor: "rgba(255,255,255,0.6)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              borderRadius: "50%",
-              fontWeight: "bold",
-            }}
-          >
-            Uploading...
-          </div>
-        )}
-      </div>
+      <img
+        src={logoPreview || "/default-logo.png"}
+        alt="Company Logo"
+        className="w-full h-full object-cover rounded-full border-2 border-blue-600"
+      />
 
       {!uploading && (
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            inputRef.current?.click();
-          }}
-          style={{
-            position: "absolute",
-            bottom: -4,
-            right: -4,
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            border: "2px solid white",
-            backgroundColor: "#1877F2",
-            color: "#fff",
-            fontSize: 20,
-            fontWeight: "bold",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-          }}
-          aria-label="Upload new logo"
+          onClick={() => inputRef.current?.click()}
+          className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg"
         >
           +
         </button>
       )}
+
+      {uploading && (
+        <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-full font-bold">
+          Uploading...
+        </div>
+      )}
     </div>
   );
 }
+

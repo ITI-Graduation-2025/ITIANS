@@ -303,7 +303,7 @@ useEffect(() => {
         newApplications: arrayUnion(user.id),
       });
 
-      // تحديث الحالة محليًا
+      // تحديث الحالة 
       setSelectedJob((prev) => ({
         ...prev,
         applicants: [...(prev?.applicants || []), newApplicant],
@@ -352,52 +352,45 @@ useEffect(() => {
   
 
 const BannerContent = () => (
-  <div className="max-w-6xl mx-auto flex justify-between items-center h-full">
-    <div className="flex gap-4 items-center">
-      <Image
-        src={logo || "https://res.cloudinary.com/dtn4wkie9/image/upload/v1692100000/default-logo.png"}
-        alt={`${name || "Company"} Logo`}
-        width={48}
-        height={48}
-        className="rounded-md shadow bg-white"
-      />
-      <div>
-        <h1 className="text-2xl font-bold">{name}</h1>
-        <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
-          {industry && (
-            <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-              <Briefcase className="w-4 h-4 text-[#8B0000]" />
-              <span>{industry}</span>
-            </div>
-          )}
-          {founded && (
-            <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-              <Calendar className="w-4 h-4 text-[#8B0000]" />
-              <span>Founded: {founded}</span>
-            </div>
-          )}
-          {location && (
-            <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-              <MapPin className="w-4 h-4 text-[#8B0000]" />
-              <span>{location}</span>
-            </div>
-          )}
-          {phone && (
-            <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-              <Phone className="w-4 h-4 text-[#8B0000]" />
-              <span>{phone}</span>
-            </div>
-          )}
+  <div className="flex flex-col items-center justify-center h-full text-center">
+    {/* اللوجو */}
+   <div className="w-30 h-30 rounded-full overflow-hidden border-2 border-blue-600">
+  <Image
+    src={logo || "https://res.cloudinary.com/dtn4wkie9/image/upload/v1692100000/default-logo.png"}
+    alt={`${name || "Company"} Logo`}
+    width={80}
+    height={80}
+    className="object-cover w-full h-full"
+  />
+</div>
+
+    {/* comname*/}
+    <h1 className="text-2xl sm:text-3xl font-bold mt-4">{name}</h1>
+
+    {/* info*/}
+    <div className="flex flex-wrap justify-center gap-2 mt-2 text-sm ">
+      {industry && (
+        <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+          <Briefcase className="w-4 h-4 text-[#8B0000]" />
+          <span>{industry}</span>
         </div>
-      </div>
-    </div>
-    <div className="text-right">
-      <p className="flex items-center justify-end gap-1">
-        <Star className="w-4 h-4 text-yellow-300" /> {rating}
-      </p>
-      <p className="text-sm">{reviewsCount} reviews</p>
+      )}
+      {founded && (
+        <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+          <Calendar className="w-4 h-4 text-[#8B0000]" />
+          <span>Founded: {founded}</span>
+        </div>
+      )}
+      {location && (
+        <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+          <MapPin className="w-4 h-4 text-[#8B0000]" />
+          <span>{location}</span>
+        </div>
+      )}
+      
     </div>
   </div>
+  
 );
 
 return (
@@ -482,7 +475,7 @@ return (
               </div>
             )}
 
-            {/* Pagination should only appear if there are jobs */}
+            {/* Pagination  */}
             {currentJobs.length > 0 && (
               <ReactPaginate
                 breakLabel="..."
@@ -626,6 +619,13 @@ return (
                   </a>
                 </p>
               )}
+              {phone && (
+  <p>
+    <Phone className="inline w-4 h-4 mr-1 text-[#b30000]" />
+    {phone}
+  </p>
+)}
+
             </div>
           </div>
         </div>
