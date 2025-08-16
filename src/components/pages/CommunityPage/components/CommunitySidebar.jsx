@@ -63,7 +63,7 @@ export default function CommunitySidebar({ currentUser, posts, companies = [] })
               companies.map((company) => (
                 <Link
                   key={company.id || company.uid}
-                  href={`/company/${company.id || company.uid}`}
+                  href={`/companies/${company.id || company.uid}`}
                   className="block"
                 >
                   <li className="flex items-center space-x-3 hover:text-primary cursor-pointer transition-colors">
