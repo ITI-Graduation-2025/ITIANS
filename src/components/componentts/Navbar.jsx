@@ -23,7 +23,7 @@ const categories = [
   { name: "Messages", href: "/chat", icon: <MdChat className="w-6 h-6" /> },
 ];
 
-export default function Navbar({onSearch}) {
+export default function Navbar({ onSearch }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchScope, setSearchScope] = useState("all");
@@ -74,6 +74,19 @@ export default function Navbar({onSearch}) {
       setIsSearching(true);
       let results = [];
       try {
+        // Helper function to convert Timestamp to ISO string
+        const convertTimestamp = (timestamp) => {
+          if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+            return timestamp.toDate().toISOString();
+          } else if (timestamp?.seconds) {
+            // Handle Timestamp objects without toDate method
+            return new Date(timestamp.seconds * 1000).toISOString();
+          } else if (typeof timestamp === "string") {
+            return timestamp;
+          }
+          return timestamp;
+        };
+
         if (scope === "all") {
           const jobsQuery = query(collection(db, "jobs"));
           const mentorsQuery = query(
@@ -96,19 +109,52 @@ export default function Navbar({onSearch}) {
                 job.company?.toLowerCase().includes(term.toLowerCase()),
             );
           const mentorsResults = mentorsSnapshot.docs
-            .map((doc) => ({ id: doc.id, type: "mentors", ...doc.data() }))
+            .map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                type: "mentors",
+                ...data,
+                createdAt: convertTimestamp(data.createdAt),
+                updatedAt: convertTimestamp(data.updatedAt),
+                adminActionDate: convertTimestamp(data.adminActionDate),
+                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+              };
+            })
             .filter((mentor) =>
               mentor.name?.toLowerCase().includes(term.toLowerCase()),
             );
           const usersResults = usersSnapshot.docs
-            .map((doc) => ({ id: doc.id, type: "users", ...doc.data() }))
+            .map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                type: "users",
+                ...data,
+                createdAt: convertTimestamp(data.createdAt),
+                updatedAt: convertTimestamp(data.updatedAt),
+                adminActionDate: convertTimestamp(data.adminActionDate),
+                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+              };
+            })
             .filter(
               (user) =>
                 user.name?.toLowerCase().includes(term.toLowerCase()) ||
                 user.email?.toLowerCase().includes(term.toLowerCase()),
             );
           const messagesResults = usersSnapshot.docs
-            .map((doc) => ({ id: doc.id, type: "messages", ...doc.data() }))
+            .map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                type: "messages",
+                ...data,
+                createdAt: convertTimestamp(data.createdAt),
+                updatedAt: convertTimestamp(data.updatedAt),
+                adminActionDate: convertTimestamp(data.adminActionDate),
+                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+              };
+            })
             .filter((user) =>
               user.name?.toLowerCase().includes(term.toLowerCase()),
             );
@@ -138,7 +184,18 @@ export default function Navbar({onSearch}) {
           );
           const querySnapshot = await getDocs(q);
           results = querySnapshot.docs
-            .map((doc) => ({ id: doc.id, type: "mentors", ...doc.data() }))
+            .map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                type: "mentors",
+                ...data,
+                createdAt: convertTimestamp(data.createdAt),
+                updatedAt: convertTimestamp(data.updatedAt),
+                adminActionDate: convertTimestamp(data.adminActionDate),
+                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+              };
+            })
             .filter((mentor) =>
               mentor.name?.toLowerCase().includes(term.toLowerCase()),
             );
@@ -147,7 +204,18 @@ export default function Navbar({onSearch}) {
           const q = query(collection(db, "users"));
           const querySnapshot = await getDocs(q);
           results = querySnapshot.docs
-            .map((doc) => ({ id: doc.id, type: "users", ...doc.data() }))
+            .map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                type: "users",
+                ...data,
+                createdAt: convertTimestamp(data.createdAt),
+                updatedAt: convertTimestamp(data.updatedAt),
+                adminActionDate: convertTimestamp(data.adminActionDate),
+                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+              };
+            })
             .filter(
               (user) =>
                 user.name?.toLowerCase().includes(term.toLowerCase()) ||
@@ -158,7 +226,18 @@ export default function Navbar({onSearch}) {
           const q = query(collection(db, "users"));
           const querySnapshot = await getDocs(q);
           results = querySnapshot.docs
-            .map((doc) => ({ id: doc.id, type: "messages", ...doc.data() }))
+            .map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                type: "messages",
+                ...data,
+                createdAt: convertTimestamp(data.createdAt),
+                updatedAt: convertTimestamp(data.updatedAt),
+                adminActionDate: convertTimestamp(data.adminActionDate),
+                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+              };
+            })
             .filter((user) =>
               user.name?.toLowerCase().includes(term.toLowerCase()),
             );
@@ -178,7 +257,7 @@ export default function Navbar({onSearch}) {
     const term = e.target.value;
     setSearchQuery(term);
     performSearch(term, searchScope);
-    onSearch?.(term)
+    onSearch?.(term);
   };
 
   const handleScopeChange = (scope) => {

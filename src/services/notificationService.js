@@ -43,7 +43,30 @@ export async function sendPushNotification({ token, title, body, data }) {
 // ---- Notification ----
 export async function getAllNotifications() {
   const snapshot = await getDocs(collection(db, "notifications"));
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+  // Helper function to convert Timestamp to ISO string
+  const convertTimestamp = (timestamp) => {
+    if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+      return timestamp.toDate().toISOString();
+    } else if (timestamp?.seconds) {
+      // Handle Timestamp objects without toDate method
+      return new Date(timestamp.seconds * 1000).toISOString();
+    } else if (typeof timestamp === "string") {
+      return timestamp;
+    }
+    return timestamp;
+  };
+
+  return snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: convertTimestamp(data.createdAt),
+      updatedAt: convertTimestamp(data.updatedAt),
+      readAt: convertTimestamp(data.readAt),
+    };
+  });
 }
 
 export function listenToNotifications(userId, callback) {
@@ -53,10 +76,29 @@ export function listenToNotifications(userId, callback) {
     orderBy("createdAt", "desc"),
   );
   return onSnapshot(q, (snapshot) => {
-    const notifications = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    // Helper function to convert Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toISOString();
+      } else if (timestamp?.seconds) {
+        // Handle Timestamp objects without toDate method
+        return new Date(timestamp.seconds * 1000).toISOString();
+      } else if (typeof timestamp === "string") {
+        return timestamp;
+      }
+      return timestamp;
+    };
+
+    const notifications = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        readAt: convertTimestamp(data.readAt),
+      };
+    });
     callback(notifications);
   });
 }

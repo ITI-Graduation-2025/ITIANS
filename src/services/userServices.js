@@ -64,13 +64,31 @@ export const getAllUsers = async () => {
   const snapshot = await getDocs(collection(db, "users"));
   return snapshot.docs.map((doc) => {
     const data = doc.data();
-    let createdAt = null;
-    if (data.createdAt?.toDate) {
-      createdAt = data.createdAt.toDate().toISOString();
-    } else if (typeof data.createdAt === "string") {
-      createdAt = data.createdAt;
-    }
-    return { id: doc.id, ...data, createdAt };
+
+    // Helper function to convert Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toISOString();
+      } else if (timestamp?.seconds) {
+        // Handle Timestamp objects without toDate method
+        return new Date(timestamp.seconds * 1000).toISOString();
+      } else if (typeof timestamp === "string") {
+        return timestamp;
+      }
+      return timestamp;
+    };
+
+    // Convert all timestamp fields
+    const cleanData = {
+      id: doc.id,
+      ...data,
+      createdAt: convertTimestamp(data.createdAt),
+      updatedAt: convertTimestamp(data.updatedAt),
+      adminActionDate: convertTimestamp(data.adminActionDate),
+      fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+    };
+
+    return cleanData;
   });
 };
 
@@ -78,13 +96,31 @@ export const subscribeToUsers = (callback) => {
   return onSnapshot(collection(db, "users"), (snapshot) => {
     const users = snapshot.docs.map((doc) => {
       const data = doc.data();
-      let createdAt = null;
-      if (data.createdAt?.toDate) {
-        createdAt = data.createdAt.toDate().toISOString();
-      } else if (typeof data.createdAt === "string") {
-        createdAt = data.createdAt;
-      }
-      return { id: doc.id, ...data, createdAt };
+
+      // Helper function to convert Timestamp to ISO string
+      const convertTimestamp = (timestamp) => {
+        if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+          return timestamp.toDate().toISOString();
+        } else if (timestamp?.seconds) {
+          // Handle Timestamp objects without toDate method
+          return new Date(timestamp.seconds * 1000).toISOString();
+        } else if (typeof timestamp === "string") {
+          return timestamp;
+        }
+        return timestamp;
+      };
+
+      // Convert all timestamp fields
+      const cleanData = {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        adminActionDate: convertTimestamp(data.adminActionDate),
+        fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+      };
+
+      return cleanData;
     });
     callback(users);
   });

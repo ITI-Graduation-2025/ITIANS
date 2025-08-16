@@ -46,9 +46,34 @@ export default function UsersList() {
         setLoading(true);
         setError(null);
         const querySnapshot = await getDocs(collection(db, "users"));
+
+        // Helper function to convert Timestamp to ISO string
+        const convertTimestamp = (timestamp) => {
+          if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+            return timestamp.toDate().toISOString();
+          } else if (timestamp?.seconds) {
+            // Handle Timestamp objects without toDate method
+            return new Date(timestamp.seconds * 1000).toISOString();
+          } else if (typeof timestamp === "string") {
+            return timestamp;
+          }
+          return timestamp;
+        };
+
         const usersData = querySnapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: convertTimestamp(data.createdAt),
+              updatedAt: convertTimestamp(data.updatedAt),
+              adminActionDate: convertTimestamp(data.adminActionDate),
+              fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+            };
+          })
           .filter((user) => user.id !== currentUser?.uid);
+
         setUsers(usersData);
       } catch (e) {
         console.error("Error fetching users:", e);

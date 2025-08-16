@@ -20,7 +20,32 @@ import {
 export const getAllMentorshipSessions = async () => {
   try {
     const snapshot = await getDocs(collection(db, "sessions"));
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    // Helper function to convert Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toISOString();
+      } else if (timestamp?.seconds) {
+        // Handle Timestamp objects without toDate method
+        return new Date(timestamp.seconds * 1000).toISOString();
+      } else if (typeof timestamp === "string") {
+        return timestamp;
+      }
+      return timestamp;
+    };
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        date: convertTimestamp(data.date),
+        startTime: convertTimestamp(data.startTime),
+        endTime: convertTimestamp(data.endTime),
+      };
+    });
   } catch (error) {
     console.error("Error fetching mentorship sessions:", error);
     throw error;
@@ -33,10 +58,31 @@ export const getMentorshipSessionsSnapshot = async (callback) => {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const sessions = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        // Helper function to convert Timestamp to ISO string
+        const convertTimestamp = (timestamp) => {
+          if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+            return timestamp.toDate().toISOString();
+          } else if (timestamp?.seconds) {
+            // Handle Timestamp objects without toDate method
+            return new Date(timestamp.seconds * 1000).toISOString();
+          } else if (typeof timestamp === "string") {
+            return timestamp;
+          }
+          return timestamp;
+        };
+
+        const sessions = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: convertTimestamp(data.createdAt),
+            updatedAt: convertTimestamp(data.updatedAt),
+            date: convertTimestamp(data.date),
+            startTime: convertTimestamp(data.startTime),
+            endTime: convertTimestamp(data.endTime),
+          };
+        });
         callback(sessions);
       },
       (error) => {
@@ -59,7 +105,32 @@ export const getMentorshipSessionsByStatus = async (status) => {
       orderBy("createdAt", "desc"),
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    // Helper function to convert Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toISOString();
+      } else if (timestamp?.seconds) {
+        // Handle Timestamp objects without toDate method
+        return new Date(timestamp.seconds * 1000).toISOString();
+      } else if (typeof timestamp === "string") {
+        return timestamp;
+      }
+      return timestamp;
+    };
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        date: convertTimestamp(data.date),
+        startTime: convertTimestamp(data.startTime),
+        endTime: convertTimestamp(data.endTime),
+      };
+    });
   } catch (error) {
     console.error("Error fetching sessions by status:", error);
     throw error;
@@ -74,7 +145,32 @@ export const getMentorshipSessionsByMentor = async (mentorId) => {
       orderBy("createdAt", "desc"),
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    // Helper function to convert Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toISOString();
+      } else if (timestamp?.seconds) {
+        // Handle Timestamp objects without toDate method
+        return new Date(timestamp.seconds * 1000).toISOString();
+      } else if (typeof timestamp === "string") {
+        return timestamp;
+      }
+      return timestamp;
+    };
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        date: convertTimestamp(data.date),
+        startTime: convertTimestamp(data.startTime),
+        endTime: convertTimestamp(data.endTime),
+      };
+    });
   } catch (error) {
     console.error("Error fetching sessions by mentor:", error);
     throw error;
@@ -89,7 +185,32 @@ export const getMentorshipSessionsByMentee = async (menteeId) => {
       orderBy("createdAt", "desc"),
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    // Helper function to convert Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toISOString();
+      } else if (timestamp?.seconds) {
+        // Handle Timestamp objects without toDate method
+        return new Date(timestamp.seconds * 1000).toISOString();
+      } else if (typeof timestamp === "string") {
+        return timestamp;
+      }
+      return timestamp;
+    };
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        date: convertTimestamp(data.date),
+        startTime: convertTimestamp(data.startTime),
+        endTime: convertTimestamp(data.endTime),
+      };
+    });
   } catch (error) {
     console.error("Error fetching sessions by mentee:", error);
     throw error;
@@ -100,7 +221,30 @@ export const getMentorshipSessionsByMentee = async (menteeId) => {
 export const getAllMentorshipRequests = async () => {
   try {
     const snapshot = await getDocs(collection(db, "sessionRequests"));
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    // Helper function to convert Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toISOString();
+      } else if (timestamp?.seconds) {
+        // Handle Timestamp objects without toDate method
+        return new Date(timestamp.seconds * 1000).toISOString();
+      } else if (typeof timestamp === "string") {
+        return timestamp;
+      }
+      return timestamp;
+    };
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        requestedAt: convertTimestamp(data.requestedAt),
+      };
+    });
   } catch (error) {
     console.error("Error fetching mentorship requests:", error);
     throw error;
@@ -415,18 +559,56 @@ export const getMentorshipStatistics = async () => {
         getDocs(collection(db, "sessionRequests")),
       ]);
 
-    const sessions = sessionsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    const bookedSessions = bookedSessionsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    const sessionRequests = sessionRequestsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    // Helper function to convert Timestamp to ISO string
+    const convertTimestamp = (timestamp) => {
+      if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+        return timestamp.toDate().toISOString();
+      } else if (timestamp?.seconds) {
+        // Handle Timestamp objects without toDate method
+        return new Date(timestamp.seconds * 1000).toISOString();
+      } else if (typeof timestamp === "string") {
+        return timestamp;
+      }
+      return timestamp;
+    };
+
+    const sessions = sessionsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        date: convertTimestamp(data.date),
+        startTime: convertTimestamp(data.startTime),
+        endTime: convertTimestamp(data.endTime),
+      };
+    });
+
+    const bookedSessions = bookedSessionsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        date: convertTimestamp(data.date),
+        startTime: convertTimestamp(data.startTime),
+        endTime: convertTimestamp(data.endTime),
+        bookedAt: convertTimestamp(data.bookedAt),
+      };
+    });
+
+    const sessionRequests = sessionRequestsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        requestedAt: convertTimestamp(data.requestedAt),
+      };
+    });
 
     // Combine sessions and bookedSessions for comprehensive stats
     const allSessions = [...sessions, ...bookedSessions];
