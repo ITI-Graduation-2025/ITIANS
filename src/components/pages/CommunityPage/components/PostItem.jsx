@@ -16,6 +16,11 @@ import {
   HiOutlinePencil,
   HiOutlinePhoto,
   HiOutlineTrash,
+  HiOutlineXMark,
+  HiOutlineHeart,
+  HiOutlineChatBubbleLeft,
+  HiOutlineArrowPathRoundedSquare,
+  HiOutlinePencilSquare,
 } from "react-icons/hi2";
 import PostComments from "./PostComments";
 
@@ -248,10 +253,10 @@ export default function PostItem({ post, currentUser }) {
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
 
     if (diffInMinutes < 1) return "Just now";
-    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440)
-      return `${Math.floor(diffInMinutes / 60)} hours ago`;
-    return `${Math.floor(diffInMinutes / 1440)} days ago`;
+      return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
   const downloadFile = async (url, filename) => {
@@ -306,60 +311,71 @@ export default function PostItem({ post, currentUser }) {
   const isPostOwner = post.authorId === (currentUser?.uid || currentUser?.id);
 
   return (
-    <div className="bg-card rounded-xl shadow-md overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+      {/* Repost Header */}
       {post.repostOf && (
-        <div className="bg-muted border-b border-border px-4 py-2 flex items-center gap-2 text-sm text-primary">
-          <span className="font-semibold">{post.author} reposted</span>
+        <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-6 py-3 flex items-center gap-2 text-sm text-slate-600">
+          <HiOutlineArrowPathRoundedSquare className="w-4 h-4 text-primary" />
+          <span className="font-medium">{post.author} reposted</span>
         </div>
       )}
 
-      <div className="p-4">
-        <div className="flex items-start space-x-3">
+      {/* Post Header */}
+      <div className="p-6">
+        <div className="flex items-start space-x-4">
+          {/* Author Avatar */}
           <Link href={`/${post.role?.toLowerCase() === "mentor" ? "mentor" : post.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.authorId}`}>
             {post.authorProfileImage ? (
               <Image
                 src={post.authorProfileImage || ""}
                 alt={post.author}
-                className="h-12 w-12 rounded-full cursor-pointer"
-                width={100}
-                height={100}
+                className="h-12 w-12 rounded-full cursor-pointer ring-2 ring-slate-100 hover:ring-primary/20 transition-all duration-200"
+                width={48}
+                height={48}
               />
             ) : (
-              <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold cursor-pointer">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold cursor-pointer ring-2 ring-slate-100 hover:ring-primary/20 transition-all duration-200">
                 {post.author.charAt(0)}
               </div>
             )}
           </Link>
-          <div className="flex-1">
+
+          {/* Author Info & Actions */}
+          <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start">
-              <div>
+              <div className="min-w-0">
                 <Link href={`/${post.role?.toLowerCase() === "mentor" ? "mentor" : post.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.authorId}`}>
-                  <h4 className="font-bold cursor-pointer hover:underline">
+                  <h4 className="font-semibold text-slate-800 cursor-pointer hover:text-primary transition-colors truncate">
                     {post.author}
                   </h4>
                 </Link>
-                <p className="text-sm text-muted-foreground">{post.role}</p>
+                <div className="flex items-center space-x-2 text-sm text-slate-500">
+                  <span className="capitalize">{post.role}</span>
+                  <span>•</span>
+                  <span>{formatTimestamp(post.createdAt)}</span>
+                </div>
               </div>
-              {/* Edit/Delete options for current user's posts */}
+
+              {/* Edit/Delete Menu */}
               {isPostOwner && (
                 <div className="relative group">
-                  <button className="text-muted-foreground hover:text-foreground">
+                  <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                     <HiOutlineEllipsisHorizontal className="w-5 h-5" />
                   </button>
-                  <div className="absolute right-0 top-6 bg-card border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[120px]">
+                  <div className="absolute right-0 top-10 bg-white border border-slate-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[140px]">
                     <button
                       onClick={startEditing}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center space-x-2"
+                      className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-3 rounded-t-xl transition-colors"
                     >
                       <HiOutlinePencil className="w-4 h-4" />
-                      <span>Edit</span>
+                      <span>Edit Post</span>
                     </button>
                     <button
                       onClick={handleDeletePost}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted text-destructive flex items-center space-x-2"
+                      className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 rounded-b-xl transition-colors"
                     >
                       <HiOutlineTrash className="w-4 h-4" />
-                      <span>Delete</span>
+                      <span>Delete Post</span>
                     </button>
                   </div>
                 </div>
@@ -368,170 +384,175 @@ export default function PostItem({ post, currentUser }) {
           </div>
         </div>
 
+        {/* Repost Content */}
         {post.repostOf && (
-          <div className="mt-3 bg-muted border border-border rounded-lg p-3">
+          <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="flex items-start space-x-3">
               <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
                 {post.repostOf.authorProfileImage ? (
                   <Image
                     src={post.repostOf.authorProfileImage || ""}
                     alt={post.repostOf.author}
-                    className="h-12 w-12 rounded-full cursor-pointer"
-                    width={100}
-                    height={100}
+                    className="h-8 w-8 rounded-full cursor-pointer ring-2 ring-slate-200"
+                    width={32}
+                    height={32}
                   />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold cursor-pointer">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-xs font-bold cursor-pointer ring-2 ring-slate-200">
                     {post.repostOf.author.charAt(0)}
                   </div>
                 )}
               </Link>
-              <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
-                <h5 className="font-semibold text-sm cursor-pointer hover:underline">
-                  {post.repostOf.author}
-                </h5>
-              </Link>
-              <p className="text-xs text-muted-foreground">
-                {post.repostOf.role}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {formatTimestamp(post.repostOf.timestamp)}
-              </p>
-            </div>
-            <p className="mt-2 text-foreground text-sm">
-              {post.repostOf.content}
-            </p>
-            {post.repostOf.attachment && (
-              <div className="mt-2">
-                {post.repostOf.attachment.type &&
-                post.repostOf.attachment.type.startsWith("image") ? (
-                  <div className="relative inline-block">
-                    <img
-                      src={post.repostOf.attachment.url}
-                      alt="Attachment"
-                      className="max-h-48 w-auto rounded-lg border"
-                    />
-                    <button
-                      onClick={() =>
-                        downloadFile(
-                          post.repostOf.attachment.url,
-                          getFileName(post, post.repostOf.attachment),
-                        )
-                      }
-                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                      title="Download image"
-                    >
-                      <HiOutlineArrowDownTray className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={post.repostOf.attachment.url}
-                      download={post.repostOf.attachment.name}
-                      className="inline-flex items-center text-primary hover:text-primary/80 text-sm"
-                    >
-                      <HiOutlinePaperClip className="w-4 h-4 mr-1" />
-                      {post.repostOf.attachment.name}
-                    </a>
-                    <button
-                      onClick={() =>
-                        downloadFile(
-                          post.repostOf.attachment.url,
-                          post.repostOf.attachment.name,
-                        )
-                      }
-                      className="text-primary hover:text-primary/80 p-1 rounded"
-                      title="Download file"
-                    >
-                      <HiOutlineArrowDownTray className="w-4 h-4" />
-                    </button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2 text-sm">
+                  <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
+                    <span className="font-semibold text-slate-700 cursor-pointer hover:text-primary transition-colors">
+                      {post.repostOf.author}
+                    </span>
+                  </Link>
+                  <span className="text-slate-500 capitalize">{post.repostOf.role}</span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-slate-400">{formatTimestamp(post.repostOf.timestamp)}</span>
+                </div>
+                <p className="mt-1 text-slate-700 text-sm">{post.repostOf.content}</p>
+                
+                                 {/* Repost Attachment */}
+                 {post.repostOf.attachment && (
+                   <div className="mt-3">
+                     {post.repostOf.attachment.type && post.repostOf.attachment.type.startsWith("image") ? (
+                       <div className="relative w-full">
+                         <img
+                           src={post.repostOf.attachment.url}
+                           alt="Repost attachment"
+                           className="w-full h-auto max-h-48 object-cover rounded-lg border border-slate-200"
+                         />
+                         <button
+                           onClick={() => downloadFile(post.repostOf.attachment.url, getFileName(post, post.repostOf.attachment))}
+                           className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                           title="Download image"
+                         >
+                           <HiOutlineArrowDownTray className="w-4 h-4" />
+                         </button>
+                       </div>
+                     ) : (
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={post.repostOf.attachment.url}
+                          download={post.repostOf.attachment.name}
+                          className="inline-flex items-center text-primary hover:text-primary/80 text-sm bg-slate-50 hover:bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 transition-colors"
+                        >
+                          <HiOutlinePaperClip className="w-4 h-4 mr-2" />
+                          {post.repostOf.attachment.name}
+                        </a>
+                        <button
+                          onClick={() => downloadFile(post.repostOf.attachment.url, post.repostOf.attachment.name)}
+                          className="text-primary hover:text-primary/80 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
+                          title="Download file"
+                        >
+                          <HiOutlineArrowDownTray className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
         )}
 
+        {/* Main Post Content */}
         {!post.repostOf && (
           <>
             {editingPost ? (
-              <div className="mt-3">
-                <textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full border border-input rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
-                  rows={3}
-                />
-                <div className="flex space-x-2 mt-2">
-                  <button
-                    onClick={handleEditPost}
-                    className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/80"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={cancelEditing}
-                    className="px-3 py-1 bg-muted text-muted-foreground rounded text-sm hover:bg-muted/80"
-                  >
-                    Cancel
-                  </button>
+              <div className="mt-4 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                      <HiOutlinePencilSquare className="h-4 w-4 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-800">Edit Post</h3>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-slate-700">Post Content</label>
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none bg-white text-slate-700 placeholder-slate-400 transition-all duration-200 shadow-sm"
+                      rows={4}
+                      placeholder="Edit your post content..."
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="text-sm text-slate-500">
+                      {editContent.length} characters
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={cancelEditing}
+                        className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all duration-200 border border-slate-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleEditPost}
+                        className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+                        disabled={!editContent.trim()}
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
-              <p className="mt-3 text-foreground">{post.content}</p>
+              <p className="mt-4 text-slate-700 text-base leading-relaxed">{post.content}</p>
             )}
-            {post.attachment && (
-              <div className="mt-3 relative">
-                {isImageAttachment ? (
-                  <div className="relative inline-block">
-                    <img
-                      src={post.attachment.url}
-                      alt="Attachment"
-                      className="max-h-96 w-full object-contain rounded-lg border"
-                    />
-                    <button
-                      onClick={() =>
-                        downloadFile(
-                          post.attachment.url,
-                          getFileName(post, post.attachment),
-                        )
-                      }
-                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                      title="Download image"
-                    >
-                      <HiOutlineArrowDownTray className="w-4 h-4" />
-                    </button>
-                    {isPostOwner && (
-                      <button
-                        onClick={() => setEditingImage(true)}
-                        className="absolute top-2 left-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                        title="Edit image"
-                      >
-                        <HiOutlinePhoto className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
+
+                             {/* Post Attachment */}
+                 {post.attachment && (
+                   <div className="mt-4">
+                     {isImageAttachment ? (
+                       <div className="relative w-full">
+                       <img
+                         src={post.attachment.url}
+                         alt="Post attachment"
+                         className="w-full h-auto max-h-96 object-cover rounded-xl border border-slate-200 shadow-sm"
+                       />
+                       <button
+                         onClick={() => downloadFile(post.attachment.url, getFileName(post, post.attachment))}
+                         className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                         title="Download image"
+                       >
+                         <HiOutlineArrowDownTray className="w-4 h-4" />
+                       </button>
+                       {isPostOwner && (
+                         <button
+                           onClick={() => setEditingImage(true)}
+                           className="absolute top-3 left-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                           title="Edit image"
+                         >
+                           <HiOutlinePhoto className="w-4 h-4" />
+                         </button>
+                       )}
+                     </div>
+                   ) : (
+                  <div className="flex items-center gap-3">
                     <a
                       href={post.attachment.url}
                       download={post.attachment.name}
-                      className="inline-flex items-center p-3 bg-muted rounded-lg border border-border text-primary hover:text-primary/80"
+                      className="inline-flex items-center p-4 bg-slate-50 rounded-xl border border-slate-200 text-primary hover:text-primary/80 hover:bg-slate-100 transition-colors"
                     >
-                      <HiOutlinePaperClip className="w-4 h-4 mr-2" />
-                      <span className="max-w-xs truncate">
-                        {post.attachment.name}
-                      </span>
+                      <HiOutlinePaperClip className="w-5 h-5 mr-3" />
+                      <span className="max-w-xs truncate font-medium">{post.attachment.name}</span>
                     </a>
                     <button
-                      onClick={() =>
-                        downloadFile(post.attachment.url, post.attachment.name)
-                      }
-                      className="text-primary hover:text-primary/80 p-2 rounded-lg border border-border"
+                      onClick={() => downloadFile(post.attachment.url, post.attachment.name)}
+                      className="text-primary hover:text-primary/80 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors"
                       title="Download file"
                     >
-                      <HiOutlineArrowDownTray className="w-4 h-4" />
+                      <HiOutlineArrowDownTray className="w-5 h-5" />
                     </button>
                   </div>
                 )}
@@ -541,34 +562,44 @@ export default function PostItem({ post, currentUser }) {
         )}
       </div>
 
-      <div className="border-t border-border px-4 py-2 flex justify-between">
-        <button
-          onClick={handleLikePost}
-          className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg ${Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"}`}
-        >
-          <HiOutlineHandThumbUp className="w-5 h-5" />
-          <span>
-            Like ({Array.isArray(post.likes) ? post.likes.length : 0})
-          </span>
-        </button>
-        <button
-          className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-muted"
-          onClick={() => setOpenComments(!openComments)}
-        >
-          <HiOutlineChatBubbleLeftRight className="w-5 h-5" />
-          <span>
-            Comment ({Array.isArray(post.comments) ? post.comments.length : 0})
-          </span>
-        </button>
-        <button
-          className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-muted"
-          onClick={handleRepost}
-        >
-          <HiOutlineArrowPath className="w-5 h-5" />
-          <span>Repost</span>
-        </button>
+      {/* Post Actions */}
+      <div className="border-t border-slate-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleLikePost}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+              Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) 
+                ? "text-primary bg-primary/10" 
+                : "text-slate-600 hover:text-primary hover:bg-slate-50"
+            }`}
+          >
+            <HiOutlineHeart className={`w-5 h-5 ${Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) ? 'fill-current' : ''}`} />
+            <span className="font-medium">
+              {Array.isArray(post.likes) ? post.likes.length : 0}
+            </span>
+          </button>
+          
+          <button
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all duration-200"
+            onClick={() => setOpenComments(!openComments)}
+          >
+            <HiOutlineChatBubbleLeft className="w-5 h-5" />
+            <span className="font-medium">
+              {Array.isArray(post.comments) ? post.comments.length : 0}
+            </span>
+          </button>
+          
+          <button
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all duration-200"
+            onClick={handleRepost}
+          >
+            <HiOutlineArrowPathRoundedSquare className="w-5 h-5" />
+            <span className="font-medium">Repost</span>
+          </button>
+        </div>
       </div>
 
+      {/* Comments Section */}
       {openComments && (
         <PostComments
           post={post}
@@ -581,34 +612,57 @@ export default function PostItem({ post, currentUser }) {
 
       {/* Image Edit Modal */}
       {editingImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg p-8 relative border border-border max-h-[90vh] overflow-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative border border-slate-200 max-h-[90vh] overflow-auto">
             <button
               onClick={() => setEditingImage(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground text-2xl"
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 p-3 hover:bg-slate-100 rounded-full transition-all duration-200"
             >
-              ×
+              <HiOutlineXMark className="w-6 h-6" />
             </button>
-            <h2 className="text-2xl font-bold mb-6 text-center">Edit Image</h2>
+            
+            <div className="text-center mb-8">
+              <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <HiOutlinePhoto className="h-10 w-10 text-primary" />
+              </div>
+              <h2 className="text-3xl font-bold text-slate-800 mb-3">Edit Post Image</h2>
+              <p className="text-slate-600 text-lg leading-relaxed max-w-md mx-auto">
+                Upload a new image to replace the current one. Your post will be updated instantly.
+              </p>
+            </div>
 
-            <div className="space-y-4">
-              <div className="flex flex-col items-center space-y-4">
-                {/* Current Image */}
-                <div className="relative">
+            <div className="space-y-8">
+              {/* Current Image Preview */}
+              <div className="relative">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Current Image</h3>
+                  <p className="text-sm text-slate-500">This is the image currently displayed in your post</p>
+                </div>
+                <div className="relative inline-block">
                   <img
                     src={imagePreview || post.attachment.url}
                     alt="Current"
-                    className="w-64 h-64 object-cover rounded-lg border"
+                    className="w-full max-w-md h-80 object-cover rounded-2xl border-2 border-slate-200 shadow-lg"
                   />
                   {uploadingImage && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mx-auto mb-4"></div>
+                        <p className="text-white font-medium">Uploading...</p>
+                      </div>
                     </div>
                   )}
                 </div>
+              </div>
 
-                {/* Upload Controls */}
-                <div className="flex gap-2">
+              {/* Upload Controls */}
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Upload New Image</h3>
+                  <p className="text-sm text-slate-500">Choose a new image to replace the current one</p>
+                </div>
+                
+                <div className="flex justify-center">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -620,16 +674,24 @@ export default function PostItem({ post, currentUser }) {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingImage}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                    className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-primary/90 text-white rounded-2xl font-semibold hover:from-primary/90 hover:to-primary/80 disabled:opacity-50 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                   >
-                    <HiOutlinePhoto />
-                    {uploadingImage ? "Uploading..." : "Upload New Image"}
+                    <HiOutlinePhoto className="w-6 h-6" />
+                    {uploadingImage ? "Uploading..." : "Choose New Image"}
                   </button>
                 </div>
-
-                <p className="text-sm text-muted-foreground text-center">
-                  Supported formats: JPG, PNG, GIF. Max size: 5MB
-                </p>
+                
+                <div className="bg-slate-50 rounded-2xl p-6 text-center">
+                  <div className="flex items-center justify-center space-x-2 text-slate-600 mb-2">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-medium">Supported Formats</span>
+                  </div>
+                  <p className="text-sm text-slate-500">
+                    JPG, PNG, GIF • Maximum file size: 5MB • Recommended: Square images for best display
+                  </p>
+                </div>
               </div>
             </div>
           </div>
