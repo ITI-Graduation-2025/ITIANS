@@ -17,7 +17,6 @@ export const PersonalInfo = ({
   status,
   rating,
   mainTrack,
-  skills,
   currentJob,
   bio,
   education,
@@ -99,12 +98,6 @@ export const PersonalInfo = ({
           <p className="text-base font-semibold text-[#B71C1C]">{mainTrack}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Skills</p>
-          <p className="text-base font-semibold text-[#B71C1C]">
-            {skills.length ? skills.map((s) => s.value || s).join(", ") : "-"}
-          </p>
-        </div>
-        <div>
           <p className="text-xs text-gray-500">Current Job</p>
           <p className="text-base font-semibold text-[#B71C1C]">
             {typeof currentJob === "string" && currentJob ? currentJob : "-"}
@@ -112,7 +105,7 @@ export const PersonalInfo = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+      <div className="grid grid-cols-2 gap-4 mt-6 text-sm">
         <ProfileItem
           title="About Me"
           value={bio}

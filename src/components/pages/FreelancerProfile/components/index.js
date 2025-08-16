@@ -8,3 +8,4 @@ export * from "./SectionCard";
 export * from "./Certificates";
 export * from "./EditModal";
 export * from "./Header";
+export * from "./Skills";

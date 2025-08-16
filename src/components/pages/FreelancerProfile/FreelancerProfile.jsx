@@ -15,6 +15,7 @@ import {
   PersonalInfo,
   Posts,
   ResumeSection,
+  Skills,
 } from "./components";
 
 const FreelancerProfile = ({ user, refetchUser }) => {
@@ -94,7 +95,6 @@ const FreelancerProfile = ({ user, refetchUser }) => {
           status={status}
           rating={rating}
           mainTrack={mainTrack}
-          skills={skills}
           currentJob={currentJob}
           bio={bio}
           education={education}
@@ -103,6 +103,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
           isOwner={isOwner}
           setIsModalOpen={setIsModalOpen}
         />
+        <Skills skills={skills} isOwner={isOwner} setIsModalOpen={setIsModalOpen} />
         <ResumeSection
           userName={fullName}
           resumeUrl={resumeUrl}

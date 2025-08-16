@@ -55,13 +55,32 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
       setTempValue(user.profileImage || "");
       setImagePreview(user.profileImage || null);
       setOriginalValue(user.profileImage || "");
+    } else if (type === "skills") {
+      const userSkills = user.skills || [];
+      console.log("Initializing skills modal with:", userSkills); // Debug log
+      setTempValue({
+        skills: Array.isArray(userSkills) ? userSkills : [],
+        newSkill: ""
+      });
+      setOriginalValue({
+        skills: Array.isArray(userSkills) ? userSkills : [],
+        newSkill: ""
+      });
     }
     setChanged(false);
   }, [type, user]);
 
   useEffect(() => {
-    setChanged(true);
-  }, [tempValue]);
+    if (type === "skills") {
+      // For skills, compare the actual skills array, not the entire tempValue object
+      const originalSkills = originalValue?.skills || [];
+      const currentSkills = tempValue?.skills || [];
+      const hasChanged = JSON.stringify(originalSkills) !== JSON.stringify(currentSkills);
+      setChanged(hasChanged);
+    } else {
+      setChanged(true);
+    }
+  }, [tempValue, type, originalValue]);
 
 
 
@@ -110,6 +129,8 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
     // Revert to original values
     if (type === "profileImage") {
       setUser({ ...user, profileImage: originalValue });
+    } else if (type === "skills") {
+      setUser({ ...user, skills: originalValue?.skills || [] });
     }
     onClose();
   };
@@ -139,6 +160,11 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
         await updateUser(user.id, { profileImage: tempValue });
         // Update local user context to ensure consistency
         setUser({ ...user, profileImage: tempValue });
+      } else if (type === "skills") {
+        console.log("Saving skills:", tempValue.skills); // Debug log
+        await updateUser(user.id, { skills: tempValue.skills || [] });
+        // Update local user context to ensure consistency
+        setUser({ ...user, skills: tempValue.skills || [] });
       }
       await refetchUser();
       toast.success("Profile updated successfully!");
@@ -163,7 +189,7 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
           <FiX />
         </button>
         <h2 className="text-2xl font-bold text-[#B71C1C] mb-6 capitalize tracking-wide text-center">
-          Edit {type === "profileImage" ? "Profile Image" : type}
+          Edit {type === "profileImage" ? "Profile Image" : type === "skills" ? "Skills" : type}
         </h2>
 
         {type === "profileImage" && (
@@ -448,6 +474,125 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
             >
               Add Certificate
             </button>
+          </div>
+        )}
+        {type === "skills" && (
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-blue-800 text-sm">
+                💡 <strong>Tip:</strong> Add your technical skills, programming languages, frameworks, and tools to showcase your expertise.
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Add new skill (e.g., React, Node.js, AWS)"
+                value={tempValue.newSkill || ""}
+                onChange={(e) => {
+                  setTempValue({ ...tempValue, newSkill: e.target.value });
+                }}
+                className="flex-1 border-2 border-[#B71C1C] px-4 py-3 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
+                disabled={loading}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && tempValue.newSkill?.trim()) {
+                    const skillValue = tempValue.newSkill.trim();
+                    const currentSkills = tempValue.skills || [];
+                    console.log("Adding skill via Enter:", skillValue, "Current skills:", currentSkills); // Debug log
+                    if (!currentSkills.includes(skillValue)) {
+                      setTempValue({
+                        ...tempValue,
+                        skills: [...currentSkills, skillValue],
+                        newSkill: ""
+                      });
+                    }
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (tempValue.newSkill?.trim()) {
+                    const skillValue = tempValue.newSkill.trim();
+                    const currentSkills = tempValue.skills || [];
+                    console.log("Adding skill via button:", skillValue, "Current skills:", currentSkills); // Debug log
+                    if (!currentSkills.includes(skillValue)) {
+                      setTempValue({
+                        ...tempValue,
+                        skills: [...currentSkills, skillValue],
+                        newSkill: ""
+                      });
+                    }
+                  }
+                }}
+                className="px-6 py-3 bg-[#B71C1C] text-white rounded-lg hover:bg-[#B71C1C]/90 transition-colors disabled:opacity-50 font-medium"
+                disabled={loading || !tempValue.newSkill?.trim()}
+              >
+                Add
+              </button>
+            </div>
+            
+            {/* Suggested Skills */}
+            <div>
+              <p className="text-sm text-gray-600 mb-3 font-medium">Quick add common skills:</p>
+              <div className="flex flex-wrap gap-2">
+                {["React", "Node.js", "JavaScript", "Python", "Java", "CSS", "HTML", "MongoDB", "SQL", "Git", "Docker", "AWS", "TypeScript", "Vue.js", "Angular", "PHP", "C++", "C#", "Ruby", "Go", "Rust", "Kubernetes", "Jenkins", "GraphQL", "REST API"].map((suggestedSkill) => (
+                  <button
+                    key={suggestedSkill}
+                    onClick={() => {
+                      const currentSkills = tempValue.skills || [];
+                      console.log("Adding suggested skill:", suggestedSkill, "Current skills:", currentSkills); // Debug log
+                      if (!currentSkills.includes(suggestedSkill)) {
+                        setTempValue({
+                          ...tempValue,
+                          skills: [...currentSkills, suggestedSkill]
+                        });
+                      }
+                    }}
+                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors border hover:border-gray-300 disabled:opacity-50"
+                    disabled={loading}
+                  >
+                    + {suggestedSkill}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Current Skills */}
+            {(tempValue.skills || []).length > 0 ? (
+              <div>
+                <p className="text-sm text-gray-600 mb-3 font-medium">Your skills ({(tempValue.skills || []).length}):</p>
+                <div className="flex flex-wrap gap-2">
+                  {(tempValue.skills || []).map((skill, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-gradient-to-r from-[#B71C1C] to-red-600 text-white px-3 py-2 rounded-full shadow-sm">
+                      <span className="text-sm font-medium">{skill.value || skill}</span>
+                      <button
+                        onClick={() => {
+                          const newSkills = (tempValue.skills || []).filter((_, idx) => idx !== i);
+                          console.log("Removing skill at index:", i, "New skills array:", newSkills); // Debug log
+                          setTempValue({
+                            ...tempValue,
+                            skills: newSkills
+                          });
+                        }}
+                        className="text-white hover:text-red-200 transition-colors p-1 rounded-full hover:bg-white/20"
+                        disabled={loading}
+                        title="Remove skill"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-gray-400 text-2xl">🎯</span>
+                </div>
+                <p className="text-gray-500 font-medium">No skills added yet</p>
+                <p className="text-gray-400 text-sm mt-1">Start by adding your first skill above</p>
+              </div>
+            )}
           </div>
         )}
         <div className="flex justify-end gap-2 mt-8">
