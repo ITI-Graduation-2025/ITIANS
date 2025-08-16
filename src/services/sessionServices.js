@@ -569,6 +569,22 @@ export const getCompletedSessionsSnapshot = async (mentorId, callback) => {
   return unsubscribe;
 };
 
+// Get completed sessions count for a mentor
+export const getCompletedSessionsCount = async (mentorId) => {
+  try {
+    const q = query(
+      collection(db, "bookedSessions"),
+      where("mentorId", "==", mentorId),
+      where("status", "==", "Completed"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.size;
+  } catch (error) {
+    console.error("Error getting completed sessions count:", error);
+    return 0;
+  }
+};
+
 // Admin cancel session function
 export const adminCancelSession = async (sessionId, menteeId) => {
   if (!sessionId || typeof sessionId !== "string") {

@@ -636,3 +636,82 @@ export const formatRequestData = (request) => {
       : "N/A",
   };
 };
+
+// --- Mentor Testimonials ---
+export const getMentorTestimonials = async (mentorId) => {
+  try {
+    // Get all sessions for this mentor
+    const sessionsQuery = query(
+      collection(db, "sessions"),
+      where("mentorId", "==", mentorId),
+      where("status", "==", "Completed"),
+    );
+    const sessionsSnapshot = await getDocs(sessionsQuery);
+
+    // Get all booked sessions for this mentor
+    const bookedSessionsQuery = query(
+      collection(db, "bookedSessions"),
+      where("mentorId", "==", mentorId),
+      where("status", "==", "Completed"),
+    );
+    const bookedSessionsSnapshot = await getDocs(bookedSessionsQuery);
+
+    // Combine all sessions
+    const allSessions = [
+      ...sessionsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+      ...bookedSessionsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })),
+    ];
+
+    // Extract all reviews from completed sessions
+    const testimonials = [];
+
+    for (const session of allSessions) {
+      if (session.reviews && Array.isArray(session.reviews)) {
+        for (const review of session.reviews) {
+          // Get user data for the reviewer
+          let reviewerName = review.reviewerName || "Anonymous";
+          let reviewerRole = "Mentee";
+
+          try {
+            if (review.reviewerId) {
+              const userRef = doc(db, "users", review.reviewerId);
+              const userDoc = await getDoc(userRef);
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                reviewerName =
+                  userData.name || review.reviewerName || "Anonymous";
+                reviewerRole = userData.role || "Mentee";
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching reviewer data:", error);
+          }
+
+          testimonials.push({
+            id: review.id || `${session.id}-${Date.now()}`,
+            name: reviewerName,
+            review: review.review || review.title || "Great session!",
+            rating: review.rating || 5,
+            role: reviewerRole,
+            sessionTitle: session.title || "Mentorship Session",
+            date: review.createdAt || session.completedAt || session.updatedAt,
+            sessionId: session.id,
+          });
+        }
+      }
+    }
+
+    // Sort by date (newest first) and return
+    return testimonials.sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
+  } catch (error) {
+    console.error("Error fetching mentor testimonials:", error);
+    throw error;
+  }
+};

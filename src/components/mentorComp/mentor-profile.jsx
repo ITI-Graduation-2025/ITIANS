@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function MentorProfile({ mentor, isOwner }) {
   const [isBioOpen, setIsBioOpen] = useState(false);
@@ -62,12 +63,18 @@ export function MentorProfile({ mentor, isOwner }) {
             </div>
           </div>
           <div className="ml-auto flex items-center space-x-3 pb-2">
-            <Button variant="outline" size="sm" className="cursor-pointer">
-              <MessageCircle className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="sm" className="cursor-pointer">
-              <Heart className="w-4 h-4" />
-            </Button>
+            {!isOwner && (
+              <>
+                <Button variant="outline" size="sm" className="cursor-pointer">
+                  <Link href={`/chat/${mentor.id}`}>
+                    <MessageCircle className="w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="cursor-pointer">
+                  <Heart className="w-4 h-4" />
+                </Button>
+              </>
+            )}
             <DropdownMenu>
               {isOwner && (
                 <DropdownMenuTrigger asChild>
