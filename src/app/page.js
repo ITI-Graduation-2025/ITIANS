@@ -16,7 +16,6 @@ export default function Home() {
       <LandingSection />
       <JobSlider />
       <TopRatedMentors />
-
       <AboutUsSection />
       <TracksMarquee />
       <OurImpactSection />

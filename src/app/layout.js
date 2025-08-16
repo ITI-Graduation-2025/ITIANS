@@ -1,3 +1,4 @@
+//src/app/layout.js
 import NextProvider from "@/components/providers/nextProvider";
 import { UsersProvider } from "@/context/usersContext";
 import { AuthProvider } from "@/context/AuthContext";

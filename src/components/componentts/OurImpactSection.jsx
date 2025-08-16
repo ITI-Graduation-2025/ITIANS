@@ -127,7 +127,7 @@ export default function OurImpactSection() {
               </h3>
 
               {/* Description */}
-              <p className="text-gray-600 text-sm leading-relaxed max-w-xs mx-auto">
+              <p className="text-gray-700 text-sm leading-relaxed max-w-xs mx-auto">
                 {item.description}
               </p>
             </motion.div>

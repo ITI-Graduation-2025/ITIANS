@@ -271,7 +271,7 @@ export default function TopRatedMentors() {
   return (
     <section className="relative py-16 px-4 md:px-8 overflow-hidden min-h-[600px]">
       {/* Your SVG Background */}
-      <div className="absolute inset-0 w-full h-full">
+      {/* <div className="absolute inset-0 w-full h-full">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           version="1.1"
@@ -330,6 +330,66 @@ export default function TopRatedMentors() {
             </mask>
           </defs>
         </svg>
+      </div> */}
+      <div className="absolute inset-0 w-full h-full">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          version="1.1"
+          xmlnsXlink="http://www.w3.org/1999/xlink"
+          xmlnssvgjs="http://svgjs.dev/svgjs"
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid slice"
+          viewBox="0 0 1440 560"
+          className="w-full h-full object-cover"
+        >
+          <g mask="url(#SvgjsMask1009)" fill="none">
+            <rect
+              width="1440"
+              height="560"
+              x="0"
+              y="0"
+              fill="rgba(250, 250, 250, 1)"
+            ></rect>
+            <path
+              d="M0 0L717.27 0L0 279.94z"
+              fill="rgba(255, 255, 255, .1)"
+            ></path>
+            <path
+              d="M0 279.94L717.27 0L1028.32 0L0 302.81z"
+              fill="rgba(255, 255, 255, .075)"
+            ></path>
+            <path
+              d="M0 302.81L1028.32 0L1082.2 0L0 421.42z"
+              fill="rgba(255, 255, 255, .05)"
+            ></path>
+            <path
+              d="M0 421.42L1082.2 0L1334.13 0L0 473.84000000000003z"
+              fill="rgba(255, 255, 255, .025)"
+            ></path>
+            <path
+              d="M1440 560L1117.47 560L1440 516.35z"
+              fill="rgba(0, 0, 0, .1)"
+            ></path>
+            <path
+              d="M1440 516.35L1117.47 560L1002.32 560L1440 451.48z"
+              fill="rgba(0, 0, 0, .075)"
+            ></path>
+            <path
+              d="M1440 451.48L1002.32 560L452.32000000000005 560L1440 376.53000000000003z"
+              fill="rgba(0, 0, 0, .05)"
+            ></path>
+            <path
+              d="M1440 376.53L452.32000000000005 560L396.75000000000006 560L1440 130.55999999999997z"
+              fill="rgba(0, 0, 0, .025)"
+            ></path>
+          </g>
+          <defs>
+            <mask id="SvgjsMask1009">
+              <rect width="1440" height="560" fill="#ffffff"></rect>
+            </mask>
+          </defs>
+        </svg>
       </div>
 
       {/* Content */}
@@ -339,7 +399,7 @@ export default function TopRatedMentors() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true, amount: 0.3 }}
-          className="text-3xl md:text-4xl font-bold text-white text-center mb-12"
+          className="text-3xl md:text-4xl font-bold text-[var(--primary)] text-center mb-12"
         >
           Top Mentors
         </motion.h2>
