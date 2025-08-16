@@ -454,11 +454,20 @@ export default function UserDetailsModal({
                       <Label className="text-sm font-medium">Skills</Label>
                       <div className="p-3 bg-gray-50 rounded-md border">
                         <div className="flex flex-wrap gap-2">
-                          {profileData.data.skills.map((skill, index) => (
-                            <Badge key={index} variant="secondary">
-                              {skill.value || skill}
-                            </Badge>
-                          ))}
+                          {profileData.data.skills.map((skill, index) => {
+                            // Normalize skill display value
+                            const skillValue = typeof skill === 'string' 
+                              ? skill 
+                              : (skill && typeof skill === 'object' 
+                                  ? skill.value || skill.name || skill.title || 'Unknown Skill'
+                                  : 'Unknown Skill');
+                            
+                            return (
+                              <Badge key={index} variant="secondary">
+                                {skillValue}
+                              </Badge>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>

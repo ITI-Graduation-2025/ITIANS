@@ -57,13 +57,22 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
       setOriginalValue(user.profileImage || "");
     } else if (type === "skills") {
       const userSkills = user.skills || [];
-      console.log("Initializing skills modal with:", userSkills); // Debug log
+      
+      // Normalize skills data structure - convert both string and object formats to strings
+      const normalizedSkills = Array.isArray(userSkills) 
+        ? userSkills.map(skill => {
+            if (typeof skill === 'string') return skill;
+            if (skill && typeof skill === 'object') return skill.value || skill.name || skill.title || 'Unknown Skill';
+            return 'Unknown Skill';
+          }).filter(skill => skill !== 'Unknown Skill')
+        : [];
+      
       setTempValue({
-        skills: Array.isArray(userSkills) ? userSkills : [],
+        skills: normalizedSkills,
         newSkill: ""
       });
       setOriginalValue({
-        skills: Array.isArray(userSkills) ? userSkills : [],
+        skills: normalizedSkills,
         newSkill: ""
       });
     }
@@ -161,7 +170,6 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
         // Update local user context to ensure consistency
         setUser({ ...user, profileImage: tempValue });
       } else if (type === "skills") {
-        console.log("Saving skills:", tempValue.skills); // Debug log
         await updateUser(user.id, { skills: tempValue.skills || [] });
         // Update local user context to ensure consistency
         setUser({ ...user, skills: tempValue.skills || [] });
@@ -498,7 +506,6 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
                   if (e.key === "Enter" && tempValue.newSkill?.trim()) {
                     const skillValue = tempValue.newSkill.trim();
                     const currentSkills = tempValue.skills || [];
-                    console.log("Adding skill via Enter:", skillValue, "Current skills:", currentSkills); // Debug log
                     if (!currentSkills.includes(skillValue)) {
                       setTempValue({
                         ...tempValue,
@@ -514,7 +521,6 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
                   if (tempValue.newSkill?.trim()) {
                     const skillValue = tempValue.newSkill.trim();
                     const currentSkills = tempValue.skills || [];
-                    console.log("Adding skill via button:", skillValue, "Current skills:", currentSkills); // Debug log
                     if (!currentSkills.includes(skillValue)) {
                       setTempValue({
                         ...tempValue,
@@ -540,7 +546,6 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
                     key={suggestedSkill}
                     onClick={() => {
                       const currentSkills = tempValue.skills || [];
-                      console.log("Adding suggested skill:", suggestedSkill, "Current skills:", currentSkills); // Debug log
                       if (!currentSkills.includes(suggestedSkill)) {
                         setTempValue({
                           ...tempValue,
@@ -562,26 +567,34 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
               <div>
                 <p className="text-sm text-gray-600 mb-3 font-medium">Your skills ({(tempValue.skills || []).length}):</p>
                 <div className="flex flex-wrap gap-2">
-                  {(tempValue.skills || []).map((skill, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-gradient-to-r from-[#B71C1C] to-red-600 text-white px-3 py-2 rounded-full shadow-sm">
-                      <span className="text-sm font-medium">{skill.value || skill}</span>
-                      <button
-                        onClick={() => {
-                          const newSkills = (tempValue.skills || []).filter((_, idx) => idx !== i);
-                          console.log("Removing skill at index:", i, "New skills array:", newSkills); // Debug log
-                          setTempValue({
-                            ...tempValue,
-                            skills: newSkills
-                          });
-                        }}
-                        className="text-white hover:text-red-200 transition-colors p-1 rounded-full hover:bg-white/20"
-                        disabled={loading}
-                        title="Remove skill"
-                      >
-                        <FiTrash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
+                  {(tempValue.skills || []).map((skill, i) => {
+                    // Helper function to get skill display value
+                    const getSkillValue = (skill) => {
+                      if (typeof skill === 'string') return skill;
+                      if (skill && typeof skill === 'object') return skill.value || skill.name || skill.title || 'Unknown Skill';
+                      return 'Unknown Skill';
+                    };
+                    
+                    return (
+                      <div key={i} className="flex items-center gap-2 bg-gradient-to-r from-[#B71C1C] to-red-600 text-white px-3 py-2 rounded-full shadow-sm">
+                        <span className="text-sm font-medium">{getSkillValue(skill)}</span>
+                        <button
+                          onClick={() => {
+                            const newSkills = (tempValue.skills || []).filter((_, idx) => idx !== i);
+                            setTempValue({
+                              ...tempValue,
+                              skills: newSkills
+                            });
+                          }}
+                          className="text-white hover:text-red-200 transition-colors p-1 rounded-full hover:bg-white/20"
+                          disabled={loading}
+                          title="Remove skill"
+                        >
+                          <FiTrash2 size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : (

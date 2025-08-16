@@ -405,56 +405,56 @@ export default function PostItem({ post, currentUser }) {
               </Link>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 text-sm">
-                  <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
+              <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
                     <span className="font-semibold text-slate-700 cursor-pointer hover:text-primary transition-colors">
-                      {post.repostOf.author}
+                  {post.repostOf.author}
                     </span>
-                  </Link>
+              </Link>
                   <span className="text-slate-500 capitalize">{post.repostOf.role}</span>
                   <span className="text-slate-400">•</span>
                   <span className="text-slate-400">{formatTimestamp(post.repostOf.timestamp)}</span>
-                </div>
+            </div>
                 <p className="mt-1 text-slate-700 text-sm">{post.repostOf.content}</p>
                 
                                  {/* Repost Attachment */}
-                 {post.repostOf.attachment && (
+            {post.repostOf.attachment && (
                    <div className="mt-3">
                      {post.repostOf.attachment.type && post.repostOf.attachment.type.startsWith("image") ? (
                        <div className="relative w-full">
-                         <img
-                           src={post.repostOf.attachment.url}
+                    <img
+                      src={post.repostOf.attachment.url}
                            alt="Repost attachment"
                            className="w-full h-auto max-h-48 object-cover rounded-lg border border-slate-200"
-                         />
-                         <button
+                    />
+                    <button
                            onClick={() => downloadFile(post.repostOf.attachment.url, getFileName(post, post.repostOf.attachment))}
                            className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                           title="Download image"
-                         >
-                           <HiOutlineArrowDownTray className="w-4 h-4" />
-                         </button>
-                       </div>
-                     ) : (
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={post.repostOf.attachment.url}
-                          download={post.repostOf.attachment.name}
+                      title="Download image"
+                    >
+                      <HiOutlineArrowDownTray className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={post.repostOf.attachment.url}
+                      download={post.repostOf.attachment.name}
                           className="inline-flex items-center text-primary hover:text-primary/80 text-sm bg-slate-50 hover:bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 transition-colors"
-                        >
+                    >
                           <HiOutlinePaperClip className="w-4 h-4 mr-2" />
-                          {post.repostOf.attachment.name}
-                        </a>
-                        <button
+                      {post.repostOf.attachment.name}
+                    </a>
+                    <button
                           onClick={() => downloadFile(post.repostOf.attachment.url, post.repostOf.attachment.name)}
                           className="text-primary hover:text-primary/80 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
-                          title="Download file"
-                        >
-                          <HiOutlineArrowDownTray className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
+                      title="Download file"
+                    >
+                      <HiOutlineArrowDownTray className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
+              </div>
+            )}
               </div>
             </div>
           </div>
@@ -475,9 +475,9 @@ export default function PostItem({ post, currentUser }) {
                   
                   <div className="space-y-3">
                     <label className="block text-sm font-medium text-slate-700">Post Content</label>
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
                       className="w-full border border-slate-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none bg-white text-slate-700 placeholder-slate-400 transition-all duration-200 shadow-sm"
                       rows={4}
                       placeholder="Edit your post content..."
@@ -489,12 +489,12 @@ export default function PostItem({ post, currentUser }) {
                       {editContent.length} characters
                     </div>
                     <div className="flex space-x-3">
-                      <button
-                        onClick={cancelEditing}
+                  <button
+                    onClick={cancelEditing}
                         className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all duration-200 border border-slate-200"
-                      >
-                        Cancel
-                      </button>
+                  >
+                    Cancel
+                  </button>
                       <button
                         onClick={handleEditPost}
                         className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
@@ -511,33 +511,33 @@ export default function PostItem({ post, currentUser }) {
             )}
 
                              {/* Post Attachment */}
-                 {post.attachment && (
+            {post.attachment && (
                    <div className="mt-4">
-                     {isImageAttachment ? (
+                {isImageAttachment ? (
                        <div className="relative w-full">
-                       <img
-                         src={post.attachment.url}
+                    <img
+                      src={post.attachment.url}
                          alt="Post attachment"
                          className="w-full h-auto max-h-96 object-cover rounded-xl border border-slate-200 shadow-sm"
-                       />
-                       <button
+                    />
+                    <button
                          onClick={() => downloadFile(post.attachment.url, getFileName(post, post.attachment))}
                          className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                         title="Download image"
-                       >
-                         <HiOutlineArrowDownTray className="w-4 h-4" />
-                       </button>
-                       {isPostOwner && (
-                         <button
-                           onClick={() => setEditingImage(true)}
+                      title="Download image"
+                    >
+                      <HiOutlineArrowDownTray className="w-4 h-4" />
+                    </button>
+                    {isPostOwner && (
+                      <button
+                        onClick={() => setEditingImage(true)}
                            className="absolute top-3 left-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                           title="Edit image"
-                         >
-                           <HiOutlinePhoto className="w-4 h-4" />
-                         </button>
-                       )}
-                     </div>
-                   ) : (
+                        title="Edit image"
+                      >
+                        <HiOutlinePhoto className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
                   <div className="flex items-center gap-3">
                     <a
                       href={post.attachment.url}
@@ -565,8 +565,8 @@ export default function PostItem({ post, currentUser }) {
       {/* Post Actions */}
       <div className="border-t border-slate-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <button
-            onClick={handleLikePost}
+        <button
+          onClick={handleLikePost}
             className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
               Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) 
                 ? "text-primary bg-primary/10" 
@@ -576,26 +576,26 @@ export default function PostItem({ post, currentUser }) {
             <HiOutlineHeart className={`w-5 h-5 ${Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) ? 'fill-current' : ''}`} />
             <span className="font-medium">
               {Array.isArray(post.likes) ? post.likes.length : 0}
-            </span>
-          </button>
+          </span>
+        </button>
           
-          <button
+        <button
             className="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all duration-200"
-            onClick={() => setOpenComments(!openComments)}
-          >
+          onClick={() => setOpenComments(!openComments)}
+        >
             <HiOutlineChatBubbleLeft className="w-5 h-5" />
             <span className="font-medium">
               {Array.isArray(post.comments) ? post.comments.length : 0}
-            </span>
-          </button>
+          </span>
+        </button>
           
-          <button
+        <button
             className="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all duration-200"
-            onClick={handleRepost}
-          >
+          onClick={handleRepost}
+        >
             <HiOutlineArrowPathRoundedSquare className="w-5 h-5" />
             <span className="font-medium">Repost</span>
-          </button>
+        </button>
         </div>
       </div>
 
@@ -633,7 +633,7 @@ export default function PostItem({ post, currentUser }) {
 
             <div className="space-y-8">
               {/* Current Image Preview */}
-              <div className="relative">
+                <div className="relative">
                 <div className="text-center mb-4">
                   <h3 className="text-lg font-semibold text-slate-700 mb-2">Current Image</h3>
                   <p className="text-sm text-slate-500">This is the image currently displayed in your post</p>
@@ -653,9 +653,9 @@ export default function PostItem({ post, currentUser }) {
                     </div>
                   )}
                 </div>
-              </div>
+                </div>
 
-              {/* Upload Controls */}
+                {/* Upload Controls */}
               <div className="space-y-6">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-slate-700 mb-2">Upload New Image</h3>
@@ -680,7 +680,7 @@ export default function PostItem({ post, currentUser }) {
                     {uploadingImage ? "Uploading..." : "Choose New Image"}
                   </button>
                 </div>
-                
+
                 <div className="bg-slate-50 rounded-2xl p-6 text-center">
                   <div className="flex items-center justify-center space-x-2 text-slate-600 mb-2">
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
