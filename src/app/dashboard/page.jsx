@@ -138,14 +138,18 @@ export default function Dashboard() {
   const totalPosts = posts.length;
   const totalSessions = bookedSessions.length;
   const totalJobs = jobs.length;
-
+  const completedSessions = bookedSessions.filter(
+    (session) => session.status === "Completed",
+  ).length;
   // User engagement metrics
   const userEngagementRate =
     totalUsers > 0 ? Math.round((totalSessions / totalUsers) * 100) : 0;
   const jobCompletionRate =
     totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0;
   const sessionSuccessRate =
-    totalSessions > 0 ? Math.round((1 / totalSessions) * 100) : 0; // wait to add completed session by mentor
+    totalSessions > 0
+      ? Math.round((completedSessions / totalSessions) * 100)
+      : 0; // wait to add completed session by mentor
 
   // Platform activity metrics
   const activeChats = chats.length;

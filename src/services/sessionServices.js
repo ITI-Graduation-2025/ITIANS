@@ -308,6 +308,9 @@ export const acceptSessionRequest = async (requestId, sessionId) => {
     const requestData = (await getDoc(requestRef)).data();
     const sessionData = (await getDoc(sessionRef)).data();
 
+    // Delete the accepted request from Firebase
+    await deleteDoc(requestRef);
+
     await updateDoc(sessionRef, {
       isBooked: true,
       bookedBy: requestData.menteeId,
@@ -482,7 +485,7 @@ export const cancelSession = async (sessionId, mentorId, menteeId) => {
     await updateDoc(sessionRef, {
       isBooked: false,
       bookedBy: null,
-      status: "Pending",
+      status: "Cancelled",
       updatedAt: serverTimestamp(),
     });
 
@@ -564,4 +567,115 @@ export const getCompletedSessionsSnapshot = async (mentorId, callback) => {
     },
   );
   return unsubscribe;
+};
+
+// Admin cancel session function
+export const adminCancelSession = async (sessionId, menteeId) => {
+  if (!sessionId || typeof sessionId !== "string") {
+    throw new Error("Invalid session ID provided.");
+  }
+
+  try {
+    // First check if it's a booked session
+    let bookedSessionRef = doc(db, "bookedSessions", sessionId);
+    let bookedSessionDoc = await getDoc(bookedSessionRef);
+    let sessionData = null;
+    let mentorId = null;
+
+    if (bookedSessionDoc.exists()) {
+      // It's a booked session
+      sessionData = bookedSessionDoc.data();
+      mentorId = sessionData.mentorId;
+
+      // Delete booked session
+      await deleteDoc(bookedSessionRef);
+    } else {
+      // Check if it's a regular session
+      const sessionRef = doc(db, "sessions", sessionId);
+      const sessionDoc = await getDoc(sessionRef);
+
+      if (!sessionDoc.exists()) {
+        throw new Error("Session not found.");
+      }
+
+      sessionData = sessionDoc.data();
+      mentorId = sessionData.mentorId;
+    }
+
+    // Update main session
+    const sessionRef = doc(db, "sessions", sessionId);
+    await updateDoc(sessionRef, {
+      isBooked: false,
+      bookedBy: null,
+      status: "Cancelled",
+      updatedAt: serverTimestamp(),
+      cancelledBy: "admin",
+      cancelReason: "Cancelled by administrator",
+    });
+
+    // Delete session requests
+    const requestsSnapshot = await getDocs(
+      query(
+        collection(db, "sessionRequests"),
+        where("sessionId", "==", sessionId),
+      ),
+    );
+    for (const docSnap of requestsSnapshot.docs) {
+      await deleteDoc(doc(db, "sessionRequests", docSnap.id));
+    }
+
+    // Send notifications to both mentor and mentee
+    if (mentorId) {
+      const mentorNotif = {
+        recipientId: mentorId,
+        senderId: "admin",
+        type: "session_cancelled",
+        message: `Your session has been cancelled by an administrator.`,
+        relatedId: sessionId,
+        read: false,
+        createdAt: serverTimestamp(),
+      };
+      await addDoc(collection(db, "notifications"), mentorNotif);
+
+      // Send push notification to mentor
+      const mentorDoc = await getDoc(doc(db, "users", mentorId));
+      const mentorFcmToken = mentorDoc.data()?.fcmToken;
+      if (mentorFcmToken) {
+        await sendPushNotification({
+          token: mentorFcmToken,
+          title: "Session Cancelled by Admin",
+          body: "Your session has been cancelled by an administrator.",
+        });
+      }
+    }
+
+    if (menteeId) {
+      const menteeNotif = {
+        recipientId: menteeId,
+        senderId: "admin",
+        type: "session_cancelled",
+        message: `Your session has been cancelled by an administrator.`,
+        relatedId: sessionId,
+        read: false,
+        createdAt: serverTimestamp(),
+      };
+      await addDoc(collection(db, "notifications"), menteeNotif);
+
+      // Send push notification to mentee
+      const menteeDoc = await getDoc(doc(db, "users", menteeId));
+      const menteeFcmToken = menteeDoc.data()?.fcmToken;
+      if (menteeFcmToken) {
+        await sendPushNotification({
+          token: menteeFcmToken,
+          title: "Session Cancelled by Admin",
+          body: "Your session has been cancelled by an administrator.",
+        });
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error cancelling session by admin:", error);
+    throw error;
+  }
 };
