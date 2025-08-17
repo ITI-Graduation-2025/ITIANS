@@ -416,9 +416,7 @@ export default function SessionDetails() {
                 {session.completedAt && (
                   <p className="text-[var(--muted-foreground)] mb-4">
                     <strong>Completed:</strong>{" "}
-                    {new Date(session.completedAt.toDate()).toLocaleString(
-                      "en-US",
-                    )}
+                    {new Date(session.completedAt).toLocaleString("en-US")}
                   </p>
                 )}
               </div>

@@ -31,11 +31,22 @@ export default function JobsSection() {
         limit(5),
       );
       const querySnapshot = await getDocs(q);
-      const jobsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-      }));
+      const jobsData = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        // Convert timestamp fields to ISO strings
+        const convertTimestamp = (timestamp) => {
+          if (timestamp && typeof timestamp === "object" && timestamp.toDate) {
+            return timestamp.toDate().toISOString();
+          }
+          return timestamp;
+        };
+
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: convertTimestamp(data.createdAt),
+        };
+      });
       setJobs(jobsData);
     };
 
@@ -56,11 +67,25 @@ export default function JobsSection() {
   }, []);
 
   const formatDate = (date) => {
-    if (!date || isNaN(date.getTime())) return "";
-    const day = date.getDate();
-    const month = date.toLocaleString("en-US", { month: "short" });
-    const year = date.getFullYear();
-    return `${day} ${month}, ${year}`;
+    if (!date) return "";
+
+    try {
+      // Convert string date to Date object if needed
+      const dateObj = typeof date === "string" ? new Date(date) : date;
+
+      // Check if it's a valid Date object
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+        return "";
+      }
+
+      const day = dateObj.getDate();
+      const month = dateObj.toLocaleString("en-US", { month: "short" });
+      const year = dateObj.getFullYear();
+      return `${day} ${month}, ${year}`;
+    } catch (error) {
+      console.warn("Error formatting date:", error, "Date value:", date);
+      return "";
+    }
   };
 
   const getCardColor = (index) => {

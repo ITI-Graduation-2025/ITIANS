@@ -26,7 +26,7 @@ export default function MentorProfileForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { data: session, update: updateSession } = useSession();
-  const { user } = useUserContext();
+  const { user, refetchUser } = useUserContext();
   // console.log(session?.user, "session");
   // console.log(refetchUser, "refetchUser");
   // const mentor = getUser(user?.id);
@@ -149,11 +149,39 @@ export default function MentorProfileForm({
       }
 
       const uid = session.user.id;
-      const res = await upload({ target: { files: [data.profileImage] } });
 
-      data.profileImage = res;
+      // Handle profile image upload
+      let profileImageUrl = data.profileImage;
+      if (data.profileImage && data.profileImage instanceof File) {
+        try {
+          const uploadResult = await upload({
+            target: { files: [data.profileImage] },
+          });
+          if (uploadResult) {
+            profileImageUrl = uploadResult;
+          } else {
+            console.warn(
+              "Upload returned undefined, keeping existing image or using default",
+            );
+            profileImageUrl = data.profileImage || null;
+          }
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          toast.error(
+            "Image upload failed, but continuing with profile submission",
+          );
+          profileImageUrl = null;
+        }
+      }
+
+      // Clean the data to remove undefined values
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== undefined),
+      );
+
       const updateData = {
-        ...data,
+        ...cleanData,
+        profileImage: profileImageUrl,
         profileUnderReview: true, // بدلاً من profileCompleted: true
         profileCompleted: false,
       };

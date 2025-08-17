@@ -173,9 +173,7 @@ export default function JobsPage() {
   const formatDate = (date) => {
     if (!date) return "N/A";
 
-    if (date.toDate) {
-      return date.toDate().toLocaleDateString();
-    } else if (typeof date === "string") {
+    if (typeof date === "string") {
       return new Date(date).toLocaleDateString();
     } else if (date instanceof Date) {
       return date.toLocaleDateString();

@@ -163,12 +163,8 @@ export default function Dashboard() {
   // Get recent notifications (latest 5)
   const recentNotifications = notifications
     .sort((a, b) => {
-      const dateA = a.createdAt?.toDate
-        ? a.createdAt.toDate()
-        : new Date(a.createdAt);
-      const dateB = b.createdAt?.toDate
-        ? b.createdAt.toDate()
-        : new Date(b.createdAt);
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
       return dateB - dateA;
     })
     .slice(0, 5);
@@ -187,30 +183,22 @@ export default function Dashboard() {
       const dayEnd = new Date(date.setHours(23, 59, 59, 999));
 
       const dayNotifications = notifications.filter((n) => {
-        const notifDate = n.createdAt?.toDate
-          ? n.createdAt.toDate()
-          : new Date(n.createdAt);
+        const notifDate = new Date(n.createdAt);
         return notifDate >= dayStart && notifDate <= dayEnd;
       }).length;
 
       const daySessions = bookedSessions.filter((s) => {
-        const sessionDate = s.updatedAt?.toDate
-          ? s.updatedAt.toDate()
-          : new Date(s.updatedAt);
+        const sessionDate = new Date(s.updatedAt);
         return sessionDate >= dayStart && sessionDate <= dayEnd;
       }).length;
 
       const dayPosts = posts.filter((p) => {
-        const postDate = p.createdAt?.toDate
-          ? p.createdAt.toDate()
-          : new Date(p.createdAt);
+        const postDate = new Date(p.createdAt);
         return postDate >= dayStart && postDate <= dayEnd;
       }).length;
 
       const dayJobs = jobs.filter((j) => {
-        const jobDate = j.createdAt?.toDate
-          ? j.createdAt.toDate()
-          : new Date(j.createdAt);
+        const jobDate = new Date(j.createdAt);
         return jobDate >= dayStart && jobDate <= dayEnd;
       }).length;
 
@@ -434,9 +422,7 @@ export default function Dashboard() {
                           {notification.message}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {notification.createdAt?.toDate
-                            ? notification.createdAt.toDate().toLocaleString()
-                            : new Date(notification.createdAt).toLocaleString()}
+                          {new Date(notification.createdAt).toLocaleString()}
                         </p>
                       </div>
                     </div>

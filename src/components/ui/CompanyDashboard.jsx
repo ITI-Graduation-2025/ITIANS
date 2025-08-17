@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { doc, onSnapshot, collection, getDocs, query, where } from "firebase/firestore";
+import {
+  doc,
+  onSnapshot,
+  collection,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "@/config/firebase";
 import CompanyNavbar from "./CompanyNavbar";
 import {
@@ -50,107 +57,125 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [companyId]);
 
- useEffect(() => {
-  if (!companyId) return;
+  useEffect(() => {
+    if (!companyId) return;
 
-  const fetchApplications = async () => {
-    try {
-      const jobsRef = collection(db, "jobs");
-      const q = query(jobsRef, where("companyId", "==", companyId));
-      const querySnapshot = await getDocs(q);
+    const fetchApplications = async () => {
+      try {
+        const jobsRef = collection(db, "jobs");
+        const q = query(jobsRef, where("companyId", "==", companyId));
+        const querySnapshot = await getDocs(q);
 
-      let total = 0;
-      let hires = 0;
-      let newApplicationsThisWeek = 0;
-      let lastWeekApplications = 0;
-      let hiresThisMonth = 0;
-      let hiresLastMonth = 0;
+        let total = 0;
+        let hires = 0;
+        let newApplicationsThisWeek = 0;
+        let lastWeekApplications = 0;
+        let hiresThisMonth = 0;
+        let hiresLastMonth = 0;
 
-      const now = new Date();
-      const oneWeekAgo = new Date(now);
-      oneWeekAgo.setDate(now.getDate() - 7);
-      const twoWeeksAgo = new Date(now);
-      twoWeeksAgo.setDate(now.getDate() - 14);
-      const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        const now = new Date();
+        const oneWeekAgo = new Date(now);
+        oneWeekAgo.setDate(now.getDate() - 7);
+        const twoWeeksAgo = new Date(now);
+        twoWeeksAgo.setDate(now.getDate() - 14);
+        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfLastMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1,
+        );
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-      querySnapshot.forEach((doc) => {
-        const job = doc.data();
-        const applicants = job.applicants || [];
+        querySnapshot.forEach((doc) => {
+          const job = doc.data();
+          const applicants = job.applicants || [];
 
-        applicants.forEach((applicant) => {
-          if (typeof applicant === "string") {
-            total += 1;
-          } else if (typeof applicant === "object" && applicant.userId) {
-            total += 1;
+          applicants.forEach((applicant) => {
+            if (typeof applicant === "string") {
+              total += 1;
+            } else if (typeof applicant === "object" && applicant.userId) {
+              total += 1;
 
-            const appliedDate = applicant.appliedAt
-              ? new Date(applicant.appliedAt)
-              : job.createdAt?.toDate
-                ? job.createdAt.toDate()
-                : null;
-
-            if (appliedDate) {
-              if (appliedDate >= oneWeekAgo) {
-                newApplicationsThisWeek += 1;
-              } else if (appliedDate >= twoWeeksAgo && appliedDate < oneWeekAgo) {
-                lastWeekApplications += 1;
-              }
-            }
-
-            if (applicant.status?.toLowerCase() === "approved") {
-              hires += 1;
+              const appliedDate = applicant.appliedAt
+                ? new Date(applicant.appliedAt)
+                : job.createdAt
+                  ? new Date(job.createdAt)
+                  : null;
 
               if (appliedDate) {
-                if (appliedDate >= startOfThisMonth) {
-                  hiresThisMonth += 1;
-                } else if (appliedDate >= startOfLastMonth && appliedDate <= endOfLastMonth) {
-                  hiresLastMonth += 1;
+                if (appliedDate >= oneWeekAgo) {
+                  newApplicationsThisWeek += 1;
+                } else if (
+                  appliedDate >= twoWeeksAgo &&
+                  appliedDate < oneWeekAgo
+                ) {
+                  lastWeekApplications += 1;
+                }
+              }
+
+              if (applicant.status?.toLowerCase() === "approved") {
+                hires += 1;
+
+                if (appliedDate) {
+                  if (appliedDate >= startOfThisMonth) {
+                    hiresThisMonth += 1;
+                  } else if (
+                    appliedDate >= startOfLastMonth &&
+                    appliedDate <= endOfLastMonth
+                  ) {
+                    hiresLastMonth += 1;
+                  }
                 }
               }
             }
-          }
+          });
         });
-      });
 
-      const getTrend = (current, previous) => {
-        if (previous === 0) return current > 0 ? "up" : "flat";
-        if (current > previous) return "up";
-        if (current < previous) return "down";
-        return "flat";
-      };
+        const getTrend = (current, previous) => {
+          if (previous === 0) return current > 0 ? "up" : "flat";
+          if (current > previous) return "up";
+          if (current < previous) return "down";
+          return "flat";
+        };
 
-      const applicationTrend = getTrend(newApplicationsThisWeek, lastWeekApplications);
-      const hireTrend = getTrend(hiresThisMonth, hiresLastMonth);
+        const applicationTrend = getTrend(
+          newApplicationsThisWeek,
+          lastWeekApplications,
+        );
+        const hireTrend = getTrend(hiresThisMonth, hiresLastMonth);
 
-      setApplicationStats({
-        total,
-        hires,
-        newThisWeek: newApplicationsThisWeek,
-        hiresThisMonth,
-        applicationTrend,
-        hireTrend,
-      });
+        setApplicationStats({
+          total,
+          hires,
+          newThisWeek: newApplicationsThisWeek,
+          hiresThisMonth,
+          applicationTrend,
+          hireTrend,
+        });
 
-      setLoading(false);
-    } catch (error) {
-      console.error("Error calculating application stats:", error);
-      setLoading(false);
-    }
-  };
+        setLoading(false);
+      } catch (error) {
+        console.error("Error calculating application stats:", error);
+        setLoading(false);
+      }
+    };
 
-  fetchApplications();
-}, [companyId]);
+    fetchApplications();
+  }, [companyId]);
 
-  if (status === "loading" || loading)
-    return <DashboardSkeleton />;
+  if (status === "loading" || loading) return <DashboardSkeleton />;
 
   if (!companyId)
-    return <div className="p-6 text-red-500">Please log in to view your dashboard.</div>;
+    return (
+      <div className="p-6 text-red-500">
+        Please log in to view your dashboard.
+      </div>
+    );
 
   const recentActivities =
-    companyStats?.recentActivities?.filter((activity) => activity?.text && activity?.type)?.slice(0, 5) || [];
+    companyStats?.recentActivities
+      ?.filter((activity) => activity?.text && activity?.type)
+      ?.slice(0, 5) || [];
 
   const navTabs = [
     { label: "Overview", href: "/dashboardCompany", icon: LayoutDashboard },
@@ -164,10 +189,13 @@ export default function DashboardPage() {
       <CompanyNavbar />
       <main className="p-6 max-w-7xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-semibold text-[#b30000]">
-          {companyStats?.name} <span className="text-[#203947] text-2xl">Dashboard</span>
+          {companyStats?.name}{" "}
+          <span className="text-[#203947] text-2xl">Dashboard</span>
         </h1>
 
-        <p className="text-gray-600 mb-6">Manage your job postings and find the best ITI talent</p>
+        <p className="text-gray-600 mb-6">
+          Manage your job postings and find the best ITI talent
+        </p>
 
         {/* Tabs */}
         <nav className="flex gap-4 border-b mb-6 overflow-x-auto whitespace-nowrap">
@@ -175,10 +203,11 @@ export default function DashboardPage() {
             <Link
               key={href}
               href={href}
-              className={`relative px-4 py-2 flex items-center gap-1 font-medium ${isActive(href)
+              className={`relative px-4 py-2 flex items-center gap-1 font-medium ${
+                isActive(href)
                   ? "text-[#b30000] border-b-2 border-[#b30000]"
                   : "text-[#203947] hover:text-[#b30000]"
-                }`}
+              }`}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -216,10 +245,10 @@ export default function DashboardPage() {
         {/* Bottom Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white shadow p-4 rounded">
-             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-               <Clock className="text-red-600 w-5 h-5" />
-               Recent Activity
-             </h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Clock className="text-red-600 w-5 h-5" />
+              Recent Activity
+            </h2>
             {recentActivities.length > 0 ? (
               <ul className="space-y-2 text-sm text-gray-700">
                 {recentActivities.map((activity, idx) => (
@@ -237,43 +266,45 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-white shadow-md rounded-lg p-6 flex flex-col items-center justify-center text-center">
-  {/* العنوان */}
-  <div className="flex items-center gap-2 mb-6">
-    <Zap className="text-red-600 w-6 h-6" />
-    <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
-  </div>
+            {/* العنوان */}
+            <div className="flex items-center gap-2 mb-6">
+              <Zap className="text-red-600 w-6 h-6" />
+              <h2 className="text-lg font-semibold text-gray-800">
+                Quick Actions
+              </h2>
+            </div>
 
-  {/* الأزرار */}
- <div className="flex flex-col gap-4 w-full">
-  {/* زر أساسي بتدرج */}
-  <Link href="/PostJob" className="w-full">
-    <button 
-      className="w-full flex items-center justify-center gap-3 px-6 py-4 
+            {/* الأزرار */}
+            <div className="flex flex-col gap-4 w-full">
+              {/* زر أساسي بتدرج */}
+              <Link href="/PostJob" className="w-full">
+                <button
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 
                  rounded-xl font-semibold text-white text-base
                  bg-gradient-to-r from-[#b30000] to-[#8B0000] 
                  hover:shadow-lg hover:scale-[1.02] active:scale-95
-                 transition-all duration-300 relative overflow-hidden group">
-      <FilePlus className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
-      Post New Job
-    </button>
-  </Link>
+                 transition-all duration-300 relative overflow-hidden group"
+                >
+                  <FilePlus className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
+                  Post New Job
+                </button>
+              </Link>
 
-  {/* زر ثانوي (Outline + خلفية فاتحة) */}
-  <Link href="/AllCompanyApplicants" className="w-full">
-    <button 
-      className="w-full flex items-center justify-center gap-3 px-6 py-4 
+              {/* زر ثانوي (Outline + خلفية فاتحة) */}
+              <Link href="/AllCompanyApplicants" className="w-full">
+                <button
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 
                  rounded-xl font-semibold text-[#b30000] text-base 
                  border-2 border-[#b30000] bg-white
                  hover:bg-[#f5f5f5] hover:shadow-md hover:scale-[1.02] active:scale-95
-                 transition-all duration-300 relative overflow-hidden group">
-      <ClipboardCopy className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
-      View Applicants
-    </button>
-  </Link>
-</div>
-
-</div>
-
+                 transition-all duration-300 relative overflow-hidden group"
+                >
+                  <ClipboardCopy className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
+                  View Applicants
+                </button>
+              </Link>
+            </div>
+          </div>
         </div>
       </main>
     </div>
@@ -287,7 +318,9 @@ function StatCard({ title, value, detail, trend, tooltip }) {
       title={tooltip || ""}
     >
       <div className="text-sm font-bold text-gray-900">{title}</div>
-      <div className="text-2xl text-[#b30000] font-medium mt-1">{value ?? "N/A"}</div>
+      <div className="text-2xl text-[#b30000] font-medium mt-1">
+        {value ?? "N/A"}
+      </div>
       {detail && (
         <div className="flex items-center text-sm mt-2">
           {trend === "up" ? (
@@ -295,7 +328,9 @@ function StatCard({ title, value, detail, trend, tooltip }) {
           ) : (
             <ArrowRight className="w-4 h-4 text-gray-400 mr-1" />
           )}
-          <span className={`${trend === "up" ? "text-green-600" : "text-gray-500"}`}>
+          <span
+            className={`${trend === "up" ? "text-green-600" : "text-gray-500"}`}
+          >
             {detail}
           </span>
         </div>
@@ -303,7 +338,6 @@ function StatCard({ title, value, detail, trend, tooltip }) {
     </div>
   );
 }
-
 
 function Activity({ icon, text, detail }) {
   return (
@@ -366,5 +400,3 @@ function DashboardSkeleton() {
     </div>
   );
 }
-
-

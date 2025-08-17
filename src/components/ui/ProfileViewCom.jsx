@@ -24,7 +24,6 @@ import {
   ChevronRight,
   Hand,
   ChevronLeft,
-
 } from "lucide-react";
 
 import Image from "next/image";
@@ -45,7 +44,6 @@ import NavbarProfileCom from "./NavbarProfileCom";
 import ReactPaginate from "react-paginate";
 import Link from "next/link";
 
-
 function formatRelativeTime(date) {
   const now = new Date();
   const diffMs = now - date;
@@ -55,21 +53,22 @@ function formatRelativeTime(date) {
   const diffDay = Math.floor(diffHr / 24);
 
   if (diffSec < 60) return "Just now";
-  if (diffMin < 60) return diffMin === 1 ? "1 minute ago" : `${diffMin} minutes ago`;
+  if (diffMin < 60)
+    return diffMin === 1 ? "1 minute ago" : `${diffMin} minutes ago`;
   if (diffHr < 24) return diffHr === 1 ? "1 hour ago" : `${diffHr} hours ago`;
   if (diffDay === 1) return "Yesterday";
   return `${diffDay} days ago`;
 }
 const timestamp = new Date("2025-07-31T20:00:00Z");
 console.log(formatRelativeTime(timestamp));
-  {/* هنا عدلنا export,const */}
+{
+  /* هنا عدلنا export,const */
+}
 export default function ProfileViewCom() {
   const { data: session } = useSession();
   const companyId = session?.user?.id;
-  
-  const user = session?.user;
 
-  
+  const user = session?.user;
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
@@ -78,9 +77,6 @@ export default function ProfileViewCom() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const jobsPerPage = 3;
-
-
-
 
   const {
     logo,
@@ -101,130 +97,121 @@ export default function ProfileViewCom() {
     facebook,
   } = company || {};
 
-
   const indexOfLastJob = currentPage * jobsPerPage;
   const indexOfFirstJob = indexOfLastJob - jobsPerPage;
   const currentJobs = jobs.slice(indexOfFirstJob, indexOfLastJob);
   const totalPages = Math.ceil(jobs.length / jobsPerPage);
 
+  useEffect(() => {
+    async function fetchCompanyAndJobs() {
+      if (!companyId) return;
 
- useEffect(() => {
-  async function fetchCompanyAndJobs() {
-    if (!companyId) return;
+      try {
+        const companyRef = doc(db, "users", companyId);
+        const companySnap = await getDoc(companyRef);
+        const companyData = companySnap.exists() ? companySnap.data() : {};
 
-    try {
-      const companyRef = doc(db, "users", companyId);
-      const companySnap = await getDoc(companyRef);
-      const companyData = companySnap.exists() ? companySnap.data() : {};
+        const jobsQuery = query(
+          collection(db, "jobs"),
+          where("companyId", "==", companyId),
+        );
 
-      const jobsQuery = query(
-        collection(db, "jobs"),
-        where("companyId", "==", companyId)
-        
-      );
+        const jobsSnapshot = await getDocs(jobsQuery);
 
-      const jobsSnapshot = await getDocs(jobsQuery);
+        const jobsData = jobsSnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
 
-      const jobsData = jobsSnapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); 
+        // إحصائيات الوظائف
+        const activeProjects = jobsData.filter(
+          (job) =>
+            job.status?.toLowerCase() === "active" ||
+            job.status?.toLowerCase() === "open",
+        ).length;
 
-      // إحصائيات الوظائف
-      const activeProjects = jobsData.filter(
-        (job) =>
-          job.status?.toLowerCase() === "active" ||
-          job.status?.toLowerCase() === "open"
-      ).length;
+        const totalJobs = jobsData.length;
 
-      const totalJobs = jobsData.length;
+        let totalApplicants = 0;
+        let totalHired = 0;
 
-let totalApplicants = 0;
-let totalHired = 0;
+        jobsData.forEach((job) => {
+          if (!Array.isArray(job.applicants)) return;
 
-jobsData.forEach((job) => {
-  if (!Array.isArray(job.applicants)) return;
+          totalApplicants += job.applicants.length;
 
-  totalApplicants += job.applicants.length;
+          totalHired += job.applicants.filter(
+            (applicant) => applicant?.status?.toLowerCase() === "approved",
+          ).length;
+        });
 
-  totalHired += job.applicants.filter(
-    (applicant) => applicant?.status?.toLowerCase() === "approved"
-  ).length;
-});
+        const successRate =
+          totalApplicants > 0
+            ? `${Math.round((totalHired / totalApplicants) * 100)}%`
+            : "0%";
 
-const successRate = totalApplicants > 0 
-  ? `${Math.round((totalHired / totalApplicants) * 100)}%`
-  : "0%";
+        console.log("Total Jobs:", totalJobs);
 
-  console.log("Total Jobs:", totalJobs);
+        setCompany({
+          ...companyData,
+          stats: {
+            activeProjects,
+            totalHired,
+            successRate,
+          },
+        });
 
-
-      setCompany({
-        ...companyData,
-        stats: {
-          activeProjects,
-          totalHired,
-          successRate,
-        },
-      });
-
-      setJobs(jobsData);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching company and jobs:", error);
-      toast.error("Failed to load company data.");
+        setJobs(jobsData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching company and jobs:", error);
+        toast.error("Failed to load company data.");
+      }
     }
-  }
 
-  fetchCompanyAndJobs();
-}, [companyId]);
-
-
-  
+    fetchCompanyAndJobs();
+  }, [companyId]);
 
   const goToPage = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
   async function handleApply() {
-  if (!user?.id) {
-    toast.error("You must be logged in to apply.");
-    return;
+    if (!user?.id) {
+      toast.error("You must be logged in to apply.");
+      return;
+    }
+
+    const hasAlreadyApplied = selectedJob?.applicants?.some((applicant) =>
+      typeof applicant === "string"
+        ? applicant === user?.id
+        : applicant?.userId === user?.id,
+    );
+
+    if (hasAlreadyApplied) {
+      toast.error("You have already applied to this job.");
+      return;
+    }
+
+    try {
+      const jobRef = doc(db, "jobs", selectedJob.id);
+
+      await updateDoc(jobRef, {
+        applicants: arrayUnion({
+          userId: user.id,
+          status: "pending",
+          appliedAt: new Date().toISOString(),
+        }),
+      });
+
+      toast.success("Application submitted successfully!");
+    } catch (error) {
+      console.error("Application error:", error);
+      toast.error("Something went wrong. Please try again.");
+    }
   }
-
-  const hasAlreadyApplied = selectedJob?.applicants?.some(applicant =>
-    typeof applicant === "string"
-      ? applicant === user?.id
-      : applicant?.userId === user?.id
-  );
-
-  if (hasAlreadyApplied) {
-    toast.error("You have already applied to this job.");
-    return;
-  }
-
-  try {
-    const jobRef = doc(db, "jobs", selectedJob.id);
-
-    await updateDoc(jobRef, {
-      applicants: arrayUnion({
-        userId: user.id,
-        status: "pending",
-        appliedAt: new Date().toISOString(),
-      }),
-    });
-
-    toast.success("Application submitted successfully!");
-  } catch (error) {
-    console.error("Application error:", error);
-    toast.error("Something went wrong. Please try again.");
-  }
-}
-
-
-
 
   return (
     <main className="min-h-screen bg-[#f9f9f9] text-[#333]">
@@ -249,39 +236,33 @@ const successRate = totalApplicants > 0
             <div>
               <h1 className="text-2xl font-bold ">{name}</h1>
 
-
               <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
                 {industry && (
                   <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
-
                     <Briefcase className="w-4 h-4 text-[#8B0000]" />
                     <span>{industry}</span>
                   </div>
                 )}
                 {founded && (
                   <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
-
                     <Calendar className="w-4 h-4 text-[#8B0000]" />
                     <span>Founded: {founded}</span>
                   </div>
                 )}
                 {location && (
                   <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
-
                     <MapPin className="w-4 h-4 text-[#8B0000]" />
                     <span>{location}</span>
                   </div>
                 )}
                 {phone && (
                   <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
-
                     <Phone className="w-4 h-4 text-[#8B0000]" />
                     <span>{phone}</span>
                   </div>
                 )}
               </div>
             </div>
-
           </div>
           <div className="text-right">
             <p className="flex items-center justify-end gap-1">
@@ -297,102 +278,110 @@ const successRate = totalApplicants > 0
         </div>
       </div>
 
-
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
         <div className="md:col-span-2">
           <h2 className="text-xl font-semibold mb-2">
-            Active Job Postings {" "}
+            Active Job Postings{" "}
             <span className="text-sm text-gray-500">
-              ({jobs.filter(job => job.status?.toLowerCase() === "active" || job.status?.toLowerCase() === "open").length} open positions)
-
+              (
+              {
+                jobs.filter(
+                  (job) =>
+                    job.status?.toLowerCase() === "active" ||
+                    job.status?.toLowerCase() === "open",
+                ).length
+              }{" "}
+              open positions)
             </span>
           </h2>
           <div className="space-y-4">
-  {jobs.length === 0 ? (
-   <div className="bg-white mt-20  rounded-xl p-8 text-center mr-20">
-  <div className="flex justify-center items-center mb-4">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-10 w-10 text-[#b30000]"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-  </div>
-  <h3 className="text-xl font-semibold text-[#333] mb-2">
-    No Job Postings Yet
-  </h3>
-  <p className="text-sm text-gray-700 max-w-md mx-auto mb-6">
-    You haven’t posted any jobs yet. Start attracting top ITI talents by
-    creating your first job posting now.
-  </p>
-  <Link href="/PostJob"
-   className="px-6 py-2 rounded-full bg-gradient-to-r from-[#b30000] to-[#8B0000] text-white font-medium shadow hover:scale-105 transform transition">
-    Post Your First Job
-  </Link>
-</div>
+            {jobs.length === 0 ? (
+              <div className="bg-white mt-20  rounded-xl p-8 text-center mr-20">
+                <div className="flex justify-center items-center mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-10 w-10 text-[#b30000]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-[#333] mb-2">
+                  No Job Postings Yet
+                </h3>
+                <p className="text-sm text-gray-700 max-w-md mx-auto mb-6">
+                  You haven’t posted any jobs yet. Start attracting top ITI
+                  talents by creating your first job posting now.
+                </p>
+                <Link
+                  href="/PostJob"
+                  className="px-6 py-2 rounded-full bg-gradient-to-r from-[#b30000] to-[#8B0000] text-white font-medium shadow hover:scale-105 transform transition"
+                >
+                  Post Your First Job
+                </Link>
+              </div>
+            ) : (
+              currentJobs.map((job) => (
+                <div
+                  key={job.id}
+                  className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
+                >
+                  {/* View Details */}
+                  <div>
+                    <h3 className="text-lg font-semibold">{job.title}</h3>
+                    <p className="text-sm text-gray-500">Type: {job.type}</p>
+                    <p className="text-sm text-gray-500">Level: {job.level}</p>
+                    <p className="text-sm text-gray-500">
+                      Applications: {job.applicants?.length || 0}
+                    </p>
+                    <button
+                      onClick={() => setSelectedJob(job)}
+                      className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {job.createdAt &&
+                      formatRelativeTime(new Date(job.createdAt))}
+                  </div>
+                </div>
+              ))
+            )}
 
-  ) : (
-    currentJobs.map((job) => (
-      <div
-        key={job.id}
-        className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
-      >
-        {/* View Details */}
-        <div>
-          <h3 className="text-lg font-semibold">{job.title}</h3>
-          <p className="text-sm text-gray-500">Type: {job.type}</p>
-          <p className="text-sm text-gray-500">Level: {job.level}</p>
-          <p className="text-sm text-gray-500">
-            Applications: {job.applicants?.length || 0}
-          </p>
-          <button
-            onClick={() => setSelectedJob(job)}
-            className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
-          >
-            View Details
-          </button>
-        </div>
-        <div className="text-xs text-gray-400">
-          {job.createdAt?.toDate() && formatRelativeTime(job.createdAt.toDate())}
-        </div>
-      </div>
-    ))
-  )}
-
-  {jobs.length > 0 && (
-    <ReactPaginate
-      breakLabel="..."
-      nextLabel={<ChevronRight size={16} />}
-      previousLabel={<ChevronLeft size={16} />}
-      onPageChange={(e) => goToPage(e.selected + 1)}
-      pageRangeDisplayed={3}
-      marginPagesDisplayed={1}
-      pageCount={totalPages}
-      forcePage={currentPage - 1}
-      containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
-      pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-      activeClassName="bg-[#b30000] text-white border-[#b30000]"
-      previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-      nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-      breakClassName="px-2 py-1"
-    />
-  )}
-</div>
-
+            {jobs.length > 0 && (
+              <ReactPaginate
+                breakLabel="..."
+                nextLabel={<ChevronRight size={16} />}
+                previousLabel={<ChevronLeft size={16} />}
+                onPageChange={(e) => goToPage(e.selected + 1)}
+                pageRangeDisplayed={3}
+                marginPagesDisplayed={1}
+                pageCount={totalPages}
+                forcePage={currentPage - 1}
+                containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
+                pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                activeClassName="bg-[#b30000] text-white border-[#b30000]"
+                previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                breakClassName="px-2 py-1"
+              />
+            )}
+          </div>
         </div>
         <div className="space-y-4">
           {/* Stats Section */}
           <div className="bg-white shadow rounded p-3">
             <h2 className="font-semibold mb-2 text-[#203947]">
-              Company Statistics</h2>
+              Company Statistics
+            </h2>
             <ul className="text-sm mt-2 space-y-1 text-[#333]">
               <li className="flex gap-2 items-center">
                 <Briefcase className="w-4 h-4 text-[#b30000]" />
@@ -411,8 +400,7 @@ const successRate = totalApplicants > 0
 
           {/* About Section */}
           <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold mb-2 text-[#203947]">
-              About {name}</h2>
+            <h2 className="font-semibold mb-2 text-[#203947]">About {name}</h2>
             <p className="text-sm mt-1 text-[#333]">
               {description || "No description provided."}
             </p>
@@ -420,8 +408,7 @@ const successRate = totalApplicants > 0
 
           {/* Core Services */}
           <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold mb-2 text-[#203947]">
-              Core Services</h2>
+            <h2 className="font-semibold mb-2 text-[#203947]">Core Services</h2>
             {services?.length > 0 ? (
               <ul className="text-sm mt-1 space-y-1 columns-2 text-[#333]">
                 {services.map((service) => (
@@ -429,14 +416,17 @@ const successRate = totalApplicants > 0
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500 mt-1">No core services listed.</p>
+              <p className="text-sm text-gray-500 mt-1">
+                No core services listed.
+              </p>
             )}
           </div>
 
           {/* Technologies */}
           <div className="bg-white shadow rounded p-3">
             <h2 className="font-semibold mb-2 text-[#203947]">
-              Technologies We Use</h2>
+              Technologies We Use
+            </h2>
             {technologies?.length > 0 ? (
               <div className="grid grid-cols-3 gap-2 text-sm text-[#333]">
                 {technologies.map((tech) => (
@@ -451,18 +441,23 @@ const successRate = totalApplicants > 0
             ) : (
               <p className="text-sm text-gray-500">No technologies listed.</p>
             )}
-            
           </div>
 
           {/* Contact Info */}
           <div className="bg-white shadow rounded p-3">
             <h2 className="font-semibold mb-2 text-[#203947]">
-              Contact Information</h2>
+              Contact Information
+            </h2>
             <div className="text-sm mt-2 space-y-2 text-[#333]">
               {website ? (
                 <p>
                   <FaGlobe className="inline w-4 h-4 mr-1 text-[#b30000]" />
-                  <a href={website} target="_blank" rel="noopener noreferrer" className="hover:underline text-[#203947]">
+                  <a
+                    href={website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-[#203947]"
+                  >
                     {website}
                   </a>
                 </p>
@@ -473,7 +468,10 @@ const successRate = totalApplicants > 0
               {email ? (
                 <p>
                   <FaEnvelope className="inline w-4 h-4 mr-1 text-[#b30000]" />
-                  <a href={`mailto:${email}`} className="hover:underline text-[#203947]">
+                  <a
+                    href={`mailto:${email}`}
+                    className="hover:underline text-[#203947]"
+                  >
                     {email}
                   </a>
                 </p>
@@ -484,7 +482,12 @@ const successRate = totalApplicants > 0
               {linkedin ? (
                 <p>
                   <FaLinkedin className="inline w-4 h-4 mr-1 text-[#b30000]" />
-                  <a href={linkedin} target="_blank" rel="noopener noreferrer" className="hover:underline text-[#203947]">
+                  <a
+                    href={linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-[#203947]"
+                  >
                     {linkedin}
                   </a>
                 </p>
@@ -495,7 +498,12 @@ const successRate = totalApplicants > 0
               {facebook ? (
                 <p>
                   <FaFacebook className="inline w-4 h-4 mr-1 text-[#b30000]" />
-                  <a href={facebook} target="_blank" rel="noopener noreferrer" className="hover:underline text-[#203947]">
+                  <a
+                    href={facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-[#203947]"
+                  >
                     {facebook}
                   </a>
                 </p>
@@ -523,17 +531,45 @@ const successRate = totalApplicants > 0
                 />
 
                 {/* Job Title */}
-                <h2 className="text-2xl font-bold mb-4 text-[#203947]">{selectedJob.title}</h2>
+                <h2 className="text-2xl font-bold mb-4 text-[#203947]">
+                  {selectedJob.title}
+                </h2>
 
                 {/* Job Details */}
                 <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                  <p><Briefcase className="inline w-4 h-4 mr-1   text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Type:</span> {selectedJob.type}</p>
-                  <p><BadgeCheck className="inline w-4 h-4 mr-1  text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Level:</span> {selectedJob.level}</p>
-                  <p><DollarSign className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Salary:</span> {selectedJob.salary}</p>
-                  <p><MapPin className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Location:</span> {selectedJob.location}</p>
-                  <p><Calendar className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Deadline:</span> {selectedJob.deadline?.toDate().toLocaleDateString()}</p>
+                  <p>
+                    <Briefcase className="inline w-4 h-4 mr-1   text-[#8B0000]" />{" "}
+                    <span className="text-[#8B0000] font-semibold">Type:</span>{" "}
+                    {selectedJob.type}
+                  </p>
+                  <p>
+                    <BadgeCheck className="inline w-4 h-4 mr-1  text-[#8B0000]" />{" "}
+                    <span className="text-[#8B0000] font-semibold">Level:</span>{" "}
+                    {selectedJob.level}
+                  </p>
+                  <p>
+                    <DollarSign className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
+                    <span className="text-[#8B0000] font-semibold">
+                      Salary:
+                    </span>{" "}
+                    {selectedJob.salary}
+                  </p>
+                  <p>
+                    <MapPin className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
+                    <span className="text-[#8B0000] font-semibold">
+                      Location:
+                    </span>{" "}
+                    {selectedJob.location}
+                  </p>
+                  <p>
+                    <Calendar className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
+                    <span className="text-[#8B0000] font-semibold">
+                      Deadline:
+                    </span>{" "}
+                    {selectedJob.deadline &&
+                      new Date(selectedJob.deadline).toLocaleDateString()}
+                  </p>
                 </div>
-
 
                 {/* Description */}
                 {selectedJob.description && (
@@ -541,7 +577,9 @@ const successRate = totalApplicants > 0
                     <h3 className="text-md font-semibold text-[#8B0000] flex items-center gap-2">
                       <FileText className="w-4 h-4" /> Description
                     </h3>
-                    <p className="text-gray-700 text-sm leading-relaxed">{selectedJob.description}</p>
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      {selectedJob.description}
+                    </p>
                   </section>
                 )}
 
@@ -551,7 +589,9 @@ const successRate = totalApplicants > 0
                     <h3 className="text-md font-semibold text-[#8B0000] flex items-center gap-2">
                       <ListChecks className="w-4 h-4" /> Requirements
                     </h3>
-                    <p className="text-gray-700 text-sm leading-relaxed">{selectedJob.requirements}</p>
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      {selectedJob.requirements}
+                    </p>
                   </section>
                 )}
 
@@ -605,21 +645,30 @@ const successRate = totalApplicants > 0
                               />
                               <div className="flex-1">
                                 <div className="flex justify-between items-center mb-1">
-                                  <p className="font-semibold text-[#203947]">{comment.userName}</p>
+                                  <p className="font-semibold text-[#203947]">
+                                    {comment.userName}
+                                  </p>
                                   <p className="text-gray-400 text-xs">
                                     {comment.timestamp?.seconds
-                                      ? formatRelativeTime(new Date(comment.timestamp.seconds * 1000))
+                                      ? formatRelativeTime(
+                                          new Date(
+                                            comment.timestamp.seconds * 1000,
+                                          ),
+                                        )
                                       : ""}
                                   </p>
-
                                 </div>
-                                <p className="text-gray-700 text-sm">{comment.text}</p>
+                                <p className="text-gray-700 text-sm">
+                                  {comment.text}
+                                </p>
                               </div>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-sm text-gray-500">No comments yet.</p>
+                        <p className="text-sm text-gray-500">
+                          No comments yet.
+                        </p>
                       )}
                     </>
                   )}
@@ -637,7 +686,6 @@ const successRate = totalApplicants > 0
                   Copy Job Link
                 </button>
 
-
                 {/* Close Button */}
                 <div className="flex justify-between items-center pt-4">
                   {user?.role === "freelancer" ? (
@@ -648,10 +696,11 @@ const successRate = totalApplicants > 0
                       Apply Now
                     </button>
                   ) : (
-                    <p className="text-sm text-gray-400 italic">Only freelancers can apply for jobs.</p>
+                    <p className="text-sm text-gray-400 italic">
+                      Only freelancers can apply for jobs.
+                    </p>
                   )}
-                   <Toaster position="top-right" />
-
+                  <Toaster position="top-right" />
 
                   <button
                     className="bg-[#203947] text-white px-4 py-2 rounded-md hover:bg-[#8B0000] text-sm transition-all"
@@ -660,25 +709,11 @@ const successRate = totalApplicants > 0
                     Close
                   </button>
                 </div>
-
               </div>
             </div>
           )}
-
-
-
-
         </div>
       </div>
     </main>
   );
 }
-
-
-
-
-
-
-
-
-

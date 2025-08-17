@@ -14,10 +14,12 @@ export function UserProvider({ children, initialUser }) {
     if (session?.user?.id) {
       const fetchedUser = await getUser(session.user.id);
 
-      // تحويل createdAt لـ string باستخدام toISOString إذا كان Timestamp
+      // تحويل createdAt لـ string إذا كان Timestamp
       if (
         fetchedUser &&
         fetchedUser.createdAt &&
+        typeof fetchedUser.createdAt === "object" &&
+        fetchedUser.createdAt.toDate &&
         typeof fetchedUser.createdAt.toDate === "function"
       ) {
         fetchedUser.createdAt = fetchedUser.createdAt.toDate().toISOString();

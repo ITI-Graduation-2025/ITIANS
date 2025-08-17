@@ -50,7 +50,7 @@ export default function PersonalInfoStep({ form }) {
         return;
       }
 
-      setValue("photo", file);
+      setValue("profileImage", file);
       const reader = new FileReader();
       reader.onload = (e) => setPhotoPreview(e.target.result);
       reader.readAsDataURL(file);
@@ -58,7 +58,7 @@ export default function PersonalInfoStep({ form }) {
   };
 
   const removePhoto = () => {
-    setValue("photo", null);
+    setValue("profileImage", null);
     setPhotoPreview(null);
   };
 
@@ -75,18 +75,21 @@ export default function PersonalInfoStep({ form }) {
         {/* Photo Upload */}
         <div className="md:col-span-2">
           <Label
-            htmlFor="photo"
+            htmlFor="profileImage"
             className="text-sm font-medium text-foreground"
           >
             Profile Photo *
           </Label>
-          {/* photo */}
+          {/* Profile Image */}
           <div className="mt-2 relative">
             {!photoPreview ? (
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
                 <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                 <div className="mt-4">
-                  <Label htmlFor="photo-upload" className="cursor-pointer">
+                  <Label
+                    htmlFor="profileImage-upload"
+                    className="cursor-pointer"
+                  >
                     <span className="text-primary font-medium">
                       Upload a photo
                     </span>
@@ -100,7 +103,7 @@ export default function PersonalInfoStep({ form }) {
                   </p>
                 </div>
                 <Controller
-                  name="photo"
+                  name="profileImage"
                   control={control}
                   rules={{
                     // required: "Please upload a valid image (PNG/JPG, max 5MB)",
@@ -122,7 +125,7 @@ export default function PersonalInfoStep({ form }) {
                   }}
                   render={({ field }) => (
                     <input
-                      id="photo-upload"
+                      id="profileImage-upload"
                       type="file"
                       accept="image/png,image/jpeg,image/jpg"
                       onChange={handlePhotoUpload}
@@ -148,9 +151,9 @@ export default function PersonalInfoStep({ form }) {
               </div>
             )}
           </div>
-          {errors.photo && (
+          {errors.profileImage && (
             <p className="text-sm text-destructive absolute bottom-[-20px] animate-in fade-in duration-200">
-              {errors.photo.message}
+              {errors.profileImage.message}
             </p>
           )}
         </div>

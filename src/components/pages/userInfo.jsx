@@ -130,9 +130,7 @@ export default function UserInfo() {
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {notification.createdAt &&
-                      new Date(
-                        notification.createdAt.toDate(),
-                      ).toLocaleString()}
+                      new Date(notification.createdAt).toLocaleString()}
                   </p>
                 </div>
               ))

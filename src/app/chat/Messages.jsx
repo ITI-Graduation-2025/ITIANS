@@ -320,12 +320,9 @@ export default function Messages({ chatId, currentUserId }) {
                   <div className="text-xs text-gray-300 mt-1 flex justify-between">
                     <span>
                       {msg.createdAt
-                        ? formatDistanceToNow(
-                            new Date(msg.createdAt.toDate()),
-                            {
-                              addSuffix: true,
-                            },
-                          )
+                        ? formatDistanceToNow(new Date(msg.createdAt), {
+                            addSuffix: true,
+                          })
                         : "Just now"}
                     </span>
                     {msg.edited && <span className="italic">(edited)</span>}

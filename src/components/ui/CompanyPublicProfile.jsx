@@ -423,8 +423,8 @@ export default function CompanyPublicProfile({ params }) {
                   </div>
 
                   <div className="text-xs text-gray-400">
-                    {job.createdAt?.toDate &&
-                      formatRelativeTime(job.createdAt.toDate())}
+                    {job.createdAt &&
+                      formatRelativeTime(new Date(job.createdAt))}
                   </div>
                 </div>
               ))
@@ -640,7 +640,8 @@ export default function CompanyPublicProfile({ params }) {
                   <span className="text-[#8B0000] font-semibold">
                     Deadline:
                   </span>{" "}
-                  {selectedJob.deadline?.toDate().toLocaleDateString()}
+                  {selectedJob.deadline &&
+                    new Date(selectedJob.deadline).toLocaleDateString()}
                 </p>
               </div>
 
@@ -797,7 +798,7 @@ export default function CompanyPublicProfile({ params }) {
                   (() => {
                     const deadlinePassed =
                       selectedJob.deadline &&
-                      selectedJob.deadline.toDate() < new Date();
+                      new Date(selectedJob.deadline) < new Date();
 
                     const isPaused =
                       selectedJob?.status?.toLowerCase() === "paused";

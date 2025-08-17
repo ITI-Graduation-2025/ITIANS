@@ -98,18 +98,16 @@ export default function JobDetailsPage() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const jobData = { id: docSnap.id, ...docSnap.data() };
-          if (jobData.createdAt && jobData.createdAt.toDate) {
-            jobData.createdAt = jobData.createdAt.toDate();
+          if (jobData.createdAt) {
+            jobData.createdAt = jobData.createdAt;
           }
-          if (jobData.deadline && jobData.deadline.toDate) {
-            jobData.deadline = jobData.deadline.toDate();
+          if (jobData.deadline) {
+            jobData.deadline = jobData.deadline;
           }
           if (jobData.comments) {
             jobData.comments = jobData.comments.map((comment) => ({
               ...comment,
-              timestamp: comment.timestamp.toDate
-                ? comment.timestamp.toDate()
-                : comment.timestamp,
+              timestamp: comment.timestamp,
             }));
           }
           if (
@@ -161,12 +159,7 @@ export default function JobDetailsPage() {
 
   const formatDate = (date) => {
     if (!date) return "N/A";
-    const dateObj =
-      date instanceof Date
-        ? date
-        : date.toDate
-          ? date.toDate()
-          : new Date(date);
+    const dateObj = new Date(date);
     return dateObj instanceof Date && !isNaN(dateObj)
       ? dateObj.toLocaleDateString("en-US", {
           year: "numeric",
@@ -178,12 +171,7 @@ export default function JobDetailsPage() {
 
   const isDeadlinePassed = () => {
     if (!job.deadline) return false;
-    const deadlineDate =
-      job.deadline instanceof Date
-        ? job.deadline
-        : job.deadline.toDate
-          ? job.deadline.toDate()
-          : new Date(job.deadline);
+    const deadlineDate = new Date(job.deadline);
     return deadlineDate < new Date();
   };
 

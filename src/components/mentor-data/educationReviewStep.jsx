@@ -87,12 +87,14 @@ export default function EducationReviewStep({ form, onStepClick }) {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {watchedValues.photo && (
+            {watchedValues.profileImage && (
               <div className="flex items-center gap-3">
                 <img
                   src={
-                    URL.createObjectURL(watchedValues.photo) ||
-                    "/placeholder.svg"
+                    typeof watchedValues.profileImage === "string"
+                      ? watchedValues.profileImage
+                      : URL.createObjectURL(watchedValues.profileImage) ||
+                        "/placeholder.svg"
                   }
                   alt="Profile"
                   className="w-16 h-16 rounded-full object-cover"

@@ -134,9 +134,7 @@ export default function UsersPage() {
     );
 
     const thisMonthUsers = users.filter((user) => {
-      const userDate = user?.createdAt?.toDate
-        ? user.createdAt.toDate()
-        : new Date(user?.createdAt);
+      const userDate = new Date(user?.createdAt);
       return userDate >= lastMonth;
     }).length;
 
@@ -146,9 +144,7 @@ export default function UsersPage() {
       now.getDate(),
     );
     const previousMonthUsers = users.filter((user) => {
-      const userDate = user?.createdAt?.toDate
-        ? user.createdAt.toDate()
-        : new Date(user?.createdAt);
+      const userDate = new Date(user?.createdAt);
       return userDate >= previousMonth && userDate < lastMonth;
     }).length;
 
@@ -249,9 +245,7 @@ export default function UsersPage() {
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
 
       const monthUsers = users.filter((user) => {
-        const userDate = user?.createdAt?.toDate
-          ? user.createdAt.toDate()
-          : new Date(user?.createdAt);
+        const userDate = new Date(user?.createdAt);
         return userDate >= monthDate && userDate <= monthEnd;
       }).length;
 
@@ -899,9 +893,9 @@ export default function UsersPage() {
                           <TableCell className="font-medium">
                             <div className="flex items-center space-x-3">
                               <div className="relative">
-                                {user?.avatar ? (
+                                {user?.profileImage ? (
                                   <Image
-                                    src={user.avatar}
+                                    src={user.profileImage}
                                     alt={user?.name || "Avatar"}
                                     width={32}
                                     height={32}
