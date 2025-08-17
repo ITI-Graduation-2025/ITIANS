@@ -158,7 +158,7 @@ export default function LandingSection() {
             ease: "easeInOut",
           }}
         >
-          <source src="/hero.mp4" type="video/mp4" />
+          <source src="/heroo.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </motion.video>
       )}
@@ -179,15 +179,15 @@ export default function LandingSection() {
           initial="hidden"
           animate="visible"
         >
-          <motion.h1 className="text-2xl md:text-5xl font-semibold leading-snug text-neutral-100 drop-shadow-md">
-            {"A professional platform".split("").map((char, index) => (
+          <motion.h1 className="text-2xl md:text-5xl font-semibold leading-snug text-neutral-200 drop-shadow-md">
+            {"A Professional Platform".split("").map((char, index) => (
               <motion.span key={index} variants={letterVariants}>
                 {char}
               </motion.span>
             ))}
           </motion.h1>
 
-          <motion.h1 className="text-xl md:text-4xl font-medium leading-snug text-neutral-200 drop-shadow-md">
+          <motion.h1 className="text-xl md:text-4xl font-medium leading-snug text-neutral-300 drop-shadow-md">
             {"built by and for ITI graduates — connect, grow, and shine."
               .split("")
               .map((char, index) => (

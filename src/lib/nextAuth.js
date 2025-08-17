@@ -95,9 +95,21 @@ export const authOptions = {
   //   // signin , session, callbacks دي بتحكم ف اليوزر اني ابعته اشعار مثلا انه دخل خلاص يعني كل حاجه ممكن اعملها وهو لوج ان
   //   // callbcks هنا اقدر ازود معلومات عن اليوزر اللي داخل اضيف ع السيشن اللي دخل بيها داتا اضافيه
   // },
-  // كدا  مش هيعمل راندوم كي بل هيستخدم اللي انا مدهوله
-  // secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key-for-development-only",
   pages: {
     signIn: "/login", // custom sign in page
+  },
+  // Fix for port mismatch issues
+  useSecureCookies: process.env.NODE_ENV === "production",
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
   },
 };

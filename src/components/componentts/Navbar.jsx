@@ -15,6 +15,9 @@ import {
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import debounce from "lodash/debounce";
+import { getOrCreateChatId } from "@/lib/chatFunctions";
+import useCurrentUser from "@/hooks/useCurrentUser";
+import { useRouter } from "next/navigation";
 
 const categories = [
   { name: "Jobs", href: "/jobs", icon: <MdWork className="w-6 h-6" /> },
@@ -29,9 +32,13 @@ export default function Navbar({ onSearch }) {
   const [searchScope, setSearchScope] = useState("all");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
   const pathname = usePathname();
   const searchRef = useRef(null);
+  const currentUser = useCurrentUser();
+  const router = useRouter();
 
+  // تحديد نطاق البحث بناءً على المسار الحالي
   useEffect(() => {
     let scope = "all";
     if (pathname === "/") {
@@ -48,222 +55,265 @@ export default function Navbar({ onSearch }) {
     setSearchScope(scope);
     setSearchQuery("");
     setSearchResults([]);
-    console.log("Current pathname:", pathname, "Scope:", scope);
+    setShowResults(false);
   }, [pathname]);
 
+  // إخفاء النتائج عند النقر خارج منطقة البحث
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setSearchResults([]);
-        setSearchQuery("");
+        setShowResults(false);
+        // لا نمسح النص هنا للحفاظ على تجربة المستخدم
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Debounced search function
+  // وظيفة البحث المحسنة مع debounce
   const performSearch = useCallback(
     debounce(async (term, scope) => {
-      if (!term) {
+      if (!term || term.trim().length < 1) {
         setSearchResults([]);
         setIsSearching(false);
+        setShowResults(false);
         return;
       }
 
       setIsSearching(true);
-      let results = [];
-      try {
-        // Helper function to convert Timestamp to ISO string
-        const convertTimestamp = (timestamp) => {
-          if (timestamp?.toDate && typeof timestamp.toDate === "function") {
-            return timestamp.toDate().toISOString();
-          } else if (timestamp?.seconds) {
-            // Handle Timestamp objects without toDate method
-            return new Date(timestamp.seconds * 1000).toISOString();
-          } else if (typeof timestamp === "string") {
-            return timestamp;
-          }
-          return timestamp;
-        };
+      setShowResults(true);
+      const searchTerm = term.trim().toLowerCase();
 
-        if (scope === "all") {
+      try {
+        let results = [];
+
+        if (scope === "all" || scope === "jobs") {
           const jobsQuery = query(collection(db, "jobs"));
+          const jobsSnapshot = await getDocs(jobsQuery);
+          const jobsResults = jobsSnapshot.docs
+            .map((doc) => {
+              // Preserve the original job type (Full Time, Part Time) in jobType field
+              const jobData = {
+                id: doc.id,
+                searchType: "jobs", // Use searchType to avoid conflict with job.type
+                jobType: doc.data().type, // Original job type (Full Time, Part Time)
+                ...doc.data(),
+              };
+              console.log("Job doc:", doc.id, jobData); // للتأكد من البيانات
+              return jobData;
+            })
+            .filter((job) => {
+              const titleMatch = job.title?.toLowerCase().includes(searchTerm);
+              const companyMatch = job.company
+                ?.toLowerCase()
+                .includes(searchTerm);
+              const descriptionMatch = job.description
+                ?.toLowerCase()
+                .includes(searchTerm);
+              return titleMatch || companyMatch || descriptionMatch;
+            })
+            .slice(0, scope === "jobs" ? 20 : 5); // تحديد عدد النتائج
+
+          console.log("Jobs results:", jobsResults); // للتأكد من النتائج
+
+          if (scope === "all") {
+            results.push(...jobsResults);
+          } else if (scope === "jobs") {
+            results = jobsResults;
+          }
+        }
+
+        if (scope === "all" || scope === "mentors") {
           const mentorsQuery = query(
             collection(db, "users"),
             where("role", "==", "mentor"),
           );
-          const usersQuery = query(collection(db, "users"));
-          const [jobsSnapshot, mentorsSnapshot, usersSnapshot] =
-            await Promise.all([
-              getDocs(jobsQuery),
-              getDocs(mentorsQuery),
-              getDocs(usersQuery),
-            ]);
-
-          const jobsResults = jobsSnapshot.docs
-            .map((doc) => ({ id: doc.id, type: "jobs", ...doc.data() }))
-            .filter(
-              (job) =>
-                job.title?.toLowerCase().includes(term.toLowerCase()) ||
-                job.company?.toLowerCase().includes(term.toLowerCase()),
-            );
+          const mentorsSnapshot = await getDocs(mentorsQuery);
           const mentorsResults = mentorsSnapshot.docs
-            .map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                type: "mentors",
-                ...data,
-                createdAt: convertTimestamp(data.createdAt),
-                updatedAt: convertTimestamp(data.updatedAt),
-                adminActionDate: convertTimestamp(data.adminActionDate),
-                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
-              };
+            .map((doc) => ({ id: doc.id, type: "mentors", ...doc.data() }))
+            .filter((mentor) => {
+              const nameMatch = mentor.name?.toLowerCase().includes(searchTerm);
+              const skillsMatch = mentor.skills?.some((skill) =>
+                skill.toLowerCase().includes(searchTerm),
+              );
+              const bioMatch = mentor.bio?.toLowerCase().includes(searchTerm);
+              return nameMatch || skillsMatch || bioMatch;
             })
-            .filter((mentor) =>
-              mentor.name?.toLowerCase().includes(term.toLowerCase()),
-            );
-          const usersResults = usersSnapshot.docs
-            .map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                type: "users",
-                ...data,
-                createdAt: convertTimestamp(data.createdAt),
-                updatedAt: convertTimestamp(data.updatedAt),
-                adminActionDate: convertTimestamp(data.adminActionDate),
-                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
-              };
-            })
-            .filter(
-              (user) =>
-                user.name?.toLowerCase().includes(term.toLowerCase()) ||
-                user.email?.toLowerCase().includes(term.toLowerCase()),
-            );
-          const messagesResults = usersSnapshot.docs
-            .map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                type: "messages",
-                ...data,
-                createdAt: convertTimestamp(data.createdAt),
-                updatedAt: convertTimestamp(data.updatedAt),
-                adminActionDate: convertTimestamp(data.adminActionDate),
-                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
-              };
-            })
-            .filter((user) =>
-              user.name?.toLowerCase().includes(term.toLowerCase()),
-            );
+            .slice(0, scope === "mentors" ? 20 : 5);
 
-          results = [
-            ...jobsResults,
-            ...mentorsResults,
-            ...usersResults,
-            ...messagesResults,
-          ];
-          console.log("All results:", results);
-        } else if (scope === "jobs") {
-          const q = query(collection(db, "jobs"));
-          const querySnapshot = await getDocs(q);
-          results = querySnapshot.docs
-            .map((doc) => ({ id: doc.id, type: "jobs", ...doc.data() }))
-            .filter(
-              (job) =>
-                job.title?.toLowerCase().includes(term.toLowerCase()) ||
-                job.company?.toLowerCase().includes(term.toLowerCase()),
-            );
-          console.log("Jobs results:", results);
-        } else if (scope === "mentors") {
-          const q = query(
-            collection(db, "users"),
-            where("role", "==", "mentor"),
-          );
-          const querySnapshot = await getDocs(q);
-          results = querySnapshot.docs
-            .map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                type: "mentors",
-                ...data,
-                createdAt: convertTimestamp(data.createdAt),
-                updatedAt: convertTimestamp(data.updatedAt),
-                adminActionDate: convertTimestamp(data.adminActionDate),
-                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
-              };
-            })
-            .filter((mentor) =>
-              mentor.name?.toLowerCase().includes(term.toLowerCase()),
-            );
-          console.log("Mentors results:", results);
-        } else if (scope === "users") {
-          const q = query(collection(db, "users"));
-          const querySnapshot = await getDocs(q);
-          results = querySnapshot.docs
-            .map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                type: "users",
-                ...data,
-                createdAt: convertTimestamp(data.createdAt),
-                updatedAt: convertTimestamp(data.updatedAt),
-                adminActionDate: convertTimestamp(data.adminActionDate),
-                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
-              };
-            })
-            .filter(
-              (user) =>
-                user.name?.toLowerCase().includes(term.toLowerCase()) ||
-                user.email?.toLowerCase().includes(term.toLowerCase()),
-            );
-          console.log("Users results:", results);
-        } else if (scope === "messages") {
-          const q = query(collection(db, "users"));
-          const querySnapshot = await getDocs(q);
-          results = querySnapshot.docs
-            .map((doc) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                type: "messages",
-                ...data,
-                createdAt: convertTimestamp(data.createdAt),
-                updatedAt: convertTimestamp(data.updatedAt),
-                adminActionDate: convertTimestamp(data.adminActionDate),
-                fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
-              };
-            })
-            .filter((user) =>
-              user.name?.toLowerCase().includes(term.toLowerCase()),
-            );
-          console.log("Messages results:", results);
+          if (scope === "all") {
+            results.push(...mentorsResults);
+          } else if (scope === "mentors") {
+            results = mentorsResults;
+          }
         }
+
+        if (scope === "all" || scope === "users") {
+          const usersQuery = query(collection(db, "users"));
+          const usersSnapshot = await getDocs(usersQuery);
+          const usersResults = usersSnapshot.docs
+            .map((doc) => ({ id: doc.id, type: "users", ...doc.data() }))
+            .filter((user) => {
+              const nameMatch = user.name?.toLowerCase().includes(searchTerm);
+              const emailMatch = user.email?.toLowerCase().includes(searchTerm);
+              return nameMatch || emailMatch;
+            })
+            .slice(0, scope === "users" ? 20 : 5);
+
+          if (scope === "all") {
+            results.push(...usersResults);
+          } else if (scope === "users") {
+            results = usersResults;
+          }
+        }
+
+        if (scope === "all" || scope === "messages") {
+          const usersQuery = query(collection(db, "users"));
+          const usersSnapshot = await getDocs(usersQuery);
+          const messagesResults = usersSnapshot.docs
+            .map((doc) => ({ id: doc.id, type: "messages", ...doc.data() }))
+            .filter((user) => {
+              // Exclude current user and company roles from messages search
+              if (currentUser && user.id === currentUser.uid) return false;
+              if (user.role === "company") return false;
+              const nameMatch = user.name?.toLowerCase().includes(searchTerm);
+              const emailMatch = user.email?.toLowerCase().includes(searchTerm);
+              return nameMatch || emailMatch;
+            })
+            .slice(0, scope === "messages" ? 20 : 5);
+
+          if (scope === "all") {
+            results.push(...messagesResults);
+          } else if (scope === "messages") {
+            results = messagesResults;
+          }
+        }
+
+        // ترتيب النتائج بناءً على الصلة
+        results.sort((a, b) => {
+          const aName = (a.name || a.title || "").toLowerCase();
+          const bName = (b.name || b.title || "").toLowerCase();
+
+          // النتائج التي تبدأ بنفس الحرف أولاً
+          const aStartsWith = aName.startsWith(searchTerm);
+          const bStartsWith = bName.startsWith(searchTerm);
+
+          if (aStartsWith && !bStartsWith) return -1;
+          if (!aStartsWith && bStartsWith) return 1;
+
+          // ثم ترتيب أبجدي
+          return aName.localeCompare(bName);
+        });
+
+        console.log("Final results:", results); // للتأكد من النتائج النهائية
         setSearchResults(results);
       } catch (error) {
         console.error("Search error:", error);
+        setSearchResults([]);
       } finally {
         setIsSearching(false);
       }
     }, 300),
-    [pathname],
+    [currentUser],
   );
 
   const handleSearch = (e) => {
     const term = e.target.value;
     setSearchQuery(term);
-    performSearch(term, searchScope);
-    onSearch?.(term);
+
+    if (term.trim().length >= 1) {
+      performSearch(term, searchScope);
+    } else {
+      setSearchResults([]);
+      setShowResults(false);
+      setIsSearching(false);
+    }
   };
 
   const handleScopeChange = (scope) => {
     setSearchScope(scope);
+    if (searchQuery.trim().length >= 1) {
+      performSearch(searchQuery, scope);
+    } else {
+      setSearchResults([]);
+      setShowResults(false);
+    }
+  };
+
+  const handleResultClick = async (result) => {
+    try {
+      if (!result || !result.id) {
+        console.error("Invalid result or missing ID:", result);
+        return;
+      }
+
+      // Log the result for debugging
+      console.log("Clicked result:", result);
+
+      if (result.searchType === "messages" || result.type === "messages") {
+        if (currentUser) {
+          const chatId = await getOrCreateChatId(currentUser.uid, result.id);
+          router.push(`/chat/${chatId}`);
+        }
+      } else {
+        // Navigate to the respective scope page with the result ID
+        let targetPath;
+
+        // Use searchType for jobs, fallback to type for others
+        const resultType = result.searchType || result.type;
+
+        // Ensure resultType exists and is valid
+        if (!resultType) {
+          console.error("Result type is undefined:", result);
+          // Try to determine type from the data structure
+          if (result.title && result.company) {
+            result.searchType = "jobs";
+          } else if (result.role === "mentor") {
+            result.type = "mentors";
+          } else {
+            result.type = "users";
+          }
+        }
+
+        switch (resultType) {
+          case "jobs":
+            targetPath = `/jobs/${result.id}`;
+            break;
+          case "mentors":
+            targetPath = `/mentor/${result.id}`;
+            break;
+          case "users":
+            targetPath = `/profile/${result.id}`;
+            break;
+          default:
+            console.error("Unknown result type:", resultType);
+            // Fallback to profile if type is unknown
+            targetPath = `/profile/${result.id}`;
+            break;
+        }
+
+        console.log("Navigating to:", targetPath);
+        router.push(targetPath);
+      }
+    } catch (error) {
+      console.error("Error navigating:", error);
+    } finally {
+      // Hide results and close mobile menu
+      setShowResults(false);
+      setIsOpen(false);
+    }
+  };
+
+  const clearSearch = () => {
     setSearchQuery("");
     setSearchResults([]);
+    setShowResults(false);
+  };
+
+  const handleInputFocus = () => {
+    if (searchResults.length > 0) {
+      setShowResults(true);
+    }
   };
 
   return (
@@ -276,9 +326,6 @@ export default function Navbar({ onSearch }) {
             alt="ITIANS Logo"
             className="h-16 w-16 rounded-full"
           />
-          {/* <span className="text-2xl font-bold tracking-tight text-[var(--primary)]">
-            ITIANS
-          </span> */}
         </Link>
 
         {/* Desktop View */}
@@ -317,9 +364,18 @@ export default function Navbar({ onSearch }) {
                 type="text"
                 value={searchQuery}
                 onChange={handleSearch}
+                onFocus={handleInputFocus}
                 placeholder={`Search ${searchScope === "all" ? "everything" : searchScope}...`}
-                className="w-full pl-12 pr-4 py-2 rounded-full bg-gray-100 text-gray-800 text-base focus:outline-none focus:ring-2 focus:ring-[#B71C1C] transition duration-200 shadow-sm"
+                className="w-full pl-12 pr-10 py-2 rounded-full bg-gray-100 text-gray-800 text-base focus:outline-none focus:ring-2 focus:ring-[#B71C1C] transition duration-200 shadow-sm"
               />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <FaTimes className="w-4 h-4" />
+                </button>
+              )}
             </div>
             {pathname === "/" && (
               <select
@@ -334,65 +390,79 @@ export default function Navbar({ onSearch }) {
                 <option value="messages">Chats</option>
               </select>
             )}
+
             {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-2 max-h-64 overflow-y-auto z-50">
-                {searchResults.map((result) => (
-                  <Link
-                    key={result.id}
-                    href={
-                      result.type === "jobs"
-                        ? `/jobs/${result.id}`
-                        : result.type === "mentors"
-                          ? `/mentor/${result.id}`
-                          : result.type === "users" ||
-                              result.type === "messages"
-                            ? `/chat/${result.id}`
-                            : "#"
-                    }
-                    className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 transition-colors duration-200"
-                  >
-                    {result.profileImage ? (
-                      <img
-                        src={result.profileImage}
-                        alt={result.name || result.title}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#B71C1C] flex items-center justify-center text-white text-sm">
-                        {(result.name || result.title || "U")[0]?.toUpperCase()}
+            {showResults && (
+              <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-2 max-h-96 overflow-y-auto z-50">
+                {isSearching && (
+                  <div className="p-4 text-gray-500 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#B71C1C]"></div>
+                      Searching...
+                    </div>
+                  </div>
+                )}
+
+                {!isSearching && searchResults.length > 0 && (
+                  <>
+                    {searchResults.map((result, index) => (
+                      <button
+                        key={`${result.type}-${result.id}-${index}`}
+                        onClick={() => handleResultClick(result)}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-colors duration-200 w-full text-left border-b border-gray-100 last:border-b-0"
+                      >
+                        {result.profileImage ? (
+                          <img
+                            src={result.profileImage}
+                            alt={result.name || result.title}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-[#B71C1C] flex items-center justify-center text-white text-sm font-semibold">
+                            {(result.name ||
+                              result.title ||
+                              "U")[0]?.toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">
+                            {result.title ||
+                              result.name ||
+                              result.email ||
+                              "Result"}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {result.type === "jobs"
+                              ? `${result.company} • ${result.location || "Remote"}`
+                              : result.type === "mentors"
+                                ? `Mentor • ${result.skills?.slice(0, 2).join(", ") || "Professional"}`
+                                : result.type === "users" ||
+                                    result.type === "messages"
+                                  ? result.email
+                                  : ""}
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-400 capitalize">
+                          {result.type === "messages" ? "Chat" : result.type}
+                        </div>
+                      </button>
+                    ))}
+                    {searchResults.length >= 20 && (
+                      <div className="p-3 text-xs text-gray-500 text-center border-t">
+                        Showing first 20 results. Try a more specific search.
                       </div>
                     )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">
-                        {result.title ||
-                          result.name ||
-                          result.email ||
-                          "Result"}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {result.type === "jobs"
-                          ? result.company
-                          : result.type === "mentors"
-                            ? "Mentor"
-                            : result.type === "users" ||
-                                result.type === "messages"
-                              ? result.email
-                              : ""}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-            {isSearching && (
-              <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-2 p-4 text-gray-500">
-                Searching...
-              </div>
-            )}
-            {searchQuery && !isSearching && searchResults.length === 0 && (
-              <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-2 p-4 text-gray-500">
-                No results found
+                  </>
+                )}
+
+                {!isSearching && searchQuery && searchResults.length === 0 && (
+                  <div className="p-4 text-gray-500 text-center">
+                    <p>No results found for "{searchQuery}"</p>
+                    <p className="text-xs mt-1">
+                      Try different keywords or check spelling
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -431,6 +501,7 @@ export default function Navbar({ onSearch }) {
                 </li>
               ))}
             </div>
+
             {/* Mobile Search Bar */}
             <li className="w-full px-6" ref={searchRef}>
               <div className="relative">
@@ -439,10 +510,20 @@ export default function Navbar({ onSearch }) {
                   type="text"
                   value={searchQuery}
                   onChange={handleSearch}
+                  onFocus={handleInputFocus}
                   placeholder={`Search ${searchScope === "all" ? "everything" : searchScope}...`}
-                  className="w-full pl-12 pr-4 py-3 rounded-full bg-gray-100 text-gray-800 text-base focus:outline-none focus:ring-2 focus:ring-[#B71C1C] transition duration-200 shadow-sm"
+                  className="w-full pl-12 pr-10 py-3 rounded-full bg-gray-100 text-gray-800 text-base focus:outline-none focus:ring-2 focus:ring-[#B71C1C] transition duration-200 shadow-sm"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <FaTimes className="w-4 h-4" />
+                  </button>
+                )}
               </div>
+
               {pathname === "/" && (
                 <select
                   value={searchScope}
@@ -456,70 +537,72 @@ export default function Navbar({ onSearch }) {
                   <option value="messages">Messages</option>
                 </select>
               )}
+
               {/* Mobile Search Results */}
-              {searchResults.length > 0 && (
+              {showResults && (
                 <div className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                  {searchResults.map((result) => (
-                    <Link
-                      key={result.id}
-                      href={
-                        result.type === "jobs"
-                          ? `/jobs/${result.id}`
-                          : result.type === "mentors"
-                            ? `/mentor/${result.id}`
-                            : result.type === "users" ||
-                                result.type === "messages"
-                              ? `/chat/${result.id}`
-                              : "#"
-                      }
-                      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 transition-colors duration-200"
-                    >
-                      {result.profileImage ? (
-                        <img
-                          src={result.profileImage}
-                          alt={result.name || result.title}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-[#B71C1C] flex items-center justify-center text-white text-sm">
-                          {(result.name ||
-                            result.title ||
-                            "U")[0]?.toUpperCase()}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">
-                          {result.title ||
-                            result.name ||
-                            result.email ||
-                            "Result"}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {result.type === "jobs"
-                            ? result.company
-                            : result.type === "mentors"
-                              ? "Mentor"
-                              : result.type === "users" ||
-                                  result.type === "messages"
-                                ? result.email
-                                : ""}
-                        </p>
+                  {isSearching && (
+                    <div className="p-4 text-gray-500 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#B71C1C]"></div>
+                        جاري البحث...
                       </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-              {isSearching && (
-                <div className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-gray-500">
-                  Searching...
-                </div>
-              )}
-              {searchQuery && !isSearching && searchResults.length === 0 && (
-                <div className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-gray-500">
-                  No results found
+                    </div>
+                  )}
+
+                  {!isSearching &&
+                    searchResults.length > 0 &&
+                    searchResults.map((result, index) => (
+                      <button
+                        key={`mobile-${result.type}-${result.id}-${index}`}
+                        onClick={() => handleResultClick(result)}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-colors duration-200 w-full text-left border-b border-gray-100 last:border-b-0"
+                      >
+                        {result.profileImage ? (
+                          <img
+                            src={result.profileImage}
+                            alt={result.name || result.title}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-[#B71C1C] flex items-center justify-center text-white text-sm">
+                            {(result.name ||
+                              result.title ||
+                              "U")[0]?.toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">
+                            {result.title ||
+                              result.name ||
+                              result.email ||
+                              "Result"}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {result.type === "jobs"
+                              ? result.company
+                              : result.type === "mentors"
+                                ? "Mentor"
+                                : result.type === "users" ||
+                                    result.type === "messages"
+                                  ? result.email
+                                  : ""}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+
+                  {!isSearching &&
+                    searchQuery &&
+                    searchResults.length === 0 && (
+                      <div className="p-4 text-gray-500 text-center">
+                        لم يتم العثور على نتائج
+                      </div>
+                    )}
                 </div>
               )}
             </li>
+
             <li className="text-gray-800 hover:text-[#B71C1C] transition-colors duration-200">
               <UserInfo />
             </li>

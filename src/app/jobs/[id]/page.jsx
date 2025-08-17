@@ -514,7 +514,7 @@ export default function JobDetailsPage() {
           className="space-y-8"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-5xl md:text-5xl font-bold text-[#901b20] tracking-tight">
+            <h2 className="text-4xl md:text-4xl font-bold text-[#901b20] tracking-tight me-2">
               {job.title.charAt(0).toUpperCase() + job.title.slice(1)}
             </h2>
             <div className="flex items-center gap-3">
@@ -605,21 +605,6 @@ export default function JobDetailsPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {userRole === "freelancer" && (
-              // <button
-              //   onClick={handleApply}
-              //   disabled={isApplied || isDeadlinePassed()}
-              //   className={`flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold transition-all duration-200 ease-in-out shadow-md hover:scale-105 hover:shadow-lg focus:ring-2 focus:ring-[var(--primary)] cursor-not-allowed ${
-              //     isApplied || isDeadlinePassed()
-              //       ? "bg-gray-300 text-gray-700 cursor-not-allowed"
-              //       : "bg-[var(--primary)] text-white hover:bg-[#6B1519] cursor-pointer"
-              //   }`}
-              // >
-              //   {isDeadlinePassed()
-              //     ? "Deadline Passed"
-              //     : isApplied
-              //       ? "Applied"
-              //       : "Apply Now"}
-              // </button>
               <button
                 onClick={handleApply}
                 disabled={isApplied || isDeadlinePassed()}

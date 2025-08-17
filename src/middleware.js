@@ -37,9 +37,13 @@ export default withAuth(
     const isProtectedRoute = protectedRoutes.some(
       (route) => pathname.startsWith(route) || pathname === "/",
     );
+
+    // Handle port issues by using the current request URL
+    const baseUrl = request.nextUrl.origin;
+
     // دي بترجه ترو لو انا ف البروفابل او اي باث بيبدا ب بروفايل
     if (!isAuth && isProtectedRoute) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/login", baseUrl));
     }
 
     const token = await getToken({ req: request });
@@ -58,7 +62,7 @@ export default withAuth(
     }
 
     if (isAuthRoute && isAuth) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/", baseUrl));
     }
     if (pathname.startsWith("/dashboard") && role !== "admin") {
       return NextResponse.redirect(new URL("/", request.url));

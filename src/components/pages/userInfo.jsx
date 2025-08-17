@@ -2,20 +2,14 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import {
-  FaUserCircle,
-  FaSignOutAlt,
-  FaRegUser,
-  FaUsers,
-  FaComments,
-} from "react-icons/fa";
-import { Loader2, Bell } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Bell } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   listenToNotifications,
   updateNotification,
   deleteOldNotifications,
 } from "@/services/notificationService";
+import { FaSignOutAlt, FaRegUser } from "react-icons/fa";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,12 +17,107 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-// import { useState } from "react";
+import { UserInfoSkeleton } from "../ui/user-info-skeleton";
+
+// Default avatars based on role
+const getDefaultAvatar = (role) => {
+  switch (role) {
+    case "mentor":
+      return (
+        <img
+          src="/default-avatar.avif"
+          alt="Default Mentor Avatar"
+          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 hover:border-[#B71C1C] transition-colors"
+        />
+      );
+    case "company":
+      return (
+        <img
+          src="/default-logo.avif"
+          alt="Default Company Logo"
+          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 hover:border-[#B71C1C] transition-colors"
+        />
+      );
+    case "freelancer":
+    default:
+      return (
+        <img
+          src="/default--avatar.avif"
+          alt="Default Freelancer Avatar"
+          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 hover:border-[#B71C1C] transition-colors"
+        />
+      );
+  }
+};
 
 export default function UserInfo() {
   const { data, status } = useSession();
   const [notifications, setNotifications] = useState([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  // Memoized values
+  const unreadCount = useMemo(() => {
+    return notifications.filter((n) => !n.read).length;
+  }, [notifications]);
+
+  const userAvatar = useMemo(() => {
+    if (data?.user?.image) {
+      return (
+        <img
+          src={data.user.image}
+          alt={data.user.name || "User"}
+          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 hover:border-[#B71C1C] transition-colors"
+        />
+      );
+    }
+    return getDefaultAvatar(data?.user?.role || "freelancer");
+  }, [data?.user?.image, data?.user?.role, data?.user?.name]);
+
+  const profileLink = useMemo(() => {
+    if (data?.user?.role === "mentor") {
+      return `/mentor/${data?.user?.id}`;
+    } else if (data?.user?.role === "company") {
+      return `/companies/${data?.user?.id}`;
+    } else {
+      return `/profile/${data?.user?.id}`;
+    }
+  }, [data?.user?.role, data?.user?.id]);
+
+  // Memoized callbacks
+  const handleNotificationsUpdate = useCallback((notifications) => {
+    setNotifications(notifications);
+  }, []);
+
+  const handleMarkAsRead = useCallback(
+    async (notificationId, sessionId, notificationType) => {
+      await updateNotification(notificationId, { read: true });
+      setIsNotificationOpen(false);
+
+      const notification = notifications.find((n) => n.id === notificationId);
+      if (
+        notification &&
+        [
+          "account_approved",
+          "profile_approved",
+          "account_rejected",
+          "profile_rejected",
+          "account_suspended",
+        ].includes(notification.type)
+      ) {
+        signOut({ callbackUrl: "/login" });
+        return;
+      }
+    },
+    [notifications],
+  );
+
+  const toggleNotification = useCallback(() => {
+    setIsNotificationOpen((prev) => !prev);
+  }, []);
+
+  const handleSignOut = useCallback(() => {
+    signOut();
+  }, []);
 
   // Notification system
   useEffect(() => {
@@ -37,50 +126,19 @@ export default function UserInfo() {
 
       const unsubscribe = listenToNotifications(
         data.user.id,
-        (notifications) => {
-          setNotifications(notifications);
-        },
+        handleNotificationsUpdate,
       );
       return () => unsubscribe();
     }
-  }, [data?.user?.id]);
+  }, [data?.user?.id, handleNotificationsUpdate]);
 
-  const handleMarkAsRead = async (
-    notificationId,
-    sessionId,
-    notificationType,
-  ) => {
-    await updateNotification(notificationId, { read: true });
-    setIsNotificationOpen(false);
-
-    // If this is an admin action notification, log out immediately
-    const notification = notifications.find((n) => n.id === notificationId);
-    if (
-      notification &&
-      [
-        "account_approved",
-        "profile_approved",
-        "account_rejected",
-        "profile_rejected",
-        "account_suspended",
-      ].includes(notification.type)
-    ) {
-      signOut({ callbackUrl: "/login" });
-      return;
-    }
-  };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
+  // Show skeleton while loading
   if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-white" />
-      </div>
-    );
+    return <UserInfoSkeleton />;
   }
 
-  if (status === "unauthenticated") {
+  // Show login button if not authenticated
+  if (status === "unauthenticated" || !data?.user) {
     return (
       <Link
         href="/login"
@@ -91,13 +149,18 @@ export default function UserInfo() {
     );
   }
 
+  // Show skeleton if user data is incomplete
+  if (!data.user.id || !data.user.name) {
+    return <UserInfoSkeleton />;
+  }
+
   return (
     <div className="flex items-center space-x-3">
       {/* Notification Bell */}
       <div className="relative">
         <Bell
           className="w-6 h-6 text-gray cursor-pointer hover:text-[#E57373] transition-colors"
-          onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+          onClick={toggleNotification}
         />
         {unreadCount > 0 && (
           <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
@@ -144,10 +207,10 @@ export default function UserInfo() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center space-x-2 text-[#B71C1C] hover:text-[var(--primary)] hover:bg-transparent"
+            className="flex items-center space-x-2 text-gray-800 hover:text-[#B71C1C] hover:bg-transparent"
           >
-            <FaUserCircle className="w-6 h-6" />
-            <span>{data?.user?.name || "User"}</span>
+            {userAvatar}
+            <span>{data.user.name}</span>
           </Button>
         </DropdownMenuTrigger>
 
@@ -159,43 +222,14 @@ export default function UserInfo() {
             asChild
             className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
           >
-            <Link
-              href={
-                data?.user?.role === "mentor"
-                  ? `/mentor/${data?.user?.id}`
-                  : data?.user?.role === "company"
-                    ? `/companies/${data?.user?.id}`
-                    : `/profile/${data?.user?.id}`
-              }
-              className="flex items-center gap-3"
-            >
+            <Link href={profileLink} className="flex items-center gap-3">
               <FaRegUser className="text-[#B71C1C] group-hover:text-white" />
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
 
-          {/* <DropdownMenuItem
-            asChild
-            className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
-          >
-            <Link href="/users" className="flex items-center gap-3">
-              <FaUsers className="text-[#B71C1C] group-hover:text-white" />
-              <span>Users</span>
-            </Link>
-          </DropdownMenuItem> */}
-
-          {/* <DropdownMenuItem
-            asChild
-            className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
-          > */}
-          {/* <Link href="/chat" className="flex items-center gap-3">
-              <FaComments className="text-[#B71C1C] group-hover:text-white" />
-              <span>Messages</span>
-            </Link>
-          </DropdownMenuItem> */}
-
           <DropdownMenuItem
-            onClick={() => signOut()}
+            onClick={handleSignOut}
             className="group flex items-center gap-4 cursor-pointer hover:bg-[#B71C1C] hover:text-white"
           >
             <FaSignOutAlt className="text-[#B71C1C] group-hover:text-white" />

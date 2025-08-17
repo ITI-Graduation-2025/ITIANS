@@ -121,7 +121,7 @@ export default function UsersList() {
       window.location.href = `/profile`;
     }
   };
-
+//EDIT HERE 
   const getRoleTitle = (role) => {
     switch (role?.toLowerCase()) {
       case "mentor":
@@ -131,7 +131,7 @@ export default function UsersList() {
       case "company":
         return "Company";
       default:
-        return "User";
+        return "USER";
     }
   };
 
