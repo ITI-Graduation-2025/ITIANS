@@ -47,7 +47,7 @@ import {
 } from "firebase/firestore";
 
 import ReactPaginate from "react-paginate";
-import toast, { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { use } from "react";
 

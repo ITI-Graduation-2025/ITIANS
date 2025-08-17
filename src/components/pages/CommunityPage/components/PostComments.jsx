@@ -6,10 +6,12 @@ import { useContext, useEffect, useRef, useState } from "react";
 import {
   HiOutlineChevronDown,
   HiOutlineChevronUp,
-  HiOutlinePencil,
+  HiOutlinePencilSquare,
   HiOutlinePhoto,
   HiOutlineTrash,
   HiOutlineXMark,
+  HiOutlinePaperAirplane,
+  HiOutlineUser,
 } from "react-icons/hi2";
 
 export default function PostComments({
@@ -63,17 +65,17 @@ export default function PostComments({
       // Add text before the mention
       if (startIndex > lastIndex) {
         parts.push(
-          <span key={`text-${lastIndex}`} className="text-black">
+          <span key={`text-${lastIndex}`} className="text-slate-700">
             {text.slice(lastIndex, startIndex)}
           </span>,
         );
       }
 
-      // Add the mention (first word only) in Facebook blue with light gray background
+      // Add the mention (first word only) in primary color with light background
       parts.push(
         <span
           key={`mention-${startIndex}`}
-          className="text-[#1877F2] bg-[#E8ECEF] px-1 rounded-sm font-medium"
+          className="text-primary bg-primary/10 px-1.5 py-0.5 rounded-md font-medium"
         >
           {mentionText}
         </span>,
@@ -85,7 +87,7 @@ export default function PostComments({
     // Add remaining text after the last mention
     if (lastIndex < text.length) {
       parts.push(
-        <span key={`text-${lastIndex}`} className="text-black">
+        <span key={`text-${lastIndex}`} className="text-slate-700">
           {text.slice(lastIndex)}
         </span>,
       );
@@ -354,26 +356,33 @@ export default function PostComments({
   const commentCount = Array.isArray(post.comments) ? post.comments.length : 0;
 
   return (
-    <div className="bg-muted px-4 py-3 border-t border-border">
+    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-6 border-t border-slate-200">
       {/* Comments Header with Toggle */}
-      <div className="flex items-center justify-between mb-3">
-        <h5 className="font-semibold text-primary">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+            <svg className="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <h5 className="font-semibold text-slate-700 text-lg">
           Comments ({commentCount})
         </h5>
+        </div>
         {commentCount > 0 && (
           <button
             onClick={toggleComments}
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-primary hover:bg-white rounded-lg transition-all duration-200"
           >
             {commentsOpen ? (
               <>
                 <HiOutlineChevronUp className="w-4 h-4" />
-                Hide Comments
+                Hide
               </>
             ) : (
               <>
                 <HiOutlineChevronDown className="w-4 h-4" />
-                Show Comments
+                Show
               </>
             )}
           </button>
@@ -384,10 +393,10 @@ export default function PostComments({
       {commentsOpen && (
         <div
           ref={commentsContainerRef}
-          className="max-h-96 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+          className="max-h-96 overflow-y-auto mb-6 pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100"
         >
           {Array.isArray(post.comments) && post.comments.length > 0 ? (
-            <ul className="space-y-3">
+            <ul className="space-y-4">
               {post.comments
                 .slice()
                 .reverse()
@@ -397,51 +406,60 @@ export default function PostComments({
                     const isEditing = editingComment === idx;
 
                     return (
-                      <li key={idx} className="flex items-start space-x-2">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
+                      <li key={idx} className="flex items-start space-x-3">
+                        {/* Comment Avatar */}
+                        <div className="flex-shrink-0">
                           {comment.authorProfileImage ? (
                             <Image
                               src={comment.authorProfileImage}
-                              className="h-8 w-8 rounded-full object-cover"
-                              width={32}
-                              height={32}
+                              className="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
+                              width={40}
+                              height={40}
                               alt={comment.authorName || "Comment author"}
                             />
                           ) : (
-                            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                              {(comment.authorName || "U").charAt(0)}
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-semibold ring-2 ring-slate-100">
+                              {(comment.authorName || "U").charAt(0).toUpperCase()}
                             </div>
                           )}
                         </div>
-                        <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
-                          <div className="flex justify-between items-start">
-                            <div className="font-medium text-sm">
+
+                        {/* Comment Content */}
+                        <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-semibold text-slate-800 text-sm">
                               {comment.authorName || "Unknown"}
-                              <span className="ml-2 text-xs text-muted-foreground">
+                              </span>
+                              <span className="text-xs text-slate-400">•</span>
+                              <span className="text-xs text-slate-500">
                                 {comment.createdAt
                                   ? new Date(comment.createdAt).toLocaleString()
                                   : ""}
                               </span>
                               {comment.editedAt && (
-                                <span className="ml-2 text-xs text-muted-foreground">
+                                <>
+                                  <span className="text-xs text-slate-400">•</span>
+                                  <span className="text-xs text-slate-500 italic">
                                   (edited)
                                 </span>
+                                </>
                               )}
                             </div>
+                            
+                            {/* Comment Actions */}
                             {isOwner && !isEditing && (
                               <div className="flex space-x-1">
                                 <button
-                                  onClick={() =>
-                                    handleEditComment(idx, comment)
-                                  }
-                                  className="text-muted-foreground hover:text-foreground p-1 rounded"
+                                  onClick={() => handleEditComment(idx, comment)}
+                                  className="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-all duration-200"
                                   title="Edit comment"
                                 >
-                                  <HiOutlinePencil className="w-3 h-3" />
+                                  <HiOutlinePencilSquare className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => showDeleteModal(idx)}
-                                  className="text-red-500 hover:text-red-700 p-1 rounded"
+                                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                                   title="Delete comment"
                                 >
                                   <HiOutlineTrash className="w-3 h-3" />
@@ -451,27 +469,34 @@ export default function PostComments({
                           </div>
 
                           {isEditing ? (
-                            <div className="mt-2">
+                            <div className="space-y-4">
+                              <div className="space-y-3">
+                                <label className="block text-sm font-medium text-slate-700">Edit Comment</label>
                               <textarea
                                 value={editContent}
                                 onChange={(e) => setEditContent(e.target.value)}
-                                className="w-full border border-input rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-background"
-                                rows={2}
+                                  className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none bg-white text-slate-700 placeholder-slate-400 transition-all duration-200 shadow-sm"
+                                  rows={3}
                                 placeholder="Edit your comment..."
                               />
+                                <div className="text-xs text-slate-400 text-right">
+                                  {editContent.length} characters
+                                </div>
+                              </div>
 
                               {/* Edit Image Section */}
-                              <div className="mt-3">
+                              <div className="space-y-3">
+                                <label className="block text-sm font-medium text-slate-700">Comment Image</label>
                                 {editImage && (
-                                  <div className="relative inline-block mb-2">
+                                   <div className="relative w-full">
                                     <img
                                       src={editImage}
                                       alt="Comment image"
-                                      className="max-h-32 rounded-lg border"
+                                       className="w-full h-auto max-h-32 object-cover rounded-lg border border-slate-200 shadow-sm"
                                     />
                                     <button
                                       onClick={removeEditImage}
-                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-lg"
                                       title="Remove image"
                                     >
                                       <HiOutlineXMark className="w-3 h-3" />
@@ -479,7 +504,7 @@ export default function PostComments({
                                   </div>
                                 )}
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
                                   <input
                                     ref={editImageRef}
                                     type="file"
@@ -490,51 +515,51 @@ export default function PostComments({
                                   />
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      editImageRef.current?.click()
-                                    }
+                                    onClick={() => editImageRef.current?.click()}
                                     disabled={uploadingImage}
-                                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80"
+                                    className="flex items-center gap-2 px-4 py-2 text-xs text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 rounded-lg transition-all duration-200 border border-primary/20"
                                   >
                                     <HiOutlinePhoto className="w-3 h-3" />
                                     {editImage ? "Change Image" : "Add Image"}
                                   </button>
                                   {uploadingImage && (
-                                    <span className="text-xs text-muted-foreground">
-                                      Uploading...
-                                    </span>
+                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent"></div>
+                                      <span>Uploading...</span>
+                                    </div>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="flex space-x-2 mt-2">
+                              <div className="flex space-x-3 pt-2">
                                 <button
                                   onClick={() => handleSaveEdit(idx)}
-                                  className="px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/80"
+                                  className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+                                  disabled={!editContent.trim() && !editImage}
                                 >
-                                  Save
+                                  Save Changes
                                 </button>
                                 <button
                                   onClick={cancelEdit}
-                                  className="px-3 py-1 bg-muted text-muted-foreground rounded text-xs hover:bg-muted/80"
+                                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-200 transition-all duration-200"
                                 >
                                   Cancel
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="mt-1">
+                            <div className="space-y-3">
                               {comment.content && (
-                                <div className="text-foreground text-sm mb-2">
+                                <div className="text-slate-700 text-sm leading-relaxed bg-slate-50/50 p-3 rounded-lg border border-slate-100">
                                   {renderCommentText(comment.content)}
                                 </div>
                               )}
                               {comment.image && (
-                                <div className="mt-2">
+                                 <div className="mt-2 w-full">
                                   <img
                                     src={comment.image}
                                     alt="Comment attachment"
-                                    className="max-h-48 rounded-lg border"
+                                     className="w-full h-auto max-h-48 object-cover rounded-lg border border-slate-200 shadow-sm"
                                   />
                                 </div>
                               )}
@@ -546,17 +571,13 @@ export default function PostComments({
                   } else {
                     // Fallback for old string comments
                     return (
-                      <li key={idx} className="flex items-start space-x-2">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-primary text-xs font-bold">
-                          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                      <li key={idx} className="flex items-start space-x-3">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white font-semibold ring-2 ring-slate-100">
                             U
                           </div>
-                        </div>
-                        <div className="flex-1 bg-card rounded-lg p-3 shadow-sm">
-                          <div className="font-medium text-sm">Unknown</div>
-                          <div className="text-foreground text-sm mt-1">
-                            {comment}
-                          </div>
+                        <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                          <div className="font-semibold text-slate-800 text-sm mb-2">Unknown User</div>
+                          <div className="text-slate-700 text-sm">{comment}</div>
                         </div>
                       </li>
                     );
@@ -564,64 +585,75 @@ export default function PostComments({
                 })}
             </ul>
           ) : (
-            <div className="text-center text-muted-foreground text-sm py-4">
-              No comments yet. Be the first to comment!
+            <div className="text-center py-8">
+              <div className="h-16 w-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <HiOutlineUser className="h-8 w-8 text-slate-400" />
+              </div>
+              <p className="text-slate-500 text-sm">No comments yet. Be the first to comment!</p>
             </div>
           )}
         </div>
       )}
 
-      {/* Comment Input Form - Always visible */}
-      <form className="flex flex-col gap-3 mt-3" onSubmit={handleSubmitComment}>
-        <div className="flex items-center gap-2">
-          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold flex-shrink-0">
+      {/* Comment Input Form */}
+      <form className="space-y-4" onSubmit={handleSubmitComment}>
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+          <div className="flex items-start space-x-3">
+            {/* User Avatar */}
+            <div className="flex-shrink-0">
             {currentUser.profileImage ? (
               <Image
                 src={currentUser.profileImage}
-                className="h-10 w-10 rounded-full object-cover"
+                  className="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
                 width={40}
                 height={40}
                 alt={currentUser.name || "Current user"}
               />
             ) : (
-              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
-                {(currentUser.name || "U").charAt(0)}
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-semibold ring-2 ring-slate-100">
+                  {(currentUser.name || "U").charAt(0).toUpperCase()}
               </div>
             )}
           </div>
-          <input
+
+            {/* Comment Input */}
+            <div className="flex-1 space-y-3">
+              <div className="relative">
+                <textarea
             ref={textareaRef}
-            type="text"
-            className="flex-1 border border-input rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-            placeholder="Write a comment..."
+                  className="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none bg-slate-50/50 text-slate-700 placeholder-slate-400 transition-all duration-200 min-h-[60px]"
+                  placeholder="Write a comment... Use @ to mention someone"
             value={commentInputs[post.id] || ""}
             onChange={handleInputChange}
+                  rows={2}
           />
+                
+                {/* Submit Button */}
           <button
             type="submit"
-            className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/80 disabled:opacity-50"
+                  className="absolute bottom-3 right-3 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
             disabled={
               !(commentInputs[post.id] && commentInputs[post.id].trim()) &&
               !commentImage
             }
           >
-            ➤
+                  <HiOutlinePaperAirplane className="w-4 h-4" />
           </button>
         </div>
 
         {/* Comment Image Section */}
-        <div className="ml-12">
+              <div className="space-y-3">
           {commentImage && (
-            <div className="relative inline-block mb-2">
+                   <div className="relative w-full">
               <img
                 src={commentImage}
                 alt="Comment image"
-                className="max-h-32 rounded-lg border"
+                       className="w-full h-auto max-h-32 object-cover rounded-lg border border-slate-200 shadow-sm"
               />
               <button
                 type="button"
                 onClick={removeCommentImage}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl"
                 title="Remove image"
               >
                 <HiOutlineXMark className="w-3 h-3" />
@@ -629,7 +661,8 @@ export default function PostComments({
             </div>
           )}
 
-          <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
             <input
               ref={commentImageRef}
               type="file"
@@ -642,71 +675,105 @@ export default function PostComments({
               type="button"
               onClick={() => commentImageRef.current?.click()}
               disabled={uploadingImage}
-              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80"
+                      className="flex items-center gap-2 px-3 py-2 text-xs text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 rounded-lg transition-all duration-200 border border-primary/20 font-medium"
             >
               <HiOutlinePhoto className="w-3 h-3" />
               {commentImage ? "Change Image" : "Add Image"}
             </button>
             {uploadingImage && (
-              <span className="text-xs text-muted-foreground">
-                Uploading...
-              </span>
-            )}
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent"></div>
+                        <span>Uploading...</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="text-xs text-slate-400">
+                    {commentInputs[post.id] ? commentInputs[post.id].length : 0} characters
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Mentions Suggestions */}
         {suggestions.length > 0 && (
-          <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
+          <div className="relative">
+            <ul className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-48 overflow-y-auto z-20">
             {suggestions.map((user) => (
               <li
                 key={user.id}
                 onClick={() => handleSuggestionSelect(user)}
-                className="p-2 hover:bg-gray-100 cursor-pointer"
-              >
-                @{user.name}
+                  className="p-4 hover:bg-slate-50 cursor-pointer transition-all duration-200 border-b border-slate-100 last:border-b-0 first:rounded-t-2xl last:rounded-b-2xl"
+                >
+                  <div className="flex items-center space-x-3">
+                    {user.profileImage ? (
+                      <Image
+                        src={user.profileImage}
+                        className="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100"
+                        width={40}
+                        height={40}
+                        alt={user.name}
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-semibold ring-2 ring-slate-100">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-800 truncate">@{user.name}</div>
+                      <div className="text-xs text-slate-500 capitalize">{user.role || "User"}</div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                  </div>
               </li>
             ))}
           </ul>
+          </div>
         )}
       </form>
 
       {/* Delete Confirmation Modal */}
       {deleteModal.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
-          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md p-6 relative border border-border">
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative border border-slate-200">
             <button
               onClick={hideDeleteModal}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-all duration-200"
             >
               <HiOutlineXMark className="w-5 h-5" />
             </button>
 
             <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <HiOutlineTrash className="h-6 w-6 text-red-600" />
+              <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-6">
+                <HiOutlineTrash className="h-10 w-10 text-red-600" />
               </div>
 
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">
                 Delete Comment
               </h3>
 
-              <p className="text-muted-foreground mb-6">
-                Are you sure you want to delete this comment? This action cannot
-                be undone.
+              <p className="text-slate-600 mb-8 leading-relaxed text-base">
+                Are you sure you want to delete this comment? This action cannot be undone and will remove the comment permanently.
               </p>
 
-              <div className="flex space-x-3">
+              <div className="flex space-x-4">
                 <button
                   onClick={hideDeleteModal}
-                  className="flex-1 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted transition-colors"
+                  className="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 transition-all duration-200 font-medium hover:border-slate-300"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteComment}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
                 >
-                  Delete
+                  Delete Comment
                 </button>
               </div>
             </div>

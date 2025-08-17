@@ -63,7 +63,7 @@ export default function LayoutWrapper({ children }) {
     pathname.startsWith("/rejected");
 
   // Specific path where only navbar is hidden
-  const hideNavbar = pathname === "/profile";
+  const hideNavbar = pathname === "/profile" || pathname === "/community";
 
   return (
     <>

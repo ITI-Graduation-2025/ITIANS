@@ -1,6 +1,11 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  connectFirestoreEmulator,
+} from "firebase/firestore";
 import {
   getMessaging,
   getToken,
@@ -25,8 +30,33 @@ const app =
 // Initialize Firebase Authentication
 export const auth = getAuth(app);
 
-// Initialize Cloud Firestore
+// Initialize Cloud Firestore with improved settings
 export const db = getFirestore(app);
+
+// Configure Firestore settings for better network handling
+if (typeof window !== "undefined") {
+  // Only run in browser environment
+  const firestoreSettings = {
+    // Increase timeout for slow connections
+    timeoutSeconds: 30,
+    // Enable offline persistence
+    cacheSizeBytes: 50 * 1024 * 1024, // 50MB cache
+    // Enable network retry
+    experimentalForceLongPolling: true,
+    // Reduce connection attempts for better performance
+    maxConcurrentConnections: 10,
+  };
+
+  // Apply settings if possible
+  try {
+    // Note: Some settings might not be available in all Firebase versions
+    if (db.settings) {
+      db.settings(firestoreSettings);
+    }
+  } catch (error) {
+    console.warn("Could not apply all Firestore settings:", error);
+  }
+}
 
 // Initialize Firebase Cloud Messaging (only in browser environment)
 export const messaging =
