@@ -76,14 +76,20 @@ export function Sidebar() {
         </Button>
       </Link>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex flex-col items-center space-y-1 h-auto p-2 text-[var(--muted-foreground)]"
-      >
-        <Calendar className="w-5 h-5" />
-        <span className="text-xs">Bookings</span>
-      </Button>
+      <Link href="/bookings" className="w-full">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`flex flex-col items-center space-y-1 h-auto p-2 w-full ${
+            pathname === "/bookings"
+              ? "text-[var(--primary)] bg-[var(--primary)]/10"
+              : "text-[var(--muted-foreground)]"
+          }`}
+        >
+          <Calendar className="w-5 h-5" />
+          <span className="text-xs">Bookings</span>
+        </Button>
+      </Link>
 
       <Button
         variant="ghost"

@@ -18,12 +18,18 @@ import debounce from "lodash/debounce";
 import { getOrCreateChatId } from "@/lib/chatFunctions";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const categories = [
   { name: "Jobs", href: "/jobs", icon: <MdWork className="w-6 h-6" /> },
   { name: "Mentors", href: "/mentors", icon: <MdSchool className="w-6 h-6" /> },
   { name: "Users", href: "/users", icon: <MdPeople className="w-6 h-6" /> },
   { name: "Messages", href: "/chat", icon: <MdChat className="w-6 h-6" /> },
+  {
+    name: "Community",
+    href: "/community",
+    icon: <MdPeople className="w-6 h-6" />,
+  },
 ];
 
 export default function Navbar({ onSearch }) {
@@ -318,13 +324,15 @@ export default function Navbar({ onSearch }) {
 
   return (
     <nav className="bg-transparent backdrop-blur-md text-gray-800 font-semibold shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-1 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto px-6  flex justify-between items-center">
         {/* Logo and ITIANS */}
         <Link href="/" className="flex items-center gap-2">
-          <img
+          <Image
             src="/logo.png"
             alt="ITIANS Logo"
-            className="h-16 w-16 rounded-full"
+            className="h-[60px] w-[60px] rounded-full"
+            width={70}
+            height={70}
           />
         </Link>
 

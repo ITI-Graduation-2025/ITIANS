@@ -54,6 +54,7 @@ export default function LayoutWrapper({ children }) {
     "/mentor/[id]",
     "/pending",
     "/rejected",
+    "/bookings",
   ];
 
   const hideBoth =

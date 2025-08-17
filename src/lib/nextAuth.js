@@ -35,6 +35,7 @@ export const authOptions = {
             name: userData?.name || userCredential.user.displayName,
             username: userData?.username || null,
             role: userData?.role || "freelancer",
+            profileImage: userData?.profileImage || null,
             profileCompleted: userData?.profileCompleted || false,
             profileUnderReview: userData?.profileUnderReview || false,
             adminComment: userData?.adminComment || null,
@@ -62,6 +63,7 @@ export const authOptions = {
         token.role = user.role;
         token.verificationStatus = user.verificationStatus;
         token.username = user.username;
+        token.profileImage = user.profileImage;
         token.profileCompleted = user.profileCompleted;
         token.profileUnderReview = user.profileUnderReview;
         token.adminComment = user.adminComment;
@@ -75,6 +77,7 @@ export const authOptions = {
         session.user.role = token.role;
         session.user.verificationStatus = token.verificationStatus;
         session.user.username = token.username;
+        session.user.profileImage = token.profileImage;
         session.user.profileCompleted = token.profileCompleted;
         session.user.profileUnderReview = token.profileUnderReview;
         session.user.adminComment = token.adminComment;
@@ -95,7 +98,8 @@ export const authOptions = {
   //   // signin , session, callbacks دي بتحكم ف اليوزر اني ابعته اشعار مثلا انه دخل خلاص يعني كل حاجه ممكن اعملها وهو لوج ان
   //   // callbcks هنا اقدر ازود معلومات عن اليوزر اللي داخل اضيف ع السيشن اللي دخل بيها داتا اضافيه
   // },
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key-for-development-only",
+  secret:
+    process.env.NEXTAUTH_SECRET || "fallback-secret-key-for-development-only",
   pages: {
     signIn: "/login", // custom sign in page
   },

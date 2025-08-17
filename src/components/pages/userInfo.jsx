@@ -61,23 +61,28 @@ export default function UserInfo() {
   }, [notifications]);
 
   const userAvatar = useMemo(() => {
-    if (data?.user?.image) {
+    console.log("User data:", data?.user);
+    console.log("Profile image:", data?.user?.profileImage);
+
+    if (data?.user?.profileImage) {
       return (
         <img
-          src={data.user.image}
+          src={data.user.profileImage}
           alt={data.user.name || "User"}
           className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 hover:border-[#B71C1C] transition-colors"
         />
       );
     }
     return getDefaultAvatar(data?.user?.role || "freelancer");
-  }, [data?.user?.image, data?.user?.role, data?.user?.name]);
+  }, [data?.user?.profileImage, data?.user?.role, data?.user?.name]);
 
   const profileLink = useMemo(() => {
     if (data?.user?.role === "mentor") {
       return `/mentor/${data?.user?.id}`;
     } else if (data?.user?.role === "company") {
       return `/companies/${data?.user?.id}`;
+    } else if (data?.user?.role === "admin") {
+      return `/dashboard`;
     } else {
       return `/profile/${data?.user?.id}`;
     }
