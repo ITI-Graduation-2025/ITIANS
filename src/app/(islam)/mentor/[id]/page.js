@@ -56,8 +56,8 @@ export default async function MentorProfilePage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* <Navbar /> */}
-      <Header />
+      <Navbar />
+      {/* <Header /> */}
       <div className="flex flex-col md:flex-row">
         <Sidebar />
         <main className="flex-1 md:ml-16 px-4 md:px-0">

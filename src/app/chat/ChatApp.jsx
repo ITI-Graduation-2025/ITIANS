@@ -1187,7 +1187,7 @@ import {
   getOrCreateChatId,
   navigateToChat,
 } from "@/lib/chatFunctions";
-import { formatDistanceToNow } from "date-fns";
+import { safeFormatDistanceToNow } from "@/utils/timestampUtils";
 import Loading from "@/components/componentts/loading";
 
 const generateBackgroundColor = (senderId) => {
@@ -1805,10 +1805,7 @@ export default function ChatApp() {
                           <div className="flex items-center gap-2">
                             {chat.lastMessageAt && (
                               <span className="text-xs text-gray-500">
-                                {formatDistanceToNow(
-                                  new Date(chat.lastMessageAt.toDate()),
-                                  { addSuffix: true },
-                                )}
+                                {safeFormatDistanceToNow(chat.lastMessageAt)}
                               </span>
                             )}
                             <div className="menu-container">
@@ -2086,14 +2083,7 @@ export default function ChatApp() {
                             <div className="text-sm">{msg.text}</div>
                             <div className="text-xs opacity-70 mt-1 flex justify-between items-center">
                               <span>
-                                {msg.createdAt
-                                  ? formatDistanceToNow(
-                                      new Date(msg.createdAt.toDate()),
-                                      {
-                                        addSuffix: true,
-                                      },
-                                    )
-                                  : "Just now"}
+                                {safeFormatDistanceToNow(msg.createdAt)}
                               </span>
                               {msg.edited && (
                                 <span className="italic bg-black/10 px-1 py-0.5 rounded text-xs">

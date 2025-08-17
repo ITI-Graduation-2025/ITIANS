@@ -1,4 +1,3 @@
-//src/app/chat/SendBox.jsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,6 +7,7 @@ import {
   serverTimestamp,
   doc,
   updateDoc,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { PaperAirplaneIcon, FaceSmileIcon } from "@heroicons/react/24/outline";
@@ -21,24 +21,65 @@ export default function SendBox({ chatId, senderId, senderName }) {
   useEffect(() => {
     const chatRef = doc(db, "chats", chatId);
     const handleTyping = async () => {
-      if (text.trim()) {
-        await updateDoc(chatRef, {
-          typing: senderId,
-          typingName: senderName,
-        });
-      } else {
-        await updateDoc(chatRef, {
-          typing: null,
-          typingName: null,
-        });
+      try {
+        if (text.trim()) {
+          await updateDoc(chatRef, {
+            typing: senderId,
+            typingName: senderName,
+          });
+        } else {
+          await updateDoc(chatRef, {
+            typing: null,
+            typingName: null,
+          });
+        }
+      } catch (error) {
+        // If document doesn't exist, ignore the typing update
+        if (error.code === "not-found") {
+          console.warn("Chat document not found, skipping typing update...");
+        } else {
+          console.error("Error updating typing status:", error);
+        }
       }
     };
-    handleTyping();
+
+    // Only update typing status if there's actually text and chatId exists
+    if (text !== undefined && chatId) {
+      handleTyping();
+    }
   }, [text, chatId, senderId, senderName]);
 
   const handleSend = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !chatId) return;
 
+    // Define chatRef outside the try-catch block
+    const chatRef = doc(db, "chats", chatId);
+
+    try {
+      // Update the chat document
+      await updateDoc(chatRef, {
+        lastMessage: text.trim(),
+        lastMessageTime: serverTimestamp(),
+        lastMessageSender: senderId,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      // If chat document doesn't exist, create it
+      if (error.code === "not-found") {
+        await setDoc(chatRef, {
+          id: chatId,
+          lastMessage: text.trim(),
+          lastMessageTime: serverTimestamp(),
+          lastMessageSender: senderId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        console.error("Error updating chat document:", error);
+      }
+    }
+
+    // Add the message
     await addDoc(collection(db, "chats", chatId, "messages"), {
       senderId,
       senderName,

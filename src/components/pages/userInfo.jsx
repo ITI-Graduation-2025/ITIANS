@@ -18,6 +18,7 @@ import {
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { UserInfoSkeleton } from "../ui/user-info-skeleton";
+import { useRouter } from "next/navigation";
 
 // Default avatars based on role
 const getDefaultAvatar = (role) => {
@@ -54,6 +55,7 @@ export default function UserInfo() {
   const { data, status } = useSession();
   const [notifications, setNotifications] = useState([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const router = useRouter();
 
   // Memoized values
   const unreadCount = useMemo(() => {
@@ -93,28 +95,44 @@ export default function UserInfo() {
     setNotifications(notifications);
   }, []);
 
-  const handleMarkAsRead = useCallback(
-    async (notificationId, sessionId, notificationType) => {
-      await updateNotification(notificationId, { read: true });
-      setIsNotificationOpen(false);
+  // const handleMarkAsRead = useCallback(
+  //   async (notificationId, sessionId, notificationType) => {
+  //     await updateNotification(notificationId, { read: true });
+  //     setIsNotificationOpen(false);
 
-      const notification = notifications.find((n) => n.id === notificationId);
-      if (
-        notification &&
-        [
-          "account_approved",
-          "profile_approved",
-          "account_rejected",
-          "profile_rejected",
-          "account_suspended",
-        ].includes(notification.type)
-      ) {
-        signOut({ callbackUrl: "/login" });
-        return;
+  //     const notification = notifications.find((n) => n.id === notificationId);
+  //     if (
+  //       notification &&
+  //       [
+  //         "account_approved",
+  //         "profile_approved",
+  //         "account_rejected",
+  //         "profile_rejected",
+  //         "account_suspended",
+  //       ].includes(notification.type)
+  //     ) {
+  //       signOut({ callbackUrl: "/login" });
+  //       return;
+  //     }
+  //   },
+  //   [notifications],
+  // );
+
+  const handleMarkAsRead = async (
+    notificationId,
+    sessionId,
+    notificationType,
+  ) => {
+    await updateNotification(notificationId, { read: true });
+    setIsNotificationOpen(false);
+    if (sessionId) {
+      if (notificationType === "session_cancelled") {
+        toast.success("Session has been cancelled !.");
+      } else {
+        router.push(`/session/${sessionId}`);
       }
-    },
-    [notifications],
-  );
+    }
+  };
 
   const toggleNotification = useCallback(() => {
     setIsNotificationOpen((prev) => !prev);

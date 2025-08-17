@@ -13,7 +13,7 @@ import {
   limit,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import { formatDistanceToNow } from "date-fns";
+import { safeFormatDistanceToNow } from "@/utils/timestampUtils";
 import {
   ChevronDownIcon,
   EllipsisVerticalIcon,
@@ -47,13 +47,17 @@ export default function Messages({ chatId, currentUserId }) {
   const messageRefs = useRef({});
 
   useEffect(() => {
+    if (!chatId) return;
+
     const q = query(
       collection(db, "chats", chatId, "messages"),
       orderBy("createdAt", "asc"),
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const msgs = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((msg) => msg && msg.senderId && msg.text); // Filter out invalid messages
       setMessages(msgs);
 
       const senderIds = [...new Set(msgs.map((msg) => msg.senderId))];
@@ -318,13 +322,7 @@ export default function Messages({ chatId, currentUserId }) {
                 <>
                   <div className="text-base">{msg.text}</div>
                   <div className="text-xs text-gray-300 mt-1 flex justify-between">
-                    <span>
-                      {msg.createdAt
-                        ? formatDistanceToNow(new Date(msg.createdAt), {
-                            addSuffix: true,
-                          })
-                        : "Just now"}
-                    </span>
+                    <span>{safeFormatDistanceToNow(msg.createdAt)}</span>
                     {msg.edited && <span className="italic">(edited)</span>}
                   </div>
                 </>
