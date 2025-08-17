@@ -7,6 +7,8 @@ import { db } from "@/config/firebase";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useSession } from "next-auth/react";
 import toast, { Toaster } from "react-hot-toast";
+import LogoClickable from "./LogoClickable";
+
 
 export default function ProfileEdit() {
   const { data: session } = useSession();
@@ -78,7 +80,7 @@ export default function ProfileEdit() {
     }));
   };
 
-  // ✅ Skeleton Loading UI
+  
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto animate-pulse">
@@ -134,15 +136,15 @@ export default function ProfileEdit() {
         <div className="bg-white p-6 rounded-xl shadow-md grid md:grid-cols-3 gap-6">
           {/* LEFT SIDE */}
           <div className="col-span-1 flex flex-col items-center">
-            <div className="bg-red-100 text-red-600 p-5 rounded-xl mb-3">
-              <Building2 className="w-10 h-10" />
-            </div>
+            <div className="p-1 rounded-xl">
+        <LogoClickable
+          currentLogoUrl={formData?.logo}
+          onUploadSuccess={() => {}}
+        />
+      </div>
             <h2 className="font-bold text-lg">{formData.name}</h2>
             <p className="text-sm text-gray-600">{formData.industry}</p>
-            <p className="text-yellow-600 text-sm mt-1">
-              ⭐ {formData.rating}/5{" "}
-              <span className="text-gray-500">({formData.reviews} reviews)</span>
-            </p>
+            
           </div>
 
           {/* RIGHT SIDE FORM */}

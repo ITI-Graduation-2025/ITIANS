@@ -123,14 +123,10 @@ export default function ActiveJobs() {
 
       if (filter === "inProgress") {
         filteredFreelancers = job.freelancers.filter(
-          (f) => f.progress > 0 && f.progress < 100
+          (f) => f.status === "approved" && !f.completed
         );
       } else if (filter === "completed") {
-        filteredFreelancers = job.freelancers.filter((f) => f.progress === 100);
-      } else if (filter === "notStarted") {
-        filteredFreelancers = job.freelancers.filter(
-          (f) => f.progress === 0 && f.status === "approved"
-        );
+        filteredFreelancers = job.freelancers.filter((f) => f.completed);
       }
 
       return { ...job, freelancers: filteredFreelancers };
@@ -148,7 +144,6 @@ export default function ActiveJobs() {
     all: <FiClipboard size={20} />,
     inProgress: <FiClock size={20} />,
     completed: <FiCheckCircle size={20} />,
-    notStarted: <FiClock size={20} />, // ممكن تغير الايكون
   };
 
   return (
@@ -158,37 +153,40 @@ export default function ActiveJobs() {
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        {/* Sidebar */}
-<aside className="w-64 p-4 bg-white mt-1 flex-shrink-0  ">
-  <h2 className="text-xl font-bold mb-4 text-center text-gray-800">
+        <aside className="w-64 p-4 bg-white mt-1 flex-shrink-0">
+          <div className="text-center mb-6">
+  <h2 className="text-2xl md:text-2xl font-extrabold text-gray-900 mb-2">
     Active Jobs
   </h2>
-  <div className="flex flex-col gap-2">
-    {["all", "notStarted", "inProgress", "completed"].map((f) => (
-      <button
-        key={f}
-        onClick={() => setFilter(f)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-          filter === f
-            ? "bg-red-600 text-white shadow-md border-red-600"
-            : "bg-white hover:bg-red-100 border-gray-300"
-        }`}
-      >
-        {filterIcons[f]}
-        <span className="capitalize">
-          {f === "all"
-            ? "All"
-            : f === "notStarted"
-            ? "Not Started"
-            : f === "inProgress"
-            ? "In Progress"
-            : "Completed"}
-        </span>
-      </button>
-    ))}
-  </div>
-</aside>
+  <p className="text-gray-600 text-sm md:text-base">
+    Overview of all approved freelancers and their current progress on your jobs
+  </p>
+  <div className="w-20 h-1 bg-red-600 mx-auto rounded-full mt-3"></div>
+</div>
 
+          <div className="flex flex-col gap-2">
+            {["all", "inProgress", "completed"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                  filter === f
+                    ? "bg-slate-800 text-white shadow-md "
+                    : "bg-white hover:bg-red-100 border-gray-300"
+                }`}
+              >
+                {filterIcons[f]}
+                <span className="capitalize">
+                  {f === "all"
+                    ? "All"
+                    : f === "inProgress"
+                    ? "In Progress"
+                    : "Completed"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </aside>
 
         {/* Main Content */}
         <main className="flex-1 p-6">
@@ -239,8 +237,6 @@ export default function ActiveJobs() {
                           ? freelancer.paidToAdmin
                             ? "Completed & Paid"
                             : "Completed & Not Paid"
-                          : freelancer.progress === 0
-                          ? "Not Started"
                           : "In Progress"}
                       </p>
 

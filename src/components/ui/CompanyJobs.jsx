@@ -356,10 +356,10 @@ if (deadlineFilter) {
             </thead>
            <tbody>
   {loading ? (
-    // ✅ Skeleton وقت التحميل
+    
     Array.from({ length: 5 }).map((_, i) => <TableSkeletonRow key={i} />)
   ) : currentJobs.length > 0 ? (
-    // ✅ الصفوف الحقيقية
+    
     currentJobs.map((job) => (
       <tr key={job.id} className="border-t hover:bg-gray-50 transition-colors">
         <td className="px-4 py-3">
@@ -405,12 +405,12 @@ if (deadlineFilter) {
             onClick={() => handleToggleStatus(job)}
             className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
               job.status === "Active"
-                ? "bg-yellow-200 text-yellow-800"
-                : "bg-green-200 text-green-800"
+                ? " text-yellow-800"
+                : " text-green-800"
             }`}
           >
             {job.status === "Active" ? (
-              <PauseCircle size={12} />
+              <PauseCircle size={12}  />
             ) : (
               <PlayCircle size={12} />
             )}

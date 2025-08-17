@@ -52,6 +52,7 @@ import BackgroundClickable from "./BackgroundClickable";
 
 import { useSession } from "next-auth/react";
 import { use } from "react";
+import NavbarProfileCom from "./NavbarProfileCom";
 
 {
   /*formatRelativeTime  */
@@ -82,7 +83,7 @@ export default function CompanyPublicProfile({ params }) {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [showComments, setShowComments] = useState(false);
+  // const [showComments, setShowComments] = useState(false);
   const [user, setUser] = useState(null);
     const [bannerUrl, setBannerUrl] = useState(null);
   {
@@ -91,21 +92,21 @@ export default function CompanyPublicProfile({ params }) {
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
   const [showActionsIndex, setShowActionsIndex] = useState(null);
 
-  {
-    /*comments  */
-  }
-  const [editingComment, setEditingComment] = useState(null);
+  // {
+  //   /*comments  */
+  // }
+  // const [editingComment, setEditingComment] = useState(null);
 
-  const handleDeleteComment = (index) => {
-    const updatedComments = [...selectedJob.comments];
-    updatedComments.splice(index, 1);
-    setSelectedJob({ ...selectedJob, comments: updatedComments });
-  };
+  // const handleDeleteComment = (index) => {
+  //   const updatedComments = [...selectedJob.comments];
+  //   updatedComments.splice(index, 1);
+  //   setSelectedJob({ ...selectedJob, comments: updatedComments });
+  // };
 
-  const handleEditComment = (index) => {
-    const commentToEdit = selectedJob.comments[index];
-    setEditingComment({ index, text: commentToEdit.text });
-  };
+  // const handleEditComment = (index) => {
+  //   const commentToEdit = selectedJob.comments[index];
+  //   setEditingComment({ index, text: commentToEdit.text });
+  // };
 
   {
     /*pageinate  */
@@ -154,82 +155,82 @@ export default function CompanyPublicProfile({ params }) {
     /*jobs */
   }
   useEffect(() => {
-    if (!companyId) return;
+  if (!companyId) return;
 
-    async function fetchCompanyAndJobs() {
-      try {
-        const companyRef = doc(db, "users", companyId);
-        const companySnap = await getDoc(companyRef);
-        const companyData = companySnap.exists() ? companySnap.data() : {};
+  async function fetchCompanyAndJobs() {
+    try {
+      const companyRef = doc(db, "users", companyId);
+      const companySnap = await getDoc(companyRef);
+      const companyData = companySnap.exists() ? companySnap.data() : {};
 
-        const jobsQuery = query(
-          collection(db, "jobs"),
-          where("companyId", "==", companyId),
-        );
+      const jobsQuery = query(
+        collection(db, "jobs"),
+        where("companyId", "==", companyId),
+      );
 
-        const unsubscribe = onSnapshot(jobsQuery, (snapshot) => {
-          const jobsData = snapshot.docs
-            .map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }))
-            .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
+      const unsubscribe = onSnapshot(jobsQuery, (snapshot) => {
+        const jobsData = snapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .sort(
+            (a, b) =>
+              (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+          );
 
-          // إحصائيات الوظائف
-          const activeProjects = jobsData.filter(
-            (job) =>
-              job.status?.toLowerCase() === "active" ||
-              job.status?.toLowerCase() === "open",
-          ).length;
+        // 🔹 إحصائيات الوظائف
+        const activeProjects = jobsData.filter(
+          (job) =>
+            job.status?.toLowerCase() === "active" ||
+            job.status?.toLowerCase() === "open",
+        ).length;
 
-          const totalJobs = jobsData.length;
+        const totalJobs = jobsData.length;
+        let jobsWithApproved = 0;
+        let totalHired = 0;
 
-          let totalApplicants = 0;
-          let totalHired = 0;
+        jobsData.forEach((job) => {
+          if (Array.isArray(job.applicants) && job.applicants.length > 0) {
+            const approvedApplicants = job.applicants.filter(
+              (applicant) => applicant?.status?.toLowerCase() === "approved"
+            );
 
-          jobsData.forEach((job) => {
-            if (!Array.isArray(job.applicants)) return;
-
-            totalApplicants += job.applicants.length;
-
-            totalHired += job.applicants.filter(
-              (applicant) => applicant?.status?.toLowerCase() === "approved",
-            ).length;
-          });
-
-          const successRate =
-            totalApplicants > 0
-              ? `${Math.round((totalHired / totalApplicants) * 100)}%`
-              : "0%";
-
-          console.log("Total Jobs:", totalJobs);
-
-          setCompany({
-            ...companyData,
-            stats: {
-              activeProjects,
-              totalHired,
-              successRate,
-            },
-          });
-
-          setJobs(jobsData);
-          setLoading(false);
+            if (approvedApplicants.length > 0) {
+              jobsWithApproved++;
+              totalHired += approvedApplicants.length;
+            }
+          }
         });
 
-        return unsubscribe;
-      } catch (error) {
-        console.error("Error fetching company and jobs:", error);
-        toast.error("Failed to load company data.");
-      }
+        const successRate =
+          totalJobs > 0
+            ? `${((jobsWithApproved / totalJobs) * 100).toFixed(1)}%`
+            : "0%";
+
+        setCompany({
+          ...companyData,
+          stats: { activeProjects, jobsWithApproved, totalHired, successRate },
+        });
+
+        setJobs(jobsData);
+        setLoading(false);
+      });
+
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error fetching company and jobs:", error);
+      toast.error("Failed to load company data.");
     }
+  }
 
-    const unsubscribeFn = fetchCompanyAndJobs();
+  const unsubscribeFn = fetchCompanyAndJobs();
 
-    return () => {
-      if (typeof unsubscribeFn === "function") unsubscribeFn();
-    };
-  }, [companyId]);
+  return () => {
+    if (typeof unsubscribeFn === "function") unsubscribeFn();
+  };
+}, [companyId]);
+
 
   const goToPage = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -395,6 +396,7 @@ const BannerContent = () => (
 
 return (
   <div className="min-h-screen bg-[#f9f9f9] text-[#333]">
+    
     {/* Banner Section */}
     <div
       className="bg-cover bg-center h-[250px] text-white"
@@ -721,7 +723,7 @@ return (
                   </div>
                 </section>
               )}
-              {/*Comments*/}
+              {/* Comments
               <section className="mt-6">
                 <button
                   onClick={() => setShowComments((prev) => !prev)}
@@ -816,7 +818,7 @@ return (
                     )}
                   </>
                 )}
-              </section>
+              </section> */}
 
               <button
                 className="text-[#203947] flex items-center gap-2 text-sm hover:underline"

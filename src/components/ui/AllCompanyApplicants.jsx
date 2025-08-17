@@ -66,7 +66,6 @@ export default function AllCompanyApplicants() {
                   jobId,
                   skills: userSnap.data().skills || [],
                   gradStatus: userSnap.data().gradStatus || "ITI Graduate",
-                  experience: userSnap.data().experience || "2 years experience",
                   ...userSnap.data(),
                   jobTitle: job.title || "Untitled Job"
                 };
@@ -217,7 +216,7 @@ export default function AllCompanyApplicants() {
         {/* Main Content */}
         <div className="flex-1 p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
-            <h2 className="text-lg font-semibold">Recent Applications</h2>
+            <h2 className="text-lg font-semibold">All Job Applications</h2>
 
             {/* Search Input */}
             <div className="relative w-full md:w-64">
@@ -277,9 +276,6 @@ export default function AllCompanyApplicants() {
                         </div>
                         <p className="text-sm text-gray-600 truncate max-w-md">
                           Applied for: <span className="font-medium">{applicant.jobTitle}</span>
-                        </p>
-                        <p className="text-xs text-gray-400 truncate max-w-md">
-                          {applicant.experience || "2 years experience"}
                         </p>
                         <div className="flex flex-wrap gap-2 mt-1 max-w-md">
                           {applicant.skills?.map((skill) => (

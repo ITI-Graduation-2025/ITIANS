@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Lock, ArrowLeft, Home, ChevronRight, User, LogOut,Settings,ChevronDown } from "lucide-react";
+import { 
+  Lock, ArrowLeft, Home, ChevronRight, User, LogOut, Settings, ChevronDown 
+} from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import { useUserContext } from "@/context/userContext";
+import { db } from "@/config/firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { getAuth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import {
   DropdownMenu,
@@ -19,13 +22,38 @@ export default function CompanySettings() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("password");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-   const { user } = useUserContext();
+  const [companyName, setCompanyName] = useState("Loading...");
+
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+
+  
+  useEffect(() => {
+    const fetchCompanyData = async () => {
+      try {
+        const companyId = session?.user?.id; 
+        if (!companyId) return;
+
+        const docRef = doc(db, "users", companyId);
+        const snap = await getDoc(docRef);
+
+        if (snap.exists()) {
+          setCompanyName(snap.data().name || "Company");
+        } else {
+          setCompanyName("Company");
+        }
+      } catch (err) {
+        console.error(err);
+        setCompanyName("Company");
+      }
+    };
+
+    fetchCompanyData();
+  }, [session]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,15 +80,15 @@ export default function CompanySettings() {
 
     setLoading(true);
     try {
-      
-      const credential = EmailAuthProvider.credential(user.email, formData.currentPassword);
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        formData.currentPassword
+      );
       await reauthenticateWithCredential(user, credential);
 
-      
       await updatePassword(user, formData.newPassword);
       toast.success("Password updated successfully!");
 
-      
       setFormData({
         currentPassword: "",
         newPassword: "",
@@ -87,62 +115,62 @@ export default function CompanySettings() {
       <Toaster />
 
       {/* Navbar */}
-<nav className="bg-white dark:bg-gray-800 shadow px-6 py-3 flex justify-between items-center">
-  {/* العنوان أو القسم الأيسر */}
-  <div className="flex items-center gap-2 text-xl font-bold text-[#b30000]">
-    <h1 className="text-xl md:text-2xl font-semibold text-[#003366] flex items-center gap-2">
-      <Settings size={24} />
-      Settings
-    </h1>
-  </div>
+      <nav className="bg-white dark:bg-gray-800 shadow px-6 py-3 flex justify-between items-center">
+        {/* العنوان أو القسم الأيسر */}
+        <div className="flex items-center gap-2 text-xl font-bold text-[#b30000]">
+          <h1 className="text-xl md:text-2xl font-semibold text-[#003366] flex items-center gap-2">
+            <Settings size={24} />
+            Settings
+          </h1>
+        </div>
 
-  {/* القسم الأيمن */}
-  <div className="flex gap-4 items-center">
-    <div className="relative">
-      
+        {/* القسم الأيمن */}
+        <div className="flex gap-4 items-center">
+          <div className="relative">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-2 bg-transparent border-none cursor-pointer focus:outline-none"
+                  type="button"
+                >
+                  <User size={18} className="text-gray-600" />
+                  <span className="text-gray-800 font-medium">
+                    {companyName}
+                  </span>
+                  <ChevronDown size={16} />
+                </button>
+              </DropdownMenuTrigger>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            className="flex items-center gap-2 bg-transparent border-none cursor-pointer focus:outline-none"
-            type="button"
-          >
-            <User size={18} className="text-gray-600" />
-            <span className="text-gray-800 font-medium">{name}</span>
-            <ChevronDown size={16} />
-          </button>
-        </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48" align="end">
+                <Link href="/dashboardCompany">
+                  <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
+                    <User size={16} />
+                    My Dashboard
+                  </DropdownMenuItem>
+                </Link>
 
-        <DropdownMenuContent className="w-48" align="end">
-          <Link href="/dashboardCompany">
-            <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
-              <User size={16} />
-              My Dashboard
-            </DropdownMenuItem>
-          </Link>
+                <Link href="/ProfileViewCom">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <User size={16} />
+                    My Profile
+                  </DropdownMenuItem>
+                </Link>
 
-           <Link href="/ProfileViewCom">
-                            <DropdownMenuItem className="cursor-pointer">
-                              <User size={16} />
-                              My Profile
-                            </DropdownMenuItem>
-                          </Link>
-          <DropdownMenuSeparator />
+                <DropdownMenuSeparator />
 
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="cursor-pointer text-red-600 flex items-center gap-2"
-          >
-            <LogOut size={16} />
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  </div>
-</nav>
-
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="cursor-pointer text-red-600 flex items-center gap-2"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </nav>
 
       <div className="px-8 py-2 flex items-center text-sm text-gray-600 gap-1">
         <Home size={14} /> <ChevronRight size={14} /> Change Password
@@ -177,7 +205,9 @@ export default function CompanySettings() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {activeTab === "password" && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-[#333] dark:text-white">Change Password</h2>
+                <h2 className="text-xl font-semibold text-[#333] dark:text-white">
+                  Change Password
+                </h2>
                 <input
                   type="password"
                   name="currentPassword"
@@ -231,6 +261,7 @@ export default function CompanySettings() {
     </main>
   );
 }
+
 
 
 

@@ -107,7 +107,15 @@ export default function PostJob() {
         postedAt: serverTimestamp(),
       });
 
-      toast.success("Job posted successfully!");
+      // toast.success("Job posted successfully!");
+      await addDoc(collection(db, "notifications"), {
+  recipientId: userId, 
+  type: "job_posted",
+  message: `You posted a new job: ${formData.title}`,
+  createdAt: serverTimestamp(),
+  read: false,
+});
+
 
       const companyRef = doc(db, "users", userId);
       const companySnap = await getDoc(companyRef);
@@ -177,27 +185,13 @@ export default function PostJob() {
     clearNewApplications();
   }, [jobId]);
 
-  function InputField({ label, name, value, onChange, type = "text", placeholder }) {
-  return (
-    <div>
-      <label className="text-sm text-gray-500">{label} *</label>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder || label} 
-        className="w-full border rounded px-3 py-2 mt-1"
-      />
-    </div>
-  );
-}
+ 
 
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
       <CompanyNavbar />
-      <Toaster position="top-right" />
+      {/* <Toaster position="top-right" /> */}
       <main className="p-6 max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold text-gray-800">Post a New Job</h1>
@@ -253,7 +247,7 @@ export default function PostJob() {
   );
 }
 
-// ✅ تحديث حالة المتقدم
+// 
 export async function updateApplicantStatus(jobId, applicantId, status) {
   try {
     const jobRef = doc(db, "jobs", jobId);
@@ -277,50 +271,61 @@ export async function updateApplicantStatus(jobId, applicantId, status) {
   }
 }
 
-// ✅ وضع حالة الجوب كمكتمل
+// 
 export async function markJobCompleted(jobId, applicantId) {
   const jobRef = doc(db, "jobs", jobId);
   const jobSnap = await getDoc(jobRef);
   if (!jobSnap.exists()) return;
 
   const jobData = jobSnap.data();
+  
   const updatedApplicants = jobData.applicants.map(app =>
-    app.applicantId === applicantId ? { ...app, status: "completed" } : app
+    
+    app.applicantId === applicantId && app.status === "approved"
+      ? { ...app, status: "completed" }
+      : app
   );
 
   await updateDoc(jobRef, { applicants: updatedApplicants });
-  toast.success("تم تحديث حالة الجوب إلى مكتملة");
+  toast.success("Job status has been updated to completed");
 }
 
-// ✅ دفع وهمي من الشركة للإدمن
-export async function handlePaymentToAdmin(jobId, applicantId, companyId, adminId, amount) {
+
+// 
+export async function handlePaymentToAdmin(jobId, companyId, adminId, amount) {
   try {
+    const jobRef = doc(db, "jobs", jobId);
+    const jobSnap = await getDoc(jobRef);
+
+    if (!jobSnap.exists()) return;
+
+    const jobData = jobSnap.data();
+
+  
     await addDoc(collection(db, "payments"), {
       from: companyId,
       to: adminId,
       jobId,
-      applicantId,
       amount,
       status: "pending",
       createdAt: serverTimestamp()
     });
 
-    const jobRef = doc(db, "jobs", jobId);
-    const jobSnap = await getDoc(jobRef);
-    const jobData = jobSnap.data();
-    const updatedApplicants = jobData.applicants.map(app =>
-      app.applicantId === applicantId ? { ...app, paidToAdmin: true } : app
-    );
+    // 
+    await updateDoc(jobRef, {
+      status: "Completed"
+    });
 
-    await updateDoc(jobRef, { applicants: updatedApplicants });
-    toast.success("تم ارسال الفلوس للإدمن (وهمي)");
+    toast.success("Payment sent and job marked as completed");
   } catch (err) {
     console.error(err);
-    toast.error("فشل ارسال الدفعة");
+    toast.error("Failed to send payment");
   }
 }
 
-function InputField({ label, name, value, onChange, type = "text" }) {
+
+
+function InputField({ label, name, value, onChange, type = "text", placeholder }) {
   return (
     <div>
       <label className="text-sm text-gray-500">{label} *</label>
@@ -329,7 +334,7 @@ function InputField({ label, name, value, onChange, type = "text" }) {
         name={name}
         value={value}
         onChange={onChange}
-        placeholder={label}
+        placeholder={placeholder || label}
         className="w-full border rounded px-3 py-2 mt-1"
       />
     </div>

@@ -71,7 +71,7 @@ export default function ProfileViewCom() {
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [showComments, setShowComments] = useState(false);
+  // const [showComments, setShowComments] = useState(false);
   const [applicantImages, setApplicantImages] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -129,49 +129,72 @@ export default function ProfileViewCom() {
 
 
   async function fetchCompanyAndJobs() {
-    if (!companyId) return;
+  if (!companyId) return;
 
-    try {
-      const companyRef = doc(db, "users", companyId);
-      const companySnap = await getDoc(companyRef);
-      const companyData = companySnap.exists() ? companySnap.data() : {};
+  try {
+    const companyRef = doc(db, "users", companyId);
+    const companySnap = await getDoc(companyRef);
+    const companyData = companySnap.exists() ? companySnap.data() : {};
 
-      const jobsQuery = query(collection(db, "jobs"), where("companyId", "==", companyId));
-      const jobsSnapshot = await getDocs(jobsQuery);
+    const jobsQuery = query(
+      collection(db, "jobs"),
+      where("companyId", "==", companyId)
+    );
+    const jobsSnapshot = await getDocs(jobsQuery);
 
-      const jobsData = jobsSnapshot.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() }))
-        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    const jobsData = jobsSnapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .sort(
+        (a, b) =>
+          (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+      );
 
-      const activeProjects = jobsData.filter(
-        (job) => job.status?.toLowerCase() === "active" || job.status?.toLowerCase() === "open"
-      ).length;
+    
+    const activeProjects = jobsData.filter(
+      (job) =>
+        job.status?.toLowerCase() === "active" ||
+        job.status?.toLowerCase() === "open"
+    ).length;
 
-      let totalApplicants = 0;
-      let totalHired = 0;
+    
+    const totalJobs = jobsData.length;
+    let jobsWithApproved = 0;
+    let totalHired = 0;
 
-      jobsData.forEach((job) => {
-        if (!Array.isArray(job.applicants)) return;
-        totalApplicants += job.applicants.length;
-        totalHired += job.applicants.filter(
+    jobsData.forEach((job) => {
+      if (Array.isArray(job.applicants) && job.applicants.length > 0) {
+        const approvedApplicants = job.applicants.filter(
           (applicant) => applicant?.status?.toLowerCase() === "approved"
-        ).length;
-      });
+        );
 
-      const successRate = totalApplicants > 0 ? `${Math.round((totalHired / totalApplicants) * 100)}%` : "0%";
+        if (approvedApplicants.length > 0) {
+          jobsWithApproved++;
+          totalHired += approvedApplicants.length; //
+        }
+      }
+    });
 
-      setCompany({ ...companyData, stats: { activeProjects, totalHired, successRate } });
-      setJobs(jobsData);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching company and jobs:", error);
-      toast.error("Failed to load company data.");
-    }
+    const successRate =
+      totalJobs > 0
+        ? `${((jobsWithApproved / totalJobs) * 100).toFixed(1)}%`
+        : "0%";
+
+    setCompany({
+      ...companyData,
+      stats: { activeProjects, jobsWithApproved, totalHired, successRate },
+    });
+    setJobs(jobsData);
+    setLoading(false);
+  } catch (error) {
+    console.error("Error fetching company and jobs:", error);
+    toast.error("Failed to load company data.");
   }
+}
 
-  useEffect(() => {
-    fetchCompanyAndJobs();
-  }, [companyId]);
+useEffect(() => {
+  fetchCompanyAndJobs();
+}, [companyId]);
+
 
   const goToPage = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -374,7 +397,7 @@ export default function ProfileViewCom() {
       )}
 
       {/* Comments */}
-      <section className="mt-6">
+      {/* <section className="mt-6">
         <button
           onClick={() => setShowComments((prev) => !prev)}
           className="text-md font-semibold text-[#8B0000] mb-3 flex items-center gap-2 focus:outline-none"
@@ -421,7 +444,7 @@ export default function ProfileViewCom() {
             )}
           </>
         )}
-      </section>
+      </section> */}
 
       {/* Copy Job Link */}
       <button
