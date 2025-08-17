@@ -9,7 +9,7 @@ import {
   FaUsers,
   FaComments,
 } from "react-icons/fa";
-import { Loader2, Bell } from "lucide-react";
+import { Loader2, Bell, CheckCircle, XCircle, Briefcase, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   listenToNotifications,
@@ -29,6 +29,24 @@ export default function UserInfo() {
   const { data, status } = useSession();
   const [notifications, setNotifications] = useState([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  // Function to get notification icon based on type
+  const getNotificationIcon = (type) => {
+    if (type?.startsWith("job_")) {
+      switch (type) {
+        case "job_approved":
+          return <CheckCircle className="w-4 h-4 text-green-600" />;
+        case "job_rejected":
+          return <XCircle className="w-4 h-4 text-red-600" />;
+        case "job_completed":
+          return <Briefcase className="w-4 h-4 text-blue-600" />;
+        default:
+          return <AlertCircle className="w-4 h-4 text-yellow-600" />;
+      }
+    }
+    // Default icon for other notification types
+    return <AlertCircle className="w-4 h-4 text-gray-600" />;
+  };
 
   // Notification system
   useEffect(() => {
@@ -67,6 +85,19 @@ export default function UserInfo() {
     ) {
       signOut({ callbackUrl: "/login" });
       return;
+    }
+
+    // Handle job-related notifications
+    if (notification && notification.type?.startsWith("job_")) {
+      // For job notifications, redirect to profile to see in-progress jobs
+      if (notification.type === "job_approved") {
+        // Redirect to profile to see the approved job in in-progress section
+        window.location.href = "/profile";
+      } else if (notification.type === "job_completed") {
+        // Redirect to profile to see the completed job
+        window.location.href = "/profile";
+      }
+      // For job_rejected, just mark as read (no redirect needed)
     }
   };
 
@@ -116,7 +147,15 @@ export default function UserInfo() {
                   key={notification.id}
                   className={`p-4 ${
                     notification.read ? "bg-gray-50" : "bg-white"
-                  } cursor-pointer hover:bg-gray-50 transition-colors`}
+                  } cursor-pointer hover:bg-gray-50 transition-colors border-l-4 ${
+                    notification.type?.startsWith("job_") 
+                      ? notification.type === "job_approved" 
+                        ? "border-l-green-500" 
+                        : notification.type === "job_rejected" 
+                          ? "border-l-red-500" 
+                          : "border-l-blue-500"
+                      : "border-l-gray-300"
+                  }`}
                   onClick={() =>
                     handleMarkAsRead(
                       notification.id,
@@ -125,15 +164,22 @@ export default function UserInfo() {
                     )
                   }
                 >
-                  <p className="text-sm text-gray-800">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {notification.createdAt &&
-                      new Date(
-                        notification.createdAt.toDate(),
-                      ).toLocaleString()}
-                  </p>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-1">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-800">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {notification.createdAt &&
+                          new Date(
+                            notification.createdAt.toDate(),
+                          ).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ))
             )}

@@ -243,7 +243,7 @@ export default function JobsPage() {
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate(), // تحويل Timestamp لـ Date
-      }));
+      })).filter((job) => job.status === "Active");
       setJobs(jobsData);
     };
 

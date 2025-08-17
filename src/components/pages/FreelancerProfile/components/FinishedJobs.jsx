@@ -6,7 +6,9 @@ export const FinishedJobs = ({
   setIsModalOpen,
   isOwner,
 }) => {
-  const jobsArray = Array.isArray(finishedJobs) ? finishedJobs : [];
+  console.log(finishedJobs);
+  
+ 
   
   return (
     <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 relative overflow-hidden">
@@ -21,17 +23,17 @@ export const FinishedJobs = ({
           <div>
             <h2 className="text-2xl font-bold text-slate-800">Completed Projects</h2>
             <p className="text-slate-600 text-sm">
-              {jobsArray.length} project{jobsArray.length !== 1 ? 's' : ''} • Successfully delivered
+              {finishedJobs.length} project{finishedJobs.length !== 1 ? 's' : ''} • Successfully delivered
             </p>
           </div>
         </div>
 
-        {jobsArray.length > 0 ? (
+        {finishedJobs.length > 0 ? (
           <div className="space-y-4">
-            {jobsArray.map((job, index) => (
+            {finishedJobs.map((job, index) => (
               <div
                 key={index}
-                className="group relative bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-5 hover:from-green-50 hover:to-green-100 hover:border-green-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                // className="group relative bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-5 hover:from-green-50 hover:to-green-100 hover:border-green-200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors flex-shrink-0">
@@ -40,12 +42,12 @@ export const FinishedJobs = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                       <h3 className="text-lg font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">
-                        {job.role || "Project Role"}
+                        {job.title || "Project Role"}
                       </h3>
-                      {job.price && (
+                      {job.salary && (
                         <div className="flex items-center gap-2 text-green-600 font-semibold">
                           <FiDollarSign className="w-4 h-4" />
-                          <span>{job.price}</span>
+                          <span>{job.salary}</span>
                         </div>
                       )}
                     </div>
@@ -57,17 +59,17 @@ export const FinishedJobs = ({
                           <span>{job.company}</span>
                         </div>
                       )}
-                      {job.date && (
+                      {job.completedAt && (
                         <div className="flex items-center gap-2">
                           <FiCalendar className="w-4 h-4 text-primary" />
-                          <span>{job.date}</span>
+                          <span>{new Date(job.completedAt.seconds*1000).toLocaleDateString()}</span>
                         </div>
                       )}
                     </div>
                     
-                    {job.details && (
+                    {job.description && (
                       <div className="text-slate-700 text-sm leading-relaxed bg-white/50 p-3 rounded-xl border border-slate-200">
-                        {job.details}
+                        {job.description}
                       </div>
                     )}
                   </div>

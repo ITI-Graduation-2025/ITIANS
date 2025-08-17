@@ -1,36 +1,37 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Image from "next/image";
-import CompanyNavbar from "./CompanyNavbar";
-import {
-  LayoutDashboard,
-  FileText,
-  Building2,
-  Users2,
-  Star,
-  MapPin,
-  Clock,
-  X,
-  AlertCircle,
-    CheckCircle,  
-    Ban, 
-    Eye, 
-    XCircle,
-    ClipboardList,
-    ArrowLeft,
-} from "lucide-react";
-import Link from "next/link";
 import { db } from "@/config/firebase";
+import { approveJobApplication, rejectJobApplication } from "@/services/jobServices";
 import {
+  collection,
   doc,
   getDoc,
-  updateDoc,
-  collection,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
-import toast, { Toaster } from "react-hot-toast";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Ban,
+  Building2,
+  CheckCircle,
+  ClipboardList,
+  Clock,
+  Eye,
+  FileText,
+  LayoutDashboard,
+  MapPin,
+  Star,
+  Users2,
+  X,
+  XCircle,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
+import CompanyNavbar from "./CompanyNavbar";
 
 const STATUS_LIST = ["pending", "approved", "rejected"];
 
@@ -41,23 +42,27 @@ const STATUS_ICONS = {
 };
 
 
-const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile, setSelectedToReject, setShowRejectModal }) => {
+const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile, setSelectedToReject, setShowRejectModal,job }) => {
   const status = applicant.status?.toLowerCase() || "pending";
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-white rounded-xl shadow-sm mb-4 hover:shadow-lg">
   <div className="flex items-start space-x-4">
     <div className="relative w-14 h-14 rounded-full overflow-hidden ring-2 ring-[#b30000]">
-      <Image
-        src={applicant.image || "/default-avatar.png"}
-        alt={applicant.name || "Applicant"}
-        fill
-        className="object-cover"
-      />
+             <Image
+         src={applicant.image || "/default-avatar.png"}
+         alt={typeof applicant.name === 'string' ? applicant.name : applicant.name?.value || "Applicant"}
+         fill
+         className="object-cover"
+       />
     </div>
     <div>
-      <h3 className="font-semibold text-lg text-gray-900">{applicant.name || "Unnamed Applicant"}</h3>
-      <p className="text-gray-600 text-sm mt-1">Applied for: <span className="font-medium">{applicant.jobTitle || "Not specified"}</span></p>
+      <h3 className="font-semibold text-lg text-gray-900">
+        {typeof applicant.name === 'string' ? applicant.name : applicant.name?.value || "Unnamed Applicant"}
+      </h3>
+      <p className="text-gray-600 text-sm mt-1">Applied for: <span className="font-medium">
+        {typeof applicant.jobTitle === 'string' ? applicant.jobTitle : applicant.jobTitle?.value || "Not specified"}
+      </span></p>
       <p className="text-xs text-gray-500 uppercase tracking-wide mt-0.5">
         Status: <span className={`font-semibold capitalize ${status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-yellow-600'}`}>
           {status}
@@ -66,34 +71,45 @@ const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile, setSelectedTo
       <div className="flex flex-wrap text-gray-500 mt-2 gap-4 text-sm">
         {applicant.experience && (
           <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4 text-[#b30000]" /> {applicant.experience}
+            <Clock className="w-4 h-4 text-[#b30000]" /> 
+            {typeof applicant.experience === 'string' ? applicant.experience : applicant.experience?.value || 'Experience'}
           </div>
         )}
         {applicant.location && (
           <div className="flex items-center gap-1">
-            <MapPin className="w-4 h-4 text-[#b30000]" /> {applicant.location}
+            <MapPin className="w-4 h-4 text-[#b30000]" /> 
+            {typeof applicant.location === 'string' ? applicant.location : applicant.location?.value || 'Location'}
           </div>
         )}
       </div>
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
-        {applicant.skills?.map((skill) => (
-          <span
-            key={skill}
-            className="bg-[#b30000] bg-opacity-10 text-[#b30000] px-3 py-1 rounded-full font-semibold select-none"
-          >
-            {skill}
-          </span>
-        ))}
+        {applicant.skills?.map((skill, index) => {
+          // Handle both string skills and object skills with value property
+          const skillText = typeof skill === 'string' ? skill : skill?.value || 'Unknown Skill';
+          const skillKey = typeof skill === 'string' ? skill : skill?.id || skill?.value || index;
+          
+          return (
+            <span
+              key={skillKey}
+              className="bg-[#b30000] bg-opacity-10 text-[#b30000] px-3 py-1 rounded-full font-semibold select-none"
+            >
+              {skillText}
+            </span>
+          );
+        })}
       </div>
       {applicant.date && (
-        <p className="text-xs text-gray-400 mt-2 italic">Applied on {applicant.date}</p>
+        <p className="text-xs text-gray-400 mt-2 italic">
+          Applied on {typeof applicant.date === 'string' ? applicant.date : applicant.date?.value || 'Unknown date'}
+        </p>
       )}
     </div>
   </div>
   <div className="flex flex-col md:flex-row items-center gap-3 mt-4 md:mt-0">
     {applicant.rating && (
       <span className="flex items-center gap-1 text-yellow-500 font-semibold text-sm">
-        <Star className="w-5 h-5" /> {applicant.rating}/5
+        <Star className="w-5 h-5" /> 
+        {typeof applicant.rating === 'number' ? applicant.rating : applicant.rating?.value || 0}/5
       </span>
     )}
 
@@ -147,6 +163,7 @@ export default function AllCompanyApplicants() {
   const [applications, setApplications] = useState([]);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedToReject, setSelectedToReject] = useState(null);
+  const [job, setJob] = useState();
 
   const [company, setCompany] = useState(null);
     useEffect(() => {
@@ -224,27 +241,40 @@ export default function AllCompanyApplicants() {
 
   const handleUpdateStatus = async (jobId, userId, newStatus, name) => {
     try {
-      const jobRef = doc(db, "jobs", jobId);
-      const jobSnap = await getDoc(jobRef);
-      if (!jobSnap.exists()) return;
+      if (newStatus.toLowerCase() === "approved") {
+        // Use the new job service for approval
+        await approveJobApplication(jobId, userId, company?.name || "Company", "Job");
+        toast.success(`${name} has been approved! Job is now in progress.`);
+      } else if (newStatus.toLowerCase() === "rejected") {
+        // Use the new job service for rejection
+        await rejectJobApplication(jobId, userId, company?.name || "Company", "Job");
+        toast.success(`${name} has been rejected.`);
+      } else {
+        // Handle other status updates (fallback to old method)
+        const jobRef = doc(db, "jobs", jobId);
+        const jobSnap = await getDoc(jobRef);
+        if (!jobSnap.exists()) return;
 
-      const jobData = jobSnap.data();
+        const jobData = jobSnap.data();
+        setJob(jobData);
 
-      const updatedApplicants = jobData.applicants.map((applicant) => {
-        if (typeof applicant === "string") {
-          return applicant === userId
-            ? { userId, status: newStatus.toLowerCase() }
-            : { userId: applicant, status: "pending" };
-        }
-        if (applicant.userId === userId) {
-          return { ...applicant, status: newStatus.toLowerCase() };
-        }
-        return applicant;
-      });
+        const updatedApplicants = jobData.applicants.map((applicant) => {
+          if (typeof applicant === "string") {
+            return applicant === userId
+              ? { userId, status: newStatus.toLowerCase() }
+              : { userId: applicant, status: "pending" };
+          }
+          if (applicant.userId === userId) {
+            return { ...applicant, status: newStatus.toLowerCase() };
+          }
+          return applicant;
+        });
 
-      await updateDoc(jobRef, { applicants: updatedApplicants });
+        await updateDoc(jobRef, { applicants: updatedApplicants });
+        toast.success(`${name} has been ${newStatus}`);
+      }
 
-      toast.success(`${name} has been ${newStatus}`);
+      // Update local state
       setApplications((prev) =>
         prev.map((a) =>
           a.id === userId && a.jobId === jobId
@@ -369,7 +399,8 @@ export default function AllCompanyApplicants() {
               onUpdateStatus={handleUpdateStatus}
               onViewProfile={setSelectedApplicant}
               setSelectedToReject={setSelectedToReject}
-               setShowRejectModal={setShowRejectModal}
+              setShowRejectModal={setShowRejectModal}
+              job={job}
             />
           ))
         ) : (
@@ -392,18 +423,24 @@ export default function AllCompanyApplicants() {
         <div className="w-28 h-28 relative rounded-full overflow-hidden shadow-lg ring-2 ring-[#b30000]">
           <Image
             src={selectedApplicant.image || "/default-avatar.png"}
-            alt={selectedApplicant.name}
+            alt={typeof selectedApplicant.name === 'string' ? selectedApplicant.name : selectedApplicant.name?.value || "Applicant"}
             fill
             className="object-cover"
           />
         </div>
-        <h2 className="mt-6 text-2xl font-semibold text-gray-900">{selectedApplicant.name}</h2>
-        <p className="mt-1 text-sm text-red-700 font-medium">{selectedApplicant.role || "Role not specified"}</p>
+        <h2 className="mt-6 text-2xl font-semibold text-gray-900">
+          {typeof selectedApplicant.name === 'string' ? selectedApplicant.name : selectedApplicant.name?.value || "Unknown"}
+        </h2>
+        <p className="mt-1 text-sm text-red-700 font-medium">
+          {typeof selectedApplicant.role === 'string' ? selectedApplicant.role : selectedApplicant.role?.value || "Role not specified"}
+        </p>
         <p className="text-xs text-gray-400 mt-2 uppercase tracking-wide font-semibold">
-          Status: <span className="capitalize">{selectedApplicant.status}</span>
+          Status: <span className="capitalize">
+            {typeof selectedApplicant.status === 'string' ? selectedApplicant.status : selectedApplicant.status?.value || "Unknown"}
+          </span>
         </p>
         <p className="mt-6 text-center text-gray-700 text-sm leading-relaxed">
-          {selectedApplicant.bio || "No additional info."}
+          {typeof selectedApplicant.bio === 'string' ? selectedApplicant.bio : selectedApplicant.bio?.value || "No additional info."}
         </p>
         <Link
           href={`/applicant/${selectedApplicant.id}`}
@@ -423,7 +460,9 @@ export default function AllCompanyApplicants() {
       <h2 className="text-lg font-semibold text-gray-800 mb-2">Reject Applicant</h2>
       <p className="text-sm text-gray-600 mb-4">
         Are you sure you want to reject{" "}
-        <span className="font-medium text-[#b30000]">{selectedToReject.name || "this applicant"}</span>?
+        <span className="font-medium text-[#b30000]">
+          {typeof selectedToReject.name === 'string' ? selectedToReject.name : selectedToReject.name?.value || "this applicant"}
+        </span>?
       </p>
       <div className="flex justify-end gap-3">
         <button

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { doc, onSnapshot, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import CompanyNavbar from "./CompanyNavbar";
+import CompanyFinishedJobs from "./CompanyFinishedJobs";
 import {
   LayoutDashboard,
   FileText,
@@ -18,6 +19,7 @@ import {
   Zap,
   Clock,
   Users2,
+  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -35,9 +37,15 @@ export default function DashboardPage() {
     applicationTrend: null,
     hireTrend: null,
   });
+  const [finishedJobsCount, setFinishedJobsCount] = useState(0);
 
   const pathname = usePathname();
-  const isActive = (route) => pathname === route;
+  const isActive = (route) => {
+    if (route === "/dashboardCompany/finished") {
+      return pathname === "/dashboardCompany/finished";
+    }
+    return pathname === route;
+  };
 
   useEffect(() => {
     if (!companyId) return;
@@ -50,98 +58,120 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [companyId]);
 
- useEffect(() => {
-  if (!companyId) return;
+  // Fetch finished jobs count
+  useEffect(() => {
+    if (!companyId) return;
+    
+    const fetchFinishedJobsCount = async () => {
+      try {
+        const jobsRef = collection(db, "jobs");
+        const q = query(
+          jobsRef, 
+          where("companyId", "==", companyId),
+          where("status", "==", "finished")
+        );
+        const querySnapshot = await getDocs(q);
+        setFinishedJobsCount(querySnapshot.size);
+      } catch (error) {
+        console.error("Error fetching finished jobs count:", error);
+      }
+    };
 
-  const fetchApplications = async () => {
-    try {
-      const jobsRef = collection(db, "jobs");
-      const q = query(jobsRef, where("companyId", "==", companyId));
-      const querySnapshot = await getDocs(q);
+    fetchFinishedJobsCount();
+  }, [companyId]);
 
-      let total = 0;
-      let hires = 0;
-      let newApplicationsThisWeek = 0;
-      let lastWeekApplications = 0;
-      let hiresThisMonth = 0;
-      let hiresLastMonth = 0;
+  useEffect(() => {
+    if (!companyId) return;
 
-      const now = new Date();
-      const oneWeekAgo = new Date(now);
-      oneWeekAgo.setDate(now.getDate() - 7);
-      const twoWeeksAgo = new Date(now);
-      twoWeeksAgo.setDate(now.getDate() - 14);
-      const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    const fetchApplications = async () => {
+      try {
+        const jobsRef = collection(db, "jobs");
+        const q = query(jobsRef, where("companyId", "==", companyId));
+        const querySnapshot = await getDocs(q);
 
-      querySnapshot.forEach((doc) => {
-        const job = doc.data();
-        const applicants = job.applicants || [];
+        let total = 0;
+        let hires = 0;
+        let newApplicationsThisWeek = 0;
+        let lastWeekApplications = 0;
+        let hiresThisMonth = 0;
+        let hiresLastMonth = 0;
 
-        applicants.forEach((applicant) => {
-          if (typeof applicant === "string") {
-            total += 1;
-          } else if (typeof applicant === "object" && applicant.userId) {
-            total += 1;
+        const now = new Date();
+        const oneWeekAgo = new Date(now);
+        oneWeekAgo.setDate(now.getDate() - 7);
+        const twoWeeksAgo = new Date(now);
+        twoWeeksAgo.setDate(now.getDate() - 14);
+        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-            const appliedDate = applicant.appliedAt
-              ? new Date(applicant.appliedAt)
-              : job.createdAt?.toDate
-                ? job.createdAt.toDate()
-                : null;
+        querySnapshot.forEach((doc) => {
+          const job = doc.data();
+          const applicants = job.applicants || [];
 
-            if (appliedDate) {
-              if (appliedDate >= oneWeekAgo) {
-                newApplicationsThisWeek += 1;
-              } else if (appliedDate >= twoWeeksAgo && appliedDate < oneWeekAgo) {
-                lastWeekApplications += 1;
-              }
-            }
+          applicants.forEach((applicant) => {
+            if (typeof applicant === "string") {
+              total += 1;
+            } else if (typeof applicant === "object" && applicant.userId) {
+              total += 1;
 
-            if (applicant.status?.toLowerCase() === "approved") {
-              hires += 1;
+              const appliedDate = applicant.appliedAt
+                ? new Date(applicant.appliedAt)
+                : job.createdAt?.toDate
+                  ? job.createdAt.toDate()
+                  : null;
 
               if (appliedDate) {
-                if (appliedDate >= startOfThisMonth) {
-                  hiresThisMonth += 1;
-                } else if (appliedDate >= startOfLastMonth && appliedDate <= endOfLastMonth) {
-                  hiresLastMonth += 1;
+                if (appliedDate >= oneWeekAgo) {
+                  newApplicationsThisWeek += 1;
+                } else if (appliedDate >= twoWeeksAgo && appliedDate < oneWeekAgo) {
+                  lastWeekApplications += 1;
+                }
+              }
+
+              if (applicant.status?.toLowerCase() === "approved") {
+                hires += 1;
+
+                if (appliedDate) {
+                  if (appliedDate >= startOfThisMonth) {
+                    hiresThisMonth += 1;
+                  } else if (appliedDate >= startOfLastMonth && appliedDate <= endOfLastMonth) {
+                    hiresLastMonth += 1;
+                  }
                 }
               }
             }
-          }
+          });
         });
-      });
 
-      const getTrend = (current, previous) => {
-        if (previous === 0) return current > 0 ? "up" : "flat";
-        if (current > previous) return "up";
-        if (current < previous) return "down";
-        return "flat";
-      };
+        const getTrend = (current, previous) => {
+          if (previous === 0) return current > 0 ? "up" : "flat";
+          if (current > previous) return "up";
+          if (current < previous) return "down";
+          return "flat";
+        };
 
-      const applicationTrend = getTrend(newApplicationsThisWeek, lastWeekApplications);
-      const hireTrend = getTrend(hiresThisMonth, hiresLastMonth);
+        const applicationTrend = getTrend(newApplicationsThisWeek, lastWeekApplications);
+        const hireTrend = getTrend(hiresThisMonth, hiresLastMonth);
 
-      setApplicationStats({
-        total,
-        hires,
-        newThisWeek: newApplicationsThisWeek,
-        hiresThisMonth,
-        applicationTrend,
-        hireTrend,
-      });
+        setApplicationStats({
+          total,
+          hires,
+          newThisWeek: newApplicationsThisWeek,
+          hiresThisMonth,
+          applicationTrend,
+          hireTrend,
+        });
 
-      setLoading(false);
-    } catch (error) {
-      console.error("Error calculating application stats:", error);
-      setLoading(false);
-    }
-  };
+        setLoading(false);
+      } catch (error) {
+        console.error("Error calculating application stats:", error);
+        setLoading(false);
+      }
+    };
 
-  fetchApplications();
-}, [companyId]);
+    fetchApplications();
+  }, [companyId]);
 
   if (status === "loading" || loading)
     return <DashboardSkeleton />;
@@ -156,6 +186,7 @@ export default function DashboardPage() {
     { label: "Overview", href: "/dashboardCompany", icon: LayoutDashboard },
     { label: "My Jobs", href: "/companyjobs", icon: FileText },
     { label: "Applications", href: "/AllCompanyApplicants", icon: Users2 },
+    { label: "Finished Jobs", href: "/dashboardCompany/finished", icon: CheckCircle },
     { label: "CompanyProfile", href: "/companyprofile", icon: Building2 },
   ];
 
@@ -191,90 +222,101 @@ export default function DashboardPage() {
           ))}
         </nav>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            title="Active Jobs"
-            value={companyStats?.stats?.activeJobs}
-            detail="Live now"
-          />
-          <StatCard
-            title="Total Applications"
-            value={applicationStats.total}
-            detail={`+${applicationStats.newThisWeek} this week`}
-            trend={applicationStats.applicationTrend}
-            tooltip="Total number of applications received"
-          />
-          <StatCard
-            title="Successful Hires"
-            value={applicationStats.hires}
-            detail={`+${applicationStats.hiresThisMonth} this month`}
-            trend={applicationStats.hireTrend}
-          />
-        </div>
+        {/* Show Finished Jobs when on that tab */}
+        {isActive("/dashboardCompany/finished") ? (
+          <CompanyFinishedJobs companyId={companyId} />
+        ) : (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <StatCard
+                title="Active Jobs"
+                value={companyStats?.stats?.activeJobs}
+                detail="Live now"
+              />
+              <StatCard
+                title="Total Applications"
+                value={applicationStats.total}
+                detail={`+${applicationStats.newThisWeek} this week`}
+                trend={applicationStats.applicationTrend}
+                tooltip="Total number of applications received"
+              />
+              <StatCard
+                title="Successful Hires"
+                value={applicationStats.hires}
+                detail={`+${applicationStats.hiresThisMonth} this month`}
+                trend={applicationStats.hireTrend}
+              />
+              <StatCard
+                title="Finished Jobs"
+                value={finishedJobsCount}
+                detail="Awaiting review"
+                tooltip="Jobs marked as finished by freelancers"
+              />
+            </div>
 
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white shadow p-4 rounded">
-             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-               <Clock className="text-red-600 w-5 h-5" />
-               Recent Activity
-             </h2>
-            {recentActivities.length > 0 ? (
-              <ul className="space-y-2 text-sm text-gray-700">
-                {recentActivities.map((activity, idx) => (
-                  <Activity
-                    key={idx}
-                    icon={getActivityIcon(activity.type)}
-                    text={activity.text}
-                    detail={activity.detail}
-                  />
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500">No activity yet.</p>
-            )}
-          </div>
+            {/* Bottom Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white shadow p-4 rounded">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <Clock className="text-red-600 w-5 h-5" />
+                  Recent Activity
+                </h2>
+                {recentActivities.length > 0 ? (
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    {recentActivities.map((activity, idx) => (
+                      <Activity
+                        key={idx}
+                        icon={getActivityIcon(activity.type)}
+                        text={activity.text}
+                        detail={activity.detail}
+                      />
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500">No activity yet.</p>
+                )}
+              </div>
 
-          <div className="bg-white shadow-md rounded-lg p-6 flex flex-col items-center justify-center text-center">
-  {/* العنوان */}
-  <div className="flex items-center gap-2 mb-6">
-    <Zap className="text-red-600 w-6 h-6" />
-    <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
-  </div>
+              <div className="bg-white shadow-md rounded-lg p-6 flex flex-col items-center justify-center text-center">
+                {/* العنوان */}
+                <div className="flex items-center gap-2 mb-6">
+                  <Zap className="text-red-600 w-6 h-6" />
+                  <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
+                </div>
 
-  {/* الأزرار */}
- <div className="flex flex-col gap-4 w-full">
-  {/* زر أساسي بتدرج */}
-  <Link href="/PostJob" className="w-full">
-    <button 
-      className="w-full flex items-center justify-center gap-3 px-6 py-4 
-                 rounded-xl font-semibold text-white text-base
-                 bg-gradient-to-r from-[#b30000] to-[#8B0000] 
-                 hover:shadow-lg hover:scale-[1.02] active:scale-95
-                 transition-all duration-300 relative overflow-hidden group">
-      <FilePlus className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
-      Post New Job
-    </button>
-  </Link>
+                {/* الأزرار */}
+                <div className="flex flex-col gap-4 w-full">
+                  {/* زر أساسي بتدرج */}
+                  <Link href="/PostJob" className="w-full">
+                    <button 
+                      className="w-full flex items-center justify-center gap-3 px-6 py-4 
+                                 rounded-xl font-semibold text-white text-base
+                                 bg-gradient-to-r from-[#b30000] to-[#8B0000] 
+                                 hover:shadow-lg hover:scale-[1.02] active:scale-95
+                                 transition-all duration-300 relative overflow-hidden group">
+                      <FilePlus className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
+                      Post New Job
+                    </button>
+                  </Link>
 
-  {/* زر ثانوي (Outline + خلفية فاتحة) */}
-  <Link href="/AllCompanyApplicants" className="w-full">
-    <button 
-      className="w-full flex items-center justify-center gap-3 px-6 py-4 
-                 rounded-xl font-semibold text-[#b30000] text-base 
-                 border-2 border-[#b30000] bg-white
-                 hover:bg-[#f5f5f5] hover:shadow-md hover:scale-[1.02] active:scale-95
-                 transition-all duration-300 relative overflow-hidden group">
-      <ClipboardCopy className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
-      View Applicants
-    </button>
-  </Link>
-</div>
-
-</div>
-
-        </div>
+                  {/* زر ثانوي (Outline + خلفية فاتحة) */}
+                  <Link href="/AllCompanyApplicants" className="w-full">
+                    <button 
+                      className="w-full flex items-center justify-center gap-3 px-6 py-4 
+                                 rounded-xl font-semibold text-[#b30000] text-base 
+                                 border-2 border-[#b30000] bg-white
+                                 hover:bg-[#f5f5f5] hover:shadow-md hover:scale-[1.02] active:scale-95
+                                 transition-all duration-300 relative overflow-hidden group">
+                      <ClipboardCopy className="w-6 h-6 transition-transform duration-300 group-hover:-translate-y-1" />
+                      View Applicants
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
@@ -303,7 +345,6 @@ function StatCard({ title, value, detail, trend, tooltip }) {
     </div>
   );
 }
-
 
 function Activity({ icon, text, detail }) {
   return (
@@ -366,5 +407,3 @@ function DashboardSkeleton() {
     </div>
   );
 }
-
-

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Bell, RefreshCw, LogOut } from "lucide-react";
+import { Bell, RefreshCw, LogOut, CheckCircle, XCircle, Briefcase, AlertCircle } from "lucide-react";
 import {
   listenToNotifications,
   updateNotification,
@@ -27,6 +27,24 @@ export function PendingClient({ user }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showLogoutPrompt, setShowLogoutPrompt] = useState(false);
+
+  // Function to get notification icon based on type
+  const getNotificationIcon = (type) => {
+    if (type?.startsWith("job_")) {
+      switch (type) {
+        case "job_approved":
+          return <CheckCircle className="w-4 h-4 text-green-600" />;
+        case "job_rejected":
+          return <XCircle className="w-4 h-4 text-red-600" />;
+        case "job_completed":
+          return <Briefcase className="w-4 h-4 text-blue-600" />;
+        default:
+          return <AlertCircle className="w-4 h-4 text-yellow-600" />;
+      }
+    }
+    // Default icon for other notification types
+    return <AlertCircle className="w-4 h-4 text-gray-600" />;
+  };
 
   // Notification system
   useEffect(() => {
@@ -263,7 +281,15 @@ export function PendingClient({ user }) {
                         key={notification.id}
                         className={`p-4 ${
                           notification.read ? "bg-gray-50" : "bg-white"
-                        } cursor-pointer hover:bg-gray-50 transition-colors`}
+                        } cursor-pointer hover:bg-gray-50 transition-colors border-l-4 ${
+                          notification.type?.startsWith("job_") 
+                            ? notification.type === "job_approved" 
+                              ? "border-l-green-500" 
+                              : notification.type === "job_rejected" 
+                                ? "border-l-red-500" 
+                                : "border-l-blue-500"
+                            : "border-l-gray-300"
+                        }`}
                         onClick={() =>
                           handleMarkAsRead(
                             notification.id,
@@ -272,15 +298,22 @@ export function PendingClient({ user }) {
                           )
                         }
                       >
-                        <p className="text-sm text-gray-800">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {notification.createdAt &&
-                            new Date(
-                              notification.createdAt.toDate(),
-                            ).toLocaleString()}
-                        </p>
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-1">
+                            {getNotificationIcon(notification.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-800">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {notification.createdAt &&
+                                new Date(
+                                  notification.createdAt.toDate(),
+                                ).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     ))
                   )}

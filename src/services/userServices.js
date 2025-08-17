@@ -2,16 +2,16 @@
 
 import { db } from "@/config/firebase";
 import {
+  collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
+  query,
+  serverTimestamp,
   setDoc,
   updateDoc,
-  collection,
-  onSnapshot,
-  serverTimestamp,
-  deleteDoc,
-  query,
   where,
 } from "firebase/firestore";
 
@@ -88,6 +88,26 @@ export const subscribeToUsers = (callback) => {
     });
     callback(users);
   });
+};
+export const getUserJobs = async (userId, approvedFreelancerId) => {
+  try {
+    const jobsRef = collection(db, "jobs");
+
+    // condition: approvedFreelancerId must match userId
+    const q = query(jobsRef, where("approvedFreelancerId", "==", userId));
+
+    const querySnapshot = await getDocs(q);
+
+    const jobs = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return jobs;
+  } catch (error) {
+    console.error("Error fetching jobs:", error);
+    return [];
+  }
 };
 
 // --- Company Account Logic ---
