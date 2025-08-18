@@ -38,7 +38,6 @@ const categories = [
 const companyTabs = [
   { name: "Overview", href: "/dashboardCompany"},
   { name: "My Jobs", href: "/companyjobs" },
-  { name: "Active Jobs", href: "/Activejobs"}, 
   { name: "Applications", href: "/AllCompanyApplicants"},
   { name: "Company Profile", href: "/companyprofile" },
 ];

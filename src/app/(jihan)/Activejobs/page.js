@@ -1,7 +1,7 @@
 
-"use client";
-import Activejobs from "@/components/ui/Activejobs";
+// "use client";
+// import Activejobs from "@/components/ui/Activejobs";
 
-export default function ActiveJobsPage() {
-  return <Activejobs />;
-}
+// export default function ActiveJobsPage() {
+//   return <Activejobs />;
+// }
