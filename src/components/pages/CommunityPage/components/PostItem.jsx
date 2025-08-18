@@ -24,7 +24,7 @@ import {
 } from "react-icons/hi2";
 import PostComments from "./PostComments";
 
-export default function PostItem({ post, currentUser }) {
+export default function PostItem({ post, currentUser, disableEditDelete = false }) {
   if (!currentUser) {
     return <div>Loading user...</div>;
   }
@@ -357,7 +357,7 @@ export default function PostItem({ post, currentUser }) {
               </div>
 
               {/* Edit/Delete Menu */}
-              {isPostOwner && (
+              {isPostOwner && !disableEditDelete && (
                 <div className="relative group">
                   <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                     <HiOutlineEllipsisHorizontal className="w-5 h-5" />
