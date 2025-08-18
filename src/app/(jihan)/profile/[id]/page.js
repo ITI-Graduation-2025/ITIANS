@@ -49,7 +49,7 @@ export default function Profile() {
     return (
       <AnimatedLoader 
         type="dots"
-        size="xl"
+        size="default"
         text="Loading profile..."
       />
     );
