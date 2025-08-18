@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { updateUser } from "@/services/userServices";
 import { getAllPosts } from "@/services/postServices";
+import { uploadDocument } from "@/utils/upload";
 import {
   Certificates,
   EditModal,
@@ -47,20 +48,44 @@ const FreelancerProfile = ({ user, refetchUser }) => {
   async function handleResumeUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
-    // For demo: just store file as base64 in Firestore (in real app, upload to storage and save URL)
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      await updateUser(user.id, { resumeUrl: reader.result });
+    
+    try {
+      // Upload document to Cloudinary
+      const documentUrl = await uploadDocument(e);
+      
+      // Save the Cloudinary URL to user profile
+      await updateUser(user.id, { resumeUrl: documentUrl });
+      
+      // Update local state immediately
+      setResumeUrl(documentUrl);
+      
+      // Update user object locally to avoid refresh
+      user.resumeUrl = documentUrl;
+      
+      // Refetch user data in background
       await refetchUser();
-      setResumeUrl(reader.result);
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Resume upload error:", error);
+      throw error; // Re-throw to be handled by the component
+    }
   }
 
   async function handleResumeDelete() {
-    await updateUser(user.id, { resumeUrl: "" });
-    await refetchUser();
-    setResumeUrl();
+    try {
+      await updateUser(user.id, { resumeUrl: "" });
+      
+      // Update local state immediately
+      setResumeUrl(null);
+      
+      // Update user object locally to avoid refresh
+      user.resumeUrl = "";
+      
+      // Refetch user data in background
+      await refetchUser();
+    } catch (error) {
+      console.error("Resume delete error:", error);
+      throw error; // Re-throw to be handled by the component
+    }
   }
 
   // Dynamic fields from user object
