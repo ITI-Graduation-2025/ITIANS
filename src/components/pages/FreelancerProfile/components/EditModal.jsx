@@ -22,15 +22,12 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
     if (type === "about") {
       setTempValue(user.bio || "");
       setOriginalValue(user.bio || "");
-    } else if (type === "links") {
-      setTempValue({
-        github: user.github || "",
-        linkedIn: user.linkedIn || "",
-      });
-      setOriginalValue({
-        github: user.github || "",
-        linkedIn: user.linkedIn || "",
-      });
+    } else if (type === "linkedin") {
+      setTempValue(user.linkedIn || "");
+      setOriginalValue(user.linkedIn || "");
+    } else if (type === "github") {
+      setTempValue(user.github || "");
+      setOriginalValue(user.github || "");
     } else if (type === "education") {
       setTempValue(user.education || { school: "", degree: "", year: "" });
       setOriginalValue(user.education || { school: "", degree: "", year: "" });
@@ -140,6 +137,20 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
       setUser({ ...user, profileImage: originalValue });
     } else if (type === "skills") {
       setUser({ ...user, skills: originalValue?.skills || [] });
+    } else if (type === "about") {
+      setUser({ ...user, bio: originalValue });
+    } else if (type === "education") {
+      setUser({ ...user, education: originalValue });
+    } else if (type === "linkedin") {
+      setUser({ ...user, linkedIn: originalValue });
+    } else if (type === "github") {
+      setUser({ ...user, github: originalValue });
+    } else if (type === "work") {
+      setUser({ ...user, finishedJobs: originalValue });
+    } else if (type === "experience") {
+      setUser({ ...user, workExperiences: originalValue });
+    } else if (type === "certificates") {
+      setUser({ ...user, certificates: originalValue });
     }
     onClose();
   };
@@ -150,15 +161,24 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
     try {
       if (type === "about") {
         await updateUser(user.id, { bio: tempValue });
-      } else if (type === "links") {
-        await updateUser(user.id, {
-          github: tempValue.github,
-          linkedIn: tempValue.linkedIn,
-        });
+        // Update local user context immediately
+        setUser({ ...user, bio: tempValue });
+      } else if (type === "linkedin") {
+        await updateUser(user.id, { linkedIn: tempValue });
+        // Update local user context immediately
+        setUser({ ...user, linkedIn: tempValue });
+      } else if (type === "github") {
+        await updateUser(user.id, { github: tempValue });
+        // Update local user context immediately
+        setUser({ ...user, github: tempValue });
       } else if (type === "education") {
         await updateUser(user.id, { education: tempValue });
+        // Update local user context immediately
+        setUser({ ...user, education: tempValue });
       } else if (type === "work") {
         await updateUser(user.id, { finishedJobs: tempValue });
+        // Update local user context immediately
+        setUser({ ...user, finishedJobs: tempValue });
       } else if (type === "experience") {
         await updateUser(user.id, { workExperiences: tempValue });
         // Update local user context immediately
@@ -199,7 +219,7 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
           <FiX />
         </button>
         <h2 className="text-2xl font-bold text-[#B71C1C] mb-6 capitalize tracking-wide text-center">
-          Edit {type === "profileImage" ? "Profile Image" : type === "skills" ? "Skills" : type}
+          Edit {type === "profileImage" ? "Profile Image" : type === "skills" ? "Skills" : type === "linkedin" ? "LinkedIn Profile" : type === "github" ? "GitHub Profile" : type}
         </h2>
 
         {type === "profileImage" && (
@@ -218,7 +238,7 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
                 />
                 {uploadingImage && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                   </div>
                 )}
               </div>
@@ -270,28 +290,67 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
             disabled={loading}
           />
         )}
-        {type === "links" && (
+        {type === "linkedin" && (
           <div className="space-y-4">
-            <input
-              type="url"
-              className="w-full border-2 border-[#B71C1C] px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
-              placeholder="GitHub Profile"
-              value={tempValue.github || ""}
-              onChange={(e) =>
-                setTempValue({ ...tempValue, github: e.target.value })
-              }
-              disabled={loading}
-            />
-            <input
-              type="url"
-              className="w-full border-2 border-[#B71C1C] px-4 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
-              placeholder="LinkedIn Profile"
-              value={tempValue.linkedIn || ""}
-              onChange={(e) =>
-                setTempValue({ ...tempValue, linkedIn: e.target.value })
-              }
-              disabled={loading}
-            />
+            <div className="text-center mb-4">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.047-1.852-3.047-1.853 0-2.136 1.445-2.136 2.939v5.677H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">Edit LinkedIn Profile</h3>
+              <p className="text-sm text-gray-600">Update your LinkedIn profile URL</p>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.047-1.852-3.047-1.853 0-2.136 1.445-2.136 2.939v5.677H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+              </div>
+              <input
+                type="url"
+                className="w-full border-2 border-[#B71C1C] pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
+                placeholder="https://linkedin.com/in/your-profile"
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div className="text-xs text-gray-500 text-center">
+              Make sure to include the full URL starting with https://
+            </div>
+          </div>
+        )}
+        
+        {type === "github" && (
+          <div className="space-y-4">
+            <div className="text-center mb-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-8 h-8 text-gray-800" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">Edit GitHub Profile</h3>
+              <p className="text-sm text-gray-600">Update your GitHub profile URL</p>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+              </div>
+              <input
+                type="url"
+                className="w-full border-2 border-[#B71C1C] pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
+                placeholder="https://github.com/your-username"
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div className="text-xs text-gray-500 text-center">
+              Make sure to include the full URL starting with https://
+            </div>
           </div>
         )}
         {type === "education" && (

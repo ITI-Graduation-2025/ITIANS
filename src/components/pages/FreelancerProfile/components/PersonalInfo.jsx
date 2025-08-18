@@ -221,7 +221,7 @@ export const PersonalInfo = ({
                 "No LinkedIn profile"
               )
             }
-            onEdit={isOwner ? () => setIsModalOpen("links") : undefined}
+            onEdit={isOwner ? () => setIsModalOpen("linkedin") : undefined}
             editable={isOwner}
           />
           <ProfileItem
@@ -240,7 +240,7 @@ export const PersonalInfo = ({
                 "No GitHub profile"
               )
             }
-            onEdit={isOwner ? () => setIsModalOpen("links") : undefined}
+            onEdit={isOwner ? () => setIsModalOpen("github") : undefined}
             editable={isOwner}
           />
         </div>
