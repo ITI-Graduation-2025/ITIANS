@@ -1,5 +1,4 @@
-// ✅ src/services/firebase/notificationService.js
-
+// src/services/notificationService.js
 import { db } from "@/config/firebase";
 import {
   collection,
