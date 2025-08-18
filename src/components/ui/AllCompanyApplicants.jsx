@@ -5,10 +5,10 @@ import CompanyNavbar from "./CompanyNavbar";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { db } from "@/config/firebase";
-import Link from "next/link"; 
+import Link from "next/link";
 import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
-import { Users, Clock, CheckCircle, XCircle, BarChart3, Search } from "lucide-react";
+import { Users, Clock, CheckCircle, XCircle, Search, Trash2 } from "lucide-react";
 
 const STATUS_LIST = [
   { key: "all", label: "All Freelancers", icon: Users, color: "text-blue-600", bg: "bg-blue-600" },
@@ -16,12 +16,6 @@ const STATUS_LIST = [
   { key: "approved", label: "Approved", icon: CheckCircle, color: "text-green-600", bg: "bg-green-600" },
   { key: "rejected", label: "Rejected", icon: XCircle, color: "text-red-600", bg: "bg-red-600" },
 ];
-
-const STATUS_BADGES = {
-  pending: { text: "New", bg: "bg-blue-100 text-blue-700" },
-  approved: { text: "Approved", bg: "bg-green-100 text-green-700" },
-  rejected: { text: "Reviewed", bg: "bg-yellow-100 text-yellow-700" },
-};
 
 export default function AllCompanyApplicants() {
   const { data: session } = useSession();
@@ -31,7 +25,9 @@ export default function AllCompanyApplicants() {
   const [tab, setTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState({ show: false, action: null, applicant: null });
+  const [deleteModal, setDeleteModal] = useState({ show: false, applicant: null });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedApplicant, setSelectedApplicant] = useState("");
 
   useEffect(() => {
     if (!companyId) return;
@@ -67,7 +63,7 @@ export default function AllCompanyApplicants() {
                   skills: userSnap.data().skills || [],
                   gradStatus: userSnap.data().gradStatus || "ITI Graduate",
                   ...userSnap.data(),
-                  jobTitle: job.title || "Untitled Job"
+                  jobTitle: job.title || "Untitled Job",
                 };
               })
             );
@@ -108,15 +104,12 @@ export default function AllCompanyApplicants() {
 
       await updateDoc(jobRef, { applicants: updatedApplicants });
 
-      toast.success(
-        `${name} has been ${newStatus}`,
-        {
-          style: {
-            background: newStatus === "approved" ? "#dcfce7" : "#fee2e2",
-            color: newStatus === "approved" ? "#166534" : "#991b1b",
-          },
-        }
-      );
+      toast.success(`${name} has been ${newStatus}`, {
+        style: {
+          background: newStatus === "approved" ? "#dcfce7" : "#fee2e2",
+          color: newStatus === "approved" ? "#166534" : "#991b1b",
+        },
+      });
 
       setApplications((prev) =>
         prev.map((a) =>
@@ -131,12 +124,36 @@ export default function AllCompanyApplicants() {
     }
   };
 
+  const handleDeleteApplicant = async (jobId, userId, name) => {
+    try {
+      const jobRef = doc(db, "jobs", jobId);
+      const jobSnap = await getDoc(jobRef);
+      if (!jobSnap.exists()) return;
+
+      const jobData = jobSnap.data();
+      const updatedApplicants = jobData.applicants.filter((applicant) =>
+        typeof applicant === "string"
+          ? applicant !== userId
+          : applicant.userId !== userId
+      );
+
+      await updateDoc(jobRef, { applicants: updatedApplicants });
+
+      toast.success(`${name} has been deleted.`);
+
+      setApplications((prev) =>
+        prev.filter((a) => !(a.id === userId && a.jobId === jobId))
+      );
+    } catch (err) {
+      console.error("Failed to delete applicant:", err);
+      toast.error("Failed to delete applicant.");
+    }
+  };
+
   const filteredApplicants =
     tab === "all"
       ? applications
-      : applications.filter(
-          (a) => (a.status?.toLowerCase() || "pending") === tab
-        );
+      : applications.filter((a) => (a.status?.toLowerCase() || "pending") === tab);
 
   const searchFilteredApplicants = filteredApplicants.filter((a) =>
     a.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -162,7 +179,6 @@ export default function AllCompanyApplicants() {
           </div>
 
           <section>
-            
             <div className="flex flex-col gap-3">
               {STATUS_LIST.map((s) => {
                 const Icon = s.icon;
@@ -218,33 +234,70 @@ export default function AllCompanyApplicants() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
             <h2 className="text-lg font-semibold">All Job Applications</h2>
 
-            {/* Search Input */}
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by job title..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-3 py-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+            <div className="flex items-center gap-3">
+              {/* Search Input */}
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search by job title..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-3 py-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Dropdown */}
+              <select
+                value={selectedApplicant}
+                onChange={(e) => setSelectedApplicant(e.target.value)}
+                className="border rounded-lg px-3 py-2"
+              >
+                <option value="">Select applicant</option>
+                {searchFilteredApplicants.map((a) => (
+                  <option key={a.id + a.jobId} value={a.id + "|" + a.jobId}>
+                    {a.name} ({a.jobTitle})
+                  </option>
+                ))}
+              </select>
+
+              {/* Delete Button */}
+              <button
+                disabled={!selectedApplicant}
+                onClick={() => {
+                  const [userId, jobId] = selectedApplicant.split("|");
+                  const applicant = searchFilteredApplicants.find(
+                    (a) => a.id === userId && a.jobId === jobId
+                  );
+                  setDeleteModal({ show: true, applicant });
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  selectedApplicant
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                <Trash2 className="w-4 h-4" /> Delete Applicant
+              </button>
             </div>
           </div>
 
           {loading ? (
             <div className="space-y-4">
-              {Array(3).fill(0).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-white p-4 rounded-lg shadow flex gap-4 animate-pulse"
-                >
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="w-1/3 h-4 bg-gray-200 rounded"></div>
-                    <div className="w-1/2 h-4 bg-gray-200 rounded"></div>
+              {Array(3)
+                .fill(0)
+                .map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white p-4 rounded-lg shadow flex gap-4 animate-pulse"
+                  >
+                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="w-1/3 h-4 bg-gray-200 rounded"></div>
+                      <div className="w-1/2 h-4 bg-gray-200 rounded"></div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           ) : searchFilteredApplicants.length > 0 ? (
             <div className="space-y-4">
@@ -270,12 +323,16 @@ export default function AllCompanyApplicants() {
                             {applicant.name}
                           </h3>
                           <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">
-                            {applicant.mainTrack ? `Main Track: ${applicant.mainTrack}` : "No Track Assigned"}
+                            {applicant.mainTrack
+                              ? `Main Track: ${applicant.mainTrack}`
+                              : "No Track Assigned"}
                           </span>
-
                         </div>
                         <p className="text-sm text-gray-600 truncate max-w-md">
-                          Applied for: <span className="font-medium">{applicant.jobTitle}</span>
+                          Applied for:{" "}
+                          <span className="font-medium">
+                            {applicant.jobTitle}
+                          </span>
                         </p>
                         <div className="flex flex-wrap gap-2 mt-1 max-w-md">
                           {applicant.skills?.map((skill) => (
@@ -311,7 +368,7 @@ export default function AllCompanyApplicants() {
                               }
                               className="text-green-600 hover:underline font-semibold"
                             >
-                              Approve 
+                              Approve
                             </button>
                             <button
                               onClick={() =>
@@ -327,7 +384,8 @@ export default function AllCompanyApplicants() {
                             </button>
                           </>
                         )}
-                        {(applicant.status === "approved" || applicant.status === "rejected") && (
+                        {(applicant.status === "approved" ||
+                          applicant.status === "rejected") && (
                           <span
                             className={`px-2 py-0.5 rounded text-xs font-semibold ${
                               applicant.status === "approved"
@@ -335,7 +393,8 @@ export default function AllCompanyApplicants() {
                                 : "bg-red-100 text-red-700"
                             }`}
                           >
-                            {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
+                            {applicant.status.charAt(0).toUpperCase() +
+                              applicant.status.slice(1)}
                           </span>
                         )}
                       </div>
@@ -350,10 +409,9 @@ export default function AllCompanyApplicants() {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modal (Approve/Reject) */}
       {confirmModal.show && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h2 className="text-lg font-semibold mb-4">
               Confirm {confirmModal.action === "approved" ? "Approve" : "Reject"}?
@@ -364,7 +422,9 @@ export default function AllCompanyApplicants() {
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setConfirmModal({ show: false, action: null, applicant: null })}
+                onClick={() =>
+                  setConfirmModal({ show: false, action: null, applicant: null })
+                }
                 className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
               >
                 Cancel
@@ -386,6 +446,42 @@ export default function AllCompanyApplicants() {
                 }`}
               >
                 Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.show && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-lg font-semibold mb-4">Delete Applicant?</h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-medium">{deleteModal.applicant?.name}</span>{" "}
+              from this job?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteModal({ show: false, applicant: null })}
+                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteApplicant(
+                    deleteModal.applicant.jobId,
+                    deleteModal.applicant.id,
+                    deleteModal.applicant.name
+                  );
+                  setDeleteModal({ show: false, applicant: null });
+                  setSelectedApplicant("");
+                }}
+                className="px-4 py-2 rounded text-white bg-red-600 hover:bg-red-700"
+              >
+                Delete
               </button>
             </div>
           </div>

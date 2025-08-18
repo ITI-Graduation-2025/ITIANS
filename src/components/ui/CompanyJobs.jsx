@@ -66,24 +66,47 @@ export default function CompanyJobs() {
   const pageCount = Math.ceil(filteredJobs.length / itemsPerPage);
 
   useEffect(() => {
-    if (!companyId) return;
-    const unsubscribe = onSnapshot(collection(db, "jobs"), (snapshot) => {
-      const jobsData = [];
-      snapshot.forEach((docSnap) => {
-        const job = { id: docSnap.id, ...docSnap.data() };
-        if (job.companyId === companyId) {
-          jobsData.push(job);
+  if (!companyId) return;
+
+  const unsubscribe = onSnapshot(collection(db, "jobs"), async (snapshot) => {
+    const jobsData = [];
+
+    for (const docSnap of snapshot.docs) {
+      const job = { id: docSnap.id, ...docSnap.data() };
+
+      // ✅ check deadline
+      if (job.deadline) {
+        const jobDeadline = job.deadline.seconds
+          ? new Date(job.deadline.seconds * 1000)
+          : new Date(job.deadline);
+
+        if (jobDeadline < new Date() && job.status !== "Closed") {
+          try {
+            await updateDoc(doc(db, "jobs", job.id), { status: "Closed" });
+            job.status = "Closed"; // update locally too
+          } catch (err) {
+            console.error("Error updating job status:", err);
+          }
         }
-      });
-      const sorted = jobsData.sort(
-        (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
-      );
-      setJobs(sorted);
-      setFilteredJobs(sorted);
-      setLoading(false); 
-    });
-    return () => unsubscribe();
-  }, [companyId]);
+      }
+
+      if (job.companyId === companyId) {
+        jobsData.push(job);
+      }
+    }
+
+    const sorted = jobsData.sort(
+      (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+    );
+
+    setJobs(sorted);
+    setFilteredJobs(sorted);
+    setLoading(false);
+  });
+
+  return () => unsubscribe();
+}, [companyId]);
+
 
   useEffect(() => {
     let result = jobs;
@@ -542,6 +565,7 @@ function daysLeft(deadline) {
   );
   return diff > 0 ? `${diff} days left` : "Expired";
 }
+
 
 
 

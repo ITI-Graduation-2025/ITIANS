@@ -5,28 +5,17 @@ import {
   MapPin,
   Users,
   Briefcase,
-  TrendingUp,
   DollarSign,
   Calendar,
-  Eye,
   BadgeCheck,
   ListChecks,
-  Clock,
   CheckCircle,
-  Mail,
-  Linkedin,
-  Globe,
-  MessageCircle,
-  ClipboardCopy,
-  Phone,
   FileText,
-  ChevronDown,
   ChevronRight,
-  Hand,
   ChevronLeft,
+  Hand,
 } from "lucide-react";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
@@ -36,8 +25,6 @@ import {
   query,
   where,
   getDocs,
-  updateDoc,
-  arrayUnion,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import toast, { Toaster } from "react-hot-toast";
@@ -58,8 +45,7 @@ function formatRelativeTime(date) {
   const diffDay = Math.floor(diffHr / 24);
 
   if (diffSec < 60) return "Just now";
-  if (diffMin < 60)
-    return diffMin === 1 ? "1 minute ago" : `${diffMin} minutes ago`;
+  if (diffMin < 60) return diffMin === 1 ? "1 minute ago" : `${diffMin} minutes ago`;
   if (diffHr < 24) return diffHr === 1 ? "1 hour ago" : `${diffHr} hours ago`;
   if (diffDay === 1) return "Yesterday";
   return `${diffDay} days ago`;
@@ -68,18 +54,16 @@ function formatRelativeTime(date) {
 export default function ProfileViewCom() {
   const { data: session } = useSession();
   const companyId = session?.user?.id;
-  const user = session?.user;
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
-  // const [showComments, setShowComments] = useState(false);
   const [applicantImages, setApplicantImages] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const jobsPerPage = 3;
 
-  // Fetch applicant images safely
+  // Fetch applicant images
   useEffect(() => {
     let isMounted = true;
     const loadImages = async () => {
@@ -90,8 +74,7 @@ export default function ProfileViewCom() {
           const userRef = doc(db, "users", applicant.userId);
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
-            images[applicant.userId] =
-              userSnap.data().profileImage || "/default-user.png";
+            images[applicant.userId] = userSnap.data().profileImage || "/default-user.png";
           } else {
             images[applicant.userId] = "/default-user.png";
           }
@@ -102,28 +85,12 @@ export default function ProfileViewCom() {
       if (isMounted) setApplicantImages(images);
     };
     loadImages();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [selectedJob]);
 
   const {
-    logo,
-    name,
-    location,
-    rating,
-    reviewsCount,
-    description,
-    services,
-    technologies,
-    website,
-    email,
-    linkedin,
     stats = {},
-    industry,
     founded,
-    phone,
-    facebook,
   } = company || {};
 
   const indexOfLastJob = currentPage * jobsPerPage;
@@ -141,20 +108,21 @@ export default function ProfileViewCom() {
 
       const jobsQuery = query(
         collection(db, "jobs"),
-        where("companyId", "==", companyId),
+        where("companyId", "==", companyId)
       );
       const jobsSnapshot = await getDocs(jobsQuery);
 
       const jobsData = jobsSnapshot.docs
         .map((doc) => ({ id: doc.id, ...doc.data() }))
         .sort(
-          (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
+          (a, b) =>
+            (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
         );
 
       const activeProjects = jobsData.filter(
         (job) =>
           job.status?.toLowerCase() === "active" ||
-          job.status?.toLowerCase() === "open",
+          job.status?.toLowerCase() === "open"
       ).length;
 
       const totalJobs = jobsData.length;
@@ -164,12 +132,12 @@ export default function ProfileViewCom() {
       jobsData.forEach((job) => {
         if (Array.isArray(job.applicants) && job.applicants.length > 0) {
           const approvedApplicants = job.applicants.filter(
-            (applicant) => applicant?.status?.toLowerCase() === "approved",
+            (applicant) => applicant?.status?.toLowerCase() === "approved"
           );
 
           if (approvedApplicants.length > 0) {
             jobsWithApproved++;
-            totalHired += approvedApplicants.length; //
+            totalHired += approvedApplicants.length;
           }
         }
       });
@@ -219,42 +187,37 @@ export default function ProfileViewCom() {
         </div>
       ) : (
         <>
-          <div className="relative w-full h-56  sm:h-64">
-            {/* الخلفية */}
+          {/* Cover + Logo */}
+          <div className="relative w-full h-56 sm:h-64">
             <BackgroundClickable
               currentBackgroundUrl={company?.backgroundUrl || ""}
               onUploadSuccess={fetchCompanyAndJobs}
               width="100%"
               height="100%"
-            ></BackgroundClickable>
-
+            />
             <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
               <LogoClickable
                 currentLogoUrl={company?.logo || "/default-logo.png"}
                 onUploadSuccess={fetchCompanyAndJobs}
               />
             </div>
-
-            {/* info*/}
             <div className="absolute top-[57%] left-1/2 transform -translate-x-1/2 z-20 text-center text-white">
-              <h1 className="text-3xl font-bold ">
-                {company?.name || "Company Name"}
-              </h1>
+              <h1 className="text-3xl font-bold">{company?.name || "Company Name"}</h1>
               <div className="flex flex-wrap justify-center gap-2 mt-2 text-sm">
                 {company?.industry && (
-                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full">
                     <Briefcase className="w-4 h-4 text-[#8B0000]" />
                     <span>{company.industry}</span>
                   </div>
                 )}
                 {founded && (
-                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full">
                     <Calendar className="w-4 h-4 text-[#8B0000]" />
                     <span>Founded: {founded}</span>
                   </div>
                 )}
                 {company?.location && (
-                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full">
                     <MapPin className="w-4 h-4 text-[#8B0000]" />
                     <span>{company.location}</span>
                   </div>
@@ -263,33 +226,22 @@ export default function ProfileViewCom() {
             </div>
           </div>
 
-          {/* Jobs + Stats + Editable Profile */}
+          {/* Jobs + Stats */}
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
             {/* Jobs Column */}
             <div className="md:col-span-2">
               <h2 className="text-xl font-semibold mb-2">
                 Active Job Postings{" "}
                 <span className="text-sm text-gray-500">
-                  (
-                  {
-                    jobs.filter(
-                      (job) =>
-                        job.status?.toLowerCase() === "active" ||
-                        job.status?.toLowerCase() === "open",
-                    ).length
-                  }{" "}
-                  open positions)
+                  ({jobs.filter(job => job.status?.toLowerCase() === "active" || job.status?.toLowerCase() === "open").length} open positions)
                 </span>
               </h2>
               <div className="space-y-4">
                 {jobs.length === 0 ? (
                   <div className="bg-white mt-20 rounded-xl p-8 text-center mr-20">
-                    <h3 className="text-xl font-semibold text-[#333] mb-2">
-                      No Job Postings Yet
-                    </h3>
+                    <h3 className="text-xl font-semibold text-[#333] mb-2">No Job Postings Yet</h3>
                     <p className="text-sm text-gray-700 max-w-md mx-auto mb-6">
-                      You haven’t posted any jobs yet. Start attracting top ITI
-                      talents by creating your first job posting now.
+                      You haven’t posted any jobs yet. Start attracting top ITI talents by creating your first job posting now.
                     </p>
                     <Link
                       href="/PostJob"
@@ -300,21 +252,12 @@ export default function ProfileViewCom() {
                   </div>
                 ) : (
                   currentJobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
-                    >
+                    <div key={job.id} className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start">
                       <div>
                         <h3 className="text-lg font-semibold">{job.title}</h3>
-                        <p className="text-sm text-gray-500">
-                          Type: {job.type}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Level: {job.level}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Applications: {job.applicants?.length || 0}
-                        </p>
+                        <p className="text-sm text-gray-500">Type: {job.type}</p>
+                        <p className="text-sm text-gray-500">Level: {job.level}</p>
+                        <p className="text-sm text-gray-500">Applications: {job.applicants?.length || 0}</p>
                         <button
                           onClick={() => setSelectedJob(job)}
                           className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
@@ -323,8 +266,7 @@ export default function ProfileViewCom() {
                         </button>
                       </div>
                       <div className="text-xs text-gray-400">
-                        {job.createdAt?.toDate &&
-                          formatRelativeTime(job.createdAt.toDate())}
+                        {job.createdAt?.toDate && formatRelativeTime(job.createdAt.toDate())}
                       </div>
                     </div>
                   ))
@@ -354,105 +296,56 @@ export default function ProfileViewCom() {
             {/* Stats + Editable Profile */}
             <div className="space-y-4">
               <div className="bg-white shadow rounded p-3">
-                <h2 className="font-semibold mb-2 text-[#203947]">
-                  Company Statistics
-                </h2>
+                <h2 className="font-semibold mb-2 text-[#203947]">Company Statistics</h2>
                 <ul className="text-sm mt-2 space-y-1 text-[#333]">
-                  <li className="flex gap-2 items-center">
-                    <Briefcase className="w-4 h-4 text-[#b30000]" />
-                    {stats?.activeProjects ?? 0} Active Jobs
-                  </li>
-                  <li className="flex gap-2 items-center">
-                    <Users className="w-4 h-4 text-[#b30000]" />
-                    {stats?.totalHired ?? 0}+ Total Hired
-                  </li>
-                  <li className="flex gap-2 items-center">
-                    <CheckCircle className="w-4 h-4 text-[#b30000]" />
-                    {stats?.successRate ?? 0} Success Rate
-                  </li>
+                  <li className="flex gap-2 items-center"><Briefcase className="w-4 h-4 text-[#b30000]" />{stats?.activeProjects ?? 0} Active Jobs</li>
+                  <li className="flex gap-2 items-center"><Users className="w-4 h-4 text-[#b30000]" />{stats?.totalHired ?? 0}+ Total Hired</li>
+                  <li className="flex gap-2 items-center"><CheckCircle className="w-4 h-4 text-[#b30000]" />{stats?.successRate ?? 0} Success Rate</li>
                 </ul>
               </div>
               <EditableProfileViewCom />
             </div>
           </div>
 
+          {/* Job Details Modal */}
           {selectedJob && (
             <div className="fixed inset-0 z-50 bg-black/40 flex justify-center items-center px-4">
               <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative overflow-y-auto max-h-[90vh] space-y-6">
-                {/* Job Title */}
-                <h2 className="text-2xl font-bold mb-4 text-[#203947]">
-                  {selectedJob.title || "N/A"}
-                </h2>
+                <h2 className="text-2xl font-bold mb-4 text-[#203947]">{selectedJob.title || "N/A"}</h2>
 
-                {/* Job Details */}
                 <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-                  <p>
-                    <Briefcase className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
-                    <span className="text-[#8B0000] font-semibold">Type:</span>{" "}
-                    {selectedJob.type || "N/A"}
-                  </p>
-                  <p>
-                    <BadgeCheck className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
-                    <span className="text-[#8B0000] font-semibold">Level:</span>{" "}
-                    {selectedJob.level || "N/A"}
-                  </p>
-                  <p>
-                    <DollarSign className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
-                    <span className="text-[#8B0000] font-semibold">
-                      Salary:
-                    </span>{" "}
-                    {selectedJob.salary || "N/A"}
-                  </p>
-                  <p>
-                    <MapPin className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
-                    <span className="text-[#8B0000] font-semibold">
-                      Location:
-                    </span>{" "}
-                    {selectedJob.location || "N/A"}
-                  </p>
-                  <p>
-                    <Calendar className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
-                    <span className="text-[#8B0000] font-semibold">
-                      Deadline:
-                    </span>{" "}
-                    {selectedJob.deadline?.toDate
-                      ? selectedJob.deadline.toDate().toLocaleDateString()
-                      : "N/A"}
-                  </p>
+                  <p><Briefcase className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Type:</span> {selectedJob.type || "N/A"}</p>
+                  <p><BadgeCheck className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Level:</span> {selectedJob.level || "N/A"}</p>
+                  <p><DollarSign className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Salary:</span> {selectedJob.salary || "N/A"}</p>
+                  <p><MapPin className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Location:</span> {selectedJob.location || "N/A"}</p>
+                  <p><Calendar className="inline w-4 h-4 mr-1 text-[#8B0000]" /> <span className="text-[#8B0000] font-semibold">Deadline:</span> {selectedJob.deadline?.toDate ? selectedJob.deadline.toDate().toLocaleDateString() : "N/A"}</p>
                 </div>
 
-                {/* Description */}
                 {selectedJob.description && (
                   <section className="space-y-2">
                     <h3 className="text-md font-semibold text-[#8B0000] flex items-center gap-2">
                       <FileText className="w-4 h-4" /> Description
                     </h3>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      {selectedJob.description}
-                    </p>
+                    <p className="text-gray-700 text-sm leading-relaxed">{selectedJob.description}</p>
                   </section>
                 )}
 
-                {/* Requirements */}
                 {selectedJob.requirements && (
                   <section className="space-y-2">
                     <h3 className="text-md font-semibold text-[#8B0000] flex items-center gap-2">
                       <ListChecks className="w-4 h-4" /> Requirements
                     </h3>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      {selectedJob.requirements}
-                    </p>
+                    <p className="text-gray-700 text-sm leading-relaxed">{selectedJob.requirements}</p>
                   </section>
                 )}
 
-                {/* Skills */}
-                {selectedJob.skills && (
+                {selectedJob.skills && typeof selectedJob.skills === "string" && (
                   <section className="space-y-2">
                     <h3 className="text-md font-semibold text-[#8B0000] flex items-center gap-2">
                       <Star className="w-4 h-4" /> Skills Required
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {selectedJob.skills?.split(",").map((skill, index) => (
+                      {selectedJob.skills.split(",").map((skill, index) => (
                         <span
                           key={index}
                           className="bg-[#203947] text-white px-3 py-1 rounded-full text-xs font-medium"
@@ -463,56 +356,6 @@ export default function ProfileViewCom() {
                     </div>
                   </section>
                 )}
-
-                {/* Comments */}
-                {/* <section className="mt-6">
-        <button
-          onClick={() => setShowComments((prev) => !prev)}
-          className="text-md font-semibold text-[#8B0000] mb-3 flex items-center gap-2 focus:outline-none"
-        >
-          <MessageCircle className="w-5 h-5 text-[#8B0000]" />
-          Comments
-          {showComments ? (
-            <ChevronDown className="w-4 h-4 text-[#203947]" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-[#203947]" />
-          )}
-        </button>
-
-        {showComments && (
-          <>
-            {selectedJob?.comments?.length > 0 ? (
-              <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                {selectedJob.comments.map((comment, index) => (
-                  <li
-                    key={index}
-                    className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm flex gap-4 items-start"
-                  >
-                    <img
-                      src={applicantImages[comment.userId] || "/default-user.png"}
-                      alt={comment.userName || "User"}
-                      className="w-10 h-10 rounded-full object-cover mt-1 border"
-                    />
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-semibold text-[#203947]">{comment.userName || "Unknown"}</p>
-                        <p className="text-gray-400 text-xs">
-                          {comment.timestamp?.seconds
-                            ? formatRelativeTime(new Date(comment.timestamp.seconds * 1000))
-                            : ""}
-                        </p>
-                      </div>
-                      <p className="text-gray-700 text-sm">{comment.text || ""}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500">No comments yet.</p>
-            )}
-          </>
-        )}
-      </section> */}
 
                 {/* Copy Job Link */}
                 <button
@@ -527,7 +370,6 @@ export default function ProfileViewCom() {
                   Copy Job Link
                 </button>
 
-                {/* Close */}
                 <div className="flex justify-between items-center pt-4">
                   <button
                     className="bg-[#203947] text-white px-4 py-2 rounded-md hover:bg-[#8B0000] text-sm transition-all"
@@ -538,7 +380,13 @@ export default function ProfileViewCom() {
                 </div>
               </div>
             </div>
-          )}
+         
+)}
+
+
+
+
+
         </>
       )}
     </main>

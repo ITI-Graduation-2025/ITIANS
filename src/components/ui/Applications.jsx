@@ -8,7 +8,7 @@ import { db } from "@/config/firebase";
 import Link from "next/link";
 import { doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
-import { Users, Clock, CheckCircle, XCircle, Search } from "lucide-react";
+import { Users, Clock, CheckCircle, XCircle, Search, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 
 const STATUS_LIST = [
@@ -17,12 +17,6 @@ const STATUS_LIST = [
   { key: "approved", label: "Approved", icon: CheckCircle, color: "text-green-600", bg: "bg-green-600" },
   { key: "rejected", label: "Rejected", icon: XCircle, color: "text-red-600", bg: "bg-red-600" },
 ];
-
-const STATUS_BADGES = {
-  pending: { text: "New", bg: "bg-blue-100 text-blue-700" },
-  approved: { text: "Approved", bg: "bg-green-100 text-green-700" },
-  rejected: { text: "Reviewed", bg: "bg-yellow-100 text-yellow-700" },
-};
 
 export default function CompanyApplications() {
   const { data: session } = useSession();
@@ -34,66 +28,66 @@ export default function CompanyApplications() {
   const [tab, setTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState({ show: false, action: null, applicant: null });
+  const [deleteModal, setDeleteModal] = useState({ show: false, applicant: null });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedApplicant, setSelectedApplicant] = useState("");
   const [jobTitle, setJobTitle] = useState("Job");
-  const capitalize = (str) =>
-  str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
+  const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
-  
-useEffect(() => {
-  if (!jobId) return;
-  setLoading(true);
+  useEffect(() => {
+    if (!jobId) return;
+    setLoading(true);
 
-  const jobRef = doc(db, "jobs", jobId);
-  const unsub = onSnapshot(jobRef, async (jobSnap) => {
-    if (!jobSnap.exists()) {
-      toast.error("Job not found.");
-      setApplications([]);
+    const jobRef = doc(db, "jobs", jobId);
+    const unsub = onSnapshot(jobRef, async (jobSnap) => {
+      if (!jobSnap.exists()) {
+        toast.error("Job not found.");
+        setApplications([]);
+        setLoading(false);
+        return;
+      }
+
+      const jobData = jobSnap.data();
+      setJob(jobData);
+      setJobTitle(jobData?.title || "Job");
+
+      const applicantEntries = jobData.applicants || [];
+      const applicantData = await Promise.all(
+        applicantEntries.map(async (entry) => {
+          const userId = typeof entry === "string" ? entry : entry.userId;
+          const status =
+            typeof entry === "object" && entry.status
+              ? String(entry.status).toLowerCase().trim()
+              : "pending";
+
+          const userRef = doc(db, "users", userId);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) return null;
+
+          const u = userSnap.data() || {};
+          return {
+            id: userId,
+            status,
+            jobId,
+            jobTitle: jobData?.title || "Untitled Job",
+            name: u.name || u.fullName || "Unnamed Applicant",
+            profileImage: u.profileImage || u.image || "/default-avatar.png",
+            skills: u.skills || [],
+            mainTrack: u.mainTrack,
+            location: u.location,
+            gradStatus: u.gradStatus || "ITI Graduate",
+            ...u,
+          };
+        })
+      );
+
+      setApplications(applicantData.filter(Boolean));
       setLoading(false);
-      return;
-    }
+    });
 
-    const jobData = jobSnap.data();
-    setJob(jobData); // ✅ هنا ضيفناها
-    setJobTitle(jobData?.title || "Job");
-
-    const applicantEntries = jobData.applicants || [];
-    const applicantData = await Promise.all(
-      applicantEntries.map(async (entry) => {
-        const userId = typeof entry === "string" ? entry : entry.userId;
-        const status =
-          typeof entry === "object" && entry.status
-            ? String(entry.status).toLowerCase().trim()
-            : "pending";
-
-        const userRef = doc(db, "users", userId);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) return null;
-
-        const u = userSnap.data() || {};
-        return {
-          id: userId,
-          status,
-          jobId,
-          jobTitle: jobData?.title || "Untitled Job",
-          name: u.name || u.fullName || "Unnamed Applicant",
-          profileImage: u.profileImage || u.image || "/default-avatar.png",
-          skills: u.skills || [],
-          mainTrack: u.mainTrack,
-          location: u.location,
-          gradStatus: u.gradStatus || "ITI Graduate",
-          ...u,
-        };
-      })
-    );
-
-    setApplications(applicantData.filter(Boolean));
-    setLoading(false);
-  });
-
-  return () => unsub();
-}, [jobId]);
+    return () => unsub();
+  }, [jobId]);
 
   const handleUpdateStatus = async (userId, newStatus, name) => {
     try {
@@ -134,7 +128,29 @@ useEffect(() => {
     }
   };
 
-  
+  const handleDeleteApplicant = async (userId, name) => {
+    try {
+      const jobRef = doc(db, "jobs", jobId);
+      const jobSnap = await getDoc(jobRef);
+      if (!jobSnap.exists()) return;
+
+      const jobData = jobSnap.data();
+      const updatedApplicants = (jobData.applicants || []).filter(
+        (applicant) => (typeof applicant === "string" ? applicant !== userId : applicant.userId !== userId)
+      );
+
+      await updateDoc(jobRef, { applicants: updatedApplicants });
+
+      toast.success(`${name} has been deleted.`);
+
+      setApplications((prev) => prev.filter((a) => a.id !== userId));
+      setSelectedApplicant("");
+    } catch (err) {
+      console.error("Failed to delete applicant:", err);
+      toast.error("Failed to delete applicant.");
+    }
+  };
+
   const filteredApplicants =
     tab === "all"
       ? applications
@@ -163,8 +179,7 @@ useEffect(() => {
               Freelancer Management
             </h1>
             <p className="text-sm text-gray-600">
-              Review and approve applications for
-              <span className="font-semibold"> {jobTitle}</span>
+              Review and approve applications for <span className="font-semibold">{jobTitle}</span>
             </p>
           </div>
 
@@ -212,22 +227,50 @@ useEffect(() => {
         {/* Main Content */}
         <div className="flex-1 p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
-            <h1 className="text-xl font-bold text-gray-800">
-  {capitalize(job?.title) } Job Applications
-</h1>
+            <h1 className="text-xl font-bold text-gray-800">{capitalize(job?.title)} Job Applications</h1>
 
+            {/* Search Input + Delete Dropdown */}
+            <div className="flex flex-col md:flex-row md:items-center gap-3 w-full md:w-auto">
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search by name or skill..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-3 py-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
 
+              {/* Dropdown */}
+              <select
+                value={selectedApplicant}
+                onChange={(e) => setSelectedApplicant(e.target.value)}
+                className="border rounded-lg px-3 py-2"
+              >
+                <option value="">Select applicant</option>
+                {searchFilteredApplicants.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
 
-            {/* Search Input */}
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by name or skill..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-3 py-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              {/* Delete Button */}
+              <button
+                disabled={!selectedApplicant}
+                onClick={() => {
+                  const applicant = searchFilteredApplicants.find((a) => a.id === selectedApplicant);
+                  setDeleteModal({ show: true, applicant });
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  selectedApplicant
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                <Trash2 className="w-4 h-4" /> Delete Applicant
+              </button>
             </div>
           </div>
 
@@ -275,7 +318,6 @@ useEffect(() => {
                         <p className="text-sm text-gray-600 truncate max-w-md">
                           Applied for: <span className="font-medium">{jobTitle}</span>
                         </p>
-                        
 
                         <div className="flex flex-wrap gap-2 mt-1 max-w-md">
                           {applicant.skills?.map((skill) => (
@@ -321,9 +363,7 @@ useEffect(() => {
                         {(status === "approved" || status === "rejected") && (
                           <span
                             className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                              status === "approved"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
+                              status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                             }`}
                           >
                             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -349,8 +389,7 @@ useEffect(() => {
               Confirm {confirmModal.action === "approved" ? "Approve" : "Reject"}?
             </h2>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to {confirmModal.action}{" "}
-              {confirmModal.applicant?.name}?
+              Are you sure you want to {confirmModal.action} {confirmModal.applicant?.name}?
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -380,9 +419,39 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.show && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-lg font-semibold mb-4">Delete Applicant?</h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete <span className="font-medium">{deleteModal.applicant?.name}</span> from this job?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteModal({ show: false, applicant: null })}
+                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteApplicant(deleteModal.applicant.id, deleteModal.applicant.name);
+                  setDeleteModal({ show: false, applicant: null });
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 
 

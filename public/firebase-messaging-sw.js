@@ -2,7 +2,7 @@
 self.FIREBASE_API_KEY = "AIzaSyBlMzVoTIAzb-ql2QYeid1NpYiu9dwGjPI";
 self.FIREBASE_AUTH_DOMAIN = "iti-platform.firebaseapp.com";
 self.FIREBASE_PROJECT_ID = "iti-platform";
-self.FIREBASE_STORAGE_BUCKET = "iti-platform.firebasestorage.app";
+self.FIREBASE_STORAGE_BUCKET = "iti-platform.appspot.com";
 self.FIREBASE_MESSAGING_SENDER_ID = "808324936416";
 self.FIREBASE_APP_ID = "1:808324936416:web:1540dd08baec41a22f5685";
 self.FIREBASE_MEASUREMENT_ID = "G-C421XZRKG6";
