@@ -4,7 +4,7 @@ import { useUserContext } from "@/context/userContext";
 import { updateUser } from "@/services/userServices";
 import { upload } from "@/utils/upload";
 import { useEffect, useRef, useState } from "react";
-import { FiTrash2, FiUpload, FiX } from "react-icons/fi";
+import { FiTrash2, FiUpload, FiX, FiPlus } from "react-icons/fi";
 import { toast } from "sonner";
 
 export const EditModal = ({ type, onClose, refetchUser }) => {
@@ -46,8 +46,30 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
         ],
       );
     } else if (type === "certificates") {
-      setTempValue(user.certificates || []);
-      setOriginalValue(user.certificates || []);
+      // Handle both old and new certificate formats
+      const userCertificates = user.certificates || [];
+      const normalizedCertificates = Array.isArray(userCertificates) 
+        ? userCertificates.map(cert => {
+            if (typeof cert === 'string') {
+              // Convert old string format to new object format
+              return { title: cert, year: "", issuer: "", fileUrl: "", fileName: "" };
+            }
+            if (cert && typeof cert === 'object') {
+              // Ensure new object format has all required fields
+              return {
+                title: cert.title || cert.name || cert || "",
+                year: cert.year || "",
+                issuer: cert.issuer || "",
+                fileUrl: cert.fileUrl || cert.url || "",
+                fileName: cert.fileName || cert.name || ""
+              };
+            }
+            return { title: "", year: "", issuer: "", fileUrl: "", fileName: "" };
+          })
+        : [];
+      
+      setTempValue(normalizedCertificates);
+      setOriginalValue(normalizedCertificates);
     } else if (type === "profileImage") {
       setTempValue(user.profileImage || "");
       setImagePreview(user.profileImage || null);
@@ -127,6 +149,18 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    // Mark as changed so user knows they have unsaved changes
+    setChanged(true);
+  };
+
+  const handleRemoveCertificateFile = (certIndex) => {
+    const arr = [...tempValue];
+    arr[certIndex] = { ...arr[certIndex], fileUrl: "", fileName: "" };
+    setTempValue(arr);
+    
+    // Update user context immediately for instant UI update
+    setUser({ ...user, certificates: arr });
+    
     // Mark as changed so user knows they have unsaved changes
     setChanged(true);
   };
@@ -498,50 +532,198 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
         {type === "certificates" && (
           <div className="space-y-4">
             {(Array.isArray(tempValue) ? tempValue : []).map((c, i) => (
-              <div key={i} className="flex gap-2 mb-2 items-center">
-                <input
-                  type="text"
-                  value={c.title || ""}
-                  onChange={(e) => {
-                    const arr = [...tempValue];
-                    arr[i] = { ...arr[i], title: e.target.value };
-                    setTempValue(arr);
-                  }}
-                  placeholder="Certificate Title"
-                  className="border-2 border-[#B71C1C] px-2 py-1 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
-                  disabled={loading}
-                />
-                <input
-                  type="number"
-                  value={c.year || ""}
-                  onChange={(e) => {
-                    const arr = [...tempValue];
-                    arr[i] = { ...arr[i], year: e.target.value };
-                    setTempValue(arr);
-                  }}
-                  placeholder="Year"
-                  className="border-2 border-[#B71C1C] px-2 py-1 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg w-24"
-                  disabled={loading}
-                />
-                <button
-                  onClick={() =>
-                    setTempValue(tempValue.filter((_, idx) => idx !== i))
-                  }
-                  className="text-red-500 hover:text-red-700 px-2 py-1 rounded-lg"
-                  disabled={loading}
-                >
-                  Delete
-                </button>
+              <div key={i} className="border-2 border-slate-200 rounded-xl p-4 bg-gradient-to-br from-slate-50 to-slate-100">
+                <div className="space-y-3">
+                  {/* Certificate Title and Year */}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={c.title || ""}
+                      onChange={(e) => {
+                        const arr = [...tempValue];
+                        arr[i] = { ...arr[i], title: e.target.value };
+                        setTempValue(arr);
+                      }}
+                      placeholder="Certificate Title"
+                      className="flex-1 border-2 border-[#B71C1C] px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
+                      disabled={loading}
+                    />
+                    <input
+                      type="number"
+                      value={c.year || ""}
+                      onChange={(e) => {
+                        const arr = [...tempValue];
+                        arr[i] = { ...arr[i], year: e.target.value };
+                        setTempValue(arr);
+                      }}
+                      placeholder="Year"
+                      className="w-24 border-2 border-[#B71C1C] px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {/* Certificate File Upload */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Certificate File</label>
+                    <div className="flex items-center gap-3">
+                      {c.fileUrl ? (
+                        <div className="flex-1 flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-300">
+                          {/* Show image preview if it's an image file */}
+                          {c.fileUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                            <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                              <img 
+                                src={c.fileUrl} 
+                                alt="Certificate preview" 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {c.fileName || "Certificate File"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {c.fileUrl.includes('cloudinary.com') ? 'Uploaded to Cloudinary' : 'File attached'}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <a
+                              href={c.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View certificate"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </a>
+                            <button
+                              onClick={() => handleRemoveCertificateFile(i)}
+                              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Remove file"
+                              disabled={loading}
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                            onChange={async (e) => {
+                              try {
+                                setLoading(true);
+                                const file = e.target.files[0];
+                                if (!file) return;
+
+                                // Validate file size (max 10MB)
+                                if (file.size > 10 * 1024 * 1024) {
+                                  throw new Error("File size should be less than 10MB");
+                                }
+
+                                // Upload to Cloudinary
+                                const fileUrl = await upload(e);
+                                
+                                // Update the certificate with file info
+                                const arr = [...tempValue];
+                                arr[i] = { 
+                                  ...arr[i], 
+                                  fileUrl: fileUrl,
+                                  fileName: file.name
+                                };
+                                setTempValue(arr);
+                                
+                                // Update user context immediately for instant UI update
+                                setUser({ ...user, certificates: arr });
+                                
+                                // Mark as changed so user knows they have unsaved changes
+                                setChanged(true);
+                                
+                                toast.success("Certificate file uploaded successfully!");
+                              } catch (err) {
+                                console.error("Upload error:", err);
+                                toast.error(err.message || "Failed to upload file. Please try again.");
+                                // Reset file input
+                                e.target.value = "";
+                              } finally {
+                                setLoading(false);
+                              }
+                            }}
+                            className="hidden"
+                            id={`cert-file-${i}`}
+                            disabled={loading}
+                          />
+                          <label
+                            htmlFor={`cert-file-${i}`}
+                            className="flex items-center justify-center w-full h-12 px-4 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-[#B71C1C] hover:bg-slate-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 text-slate-600">
+                              {loading ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#B71C1C]"></div>
+                              ) : (
+                                <FiUpload size={16} />
+                              )}
+                              <span className="text-sm font-medium">
+                                {loading ? "Uploading..." : "Upload Certificate File"}
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Supported formats: PDF, DOC, DOCX, JPG, PNG. Max size: 10MB
+                    </p>
+                  </div>
+
+                  {/* Issuer Field */}
+                  <input
+                    type="text"
+                    value={c.issuer || ""}
+                    onChange={(e) => {
+                      const arr = [...tempValue];
+                      arr[i] = { ...arr[i], issuer: e.target.value };
+                      setTempValue(arr);
+                    }}
+                    placeholder="Issuing Organization (optional)"
+                    className="w-full border-2 border-[#B71C1C] px-3 py-2 rounded-lg focus:ring-2 focus:ring-[#B71C1C] focus:outline-none text-lg"
+                    disabled={loading}
+                  />
+
+                  {/* Delete Certificate Button */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setTempValue(tempValue.filter((_, idx) => idx !== i))}
+                      className="flex items-center gap-2 text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                      disabled={loading}
+                    >
+                      <FiTrash2 size={16} />
+                      Delete Certificate
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
+            
             <button
               onClick={() =>
-                setTempValue([...(tempValue || []), { title: "", year: "" }])
+                setTempValue([...(tempValue || []), { title: "", year: "", issuer: "", fileUrl: "", fileName: "" }])
               }
-              className="text-[#B71C1C] underline hover:text-[#B71C1C]/80"
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#B71C1C] text-[#B71C1C] hover:bg-[#B71C1C]/5 rounded-xl transition-colors font-medium"
               disabled={loading}
             >
-              Add Certificate
+              <FiPlus size={20} />
+              Add New Certificate
             </button>
           </div>
         )}
