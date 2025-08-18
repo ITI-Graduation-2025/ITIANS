@@ -3,6 +3,8 @@ export * from "./FinishedJobs";
 export * from "./InProgressJobs";
 export * from "./Experience";
 export * from "./ResumeSection";
+export * from "./ResumeEditModal";
+export * from "./ResumeUploadModal";
 export * from "./Posts";
 export * from "./SectionCard";
 export * from "./Certificates";
