@@ -6,6 +6,8 @@ export * from "./ResumeSection";
 export * from "./ResumeEditModal";
 export * from "./ResumeUploadModal";
 export * from "./Posts";
+export * from "./EditPostModal";
+export * from "./DeletePostModal";
 export * from "./SectionCard";
 export * from "./Certificates";
 export * from "./EditModal";
