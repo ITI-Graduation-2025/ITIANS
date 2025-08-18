@@ -452,10 +452,10 @@ const downloadFile = async (url, filename) => {
   const isPostOwner = post.authorId === (currentUser?.uid || currentUser?.id);
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+            <div className="bg-card rounded-3xl shadow-xl border border-border/50 overflow-hidden backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
       {/* Repost Header */}
       {post.repostOf && (
-        <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-6 py-3 flex items-center gap-2 text-sm text-slate-600">
+        <div className="bg-gradient-to-r from-muted/30 to-muted/50 border-b border-border/50 px-6 py-3 flex items-center gap-2 text-sm text-muted-foreground">
           <HiOutlineArrowPathRoundedSquare className="w-4 h-4 text-primary" />
           <span className="font-medium">{post.author} reposted</span>
         </div>
@@ -486,11 +486,11 @@ const downloadFile = async (url, filename) => {
             <div className="flex justify-between items-start">
               <div className="min-w-0">
                 <Link href={`/${post.role?.toLowerCase() === "mentor" ? "mentor" : post.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.authorId}`}>
-                  <h4 className="font-semibold text-slate-800 cursor-pointer hover:text-primary transition-colors truncate">
+                                      <h4 className="font-semibold text-foreground cursor-pointer hover:text-primary transition-colors truncate">
                     {post.author}
                   </h4>
                 </Link>
-                <div className="flex items-center space-x-2 text-sm text-slate-500">
+                                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <span className="capitalize">{post.role}</span>
                   <span>•</span>
                   <span>{formatTimestamp(post.createdAt)}</span>
@@ -500,22 +500,22 @@ const downloadFile = async (url, filename) => {
               {/* Edit/Delete Menu */}
               {isPostOwner && !disableEditDelete && (
                 <div className="relative group">
-                  <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                                      <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200">
                     <HiOutlineEllipsisHorizontal className="w-5 h-5" />
                   </button>
-                  <div className="absolute right-0 top-10 bg-white border border-slate-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[140px]">
+                  <div className="absolute right-0 top-10 bg-card border border-border/50 rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[140px] backdrop-blur-sm">
                     <button
                       onClick={startEditing}
-                      className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-3 rounded-t-xl transition-colors"
+                      className="w-full px-4 py-3 text-left text-sm text-foreground hover:bg-muted/30 flex items-center space-x-3 rounded-t-xl transition-all duration-200 group"
                     >
-                      <HiOutlinePencil className="w-4 h-4" />
+                      <HiOutlinePencil className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                       <span>Edit Post</span>
                     </button>
                     <button
                       onClick={handleDeletePost}
-                      className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 rounded-b-xl transition-colors"
+                      className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 rounded-b-xl transition-all duration-200 group"
                     >
-                      <HiOutlineTrash className="w-4 h-4" />
+                      <HiOutlineTrash className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                       <span>Delete Post</span>
                     </button>
                   </div>
@@ -547,15 +547,15 @@ const downloadFile = async (url, filename) => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 text-sm">
               <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
-                    <span className="font-semibold text-slate-700 cursor-pointer hover:text-primary transition-colors">
+                                            <span className="font-semibold text-foreground cursor-pointer hover:text-primary transition-colors">
                   {post.repostOf.author}
                     </span>
               </Link>
-                  <span className="text-slate-500 capitalize">{post.repostOf.role}</span>
-                  <span className="text-slate-400">•</span>
-                  <span className="text-slate-400">{formatTimestamp(post.repostOf.timestamp)}</span>
+                                      <span className="text-muted-foreground capitalize">{post.repostOf.role}</span>
+                    <span className="text-muted-foreground/70">•</span>
+                    <span className="text-muted-foreground/70">{formatTimestamp(post.repostOf.timestamp)}</span>
             </div>
-                <p className="mt-1 text-slate-700 text-sm">{post.repostOf.content}</p>
+                                  <p className="mt-1 text-foreground text-sm">{post.repostOf.content}</p>
                 
                                  {/* Repost Attachment */}
             {post.repostOf.attachment && (
@@ -648,7 +648,7 @@ const downloadFile = async (url, filename) => {
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-slate-700 text-base leading-relaxed">{post.content}</p>
+                                <p className="mt-4 text-foreground text-base leading-relaxed">{post.content}</p>
             )}
 
                              {/* Post Attachment */}
@@ -711,7 +711,7 @@ const downloadFile = async (url, filename) => {
             className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
               Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) 
                 ? "text-primary bg-primary/10" 
-                : "text-slate-600 hover:text-primary hover:bg-slate-50"
+                : "text-muted-foreground hover:text-primary hover:bg-muted/30"
             }`}
           >
             <HiOutlineHeart className={`w-5 h-5 ${Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) ? 'fill-current' : ''}`} />
@@ -721,7 +721,7 @@ const downloadFile = async (url, filename) => {
         </button>
           
         <button
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all duration-200"
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-muted/30 transition-all duration-200"
           onClick={() => setOpenComments(!openComments)}
         >
             <HiOutlineChatBubbleLeft className="w-5 h-5" />
@@ -731,7 +731,7 @@ const downloadFile = async (url, filename) => {
         </button>
           
         <button
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all duration-200"
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-muted/30 transition-all duration-200"
           onClick={handleRepost}
         >
             <HiOutlineArrowPathRoundedSquare className="w-5 h-5" />
@@ -754,10 +754,10 @@ const downloadFile = async (url, filename) => {
       {/* Image Edit Modal */}
       {editingImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative border border-slate-200 max-h-[90vh] overflow-auto">
+          <div className="bg-card rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative border border-border/50 max-h-[90vh] overflow-auto backdrop-blur-sm">
             <button
               onClick={() => setEditingImage(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 p-3 hover:bg-slate-100 rounded-full transition-all duration-200"
+              className="absolute top-6 right-6 text-muted-foreground hover:text-foreground p-3 hover:bg-muted/50 rounded-full transition-all duration-200"
             >
               <HiOutlineXMark className="w-6 h-6" />
             </button>
@@ -766,8 +766,8 @@ const downloadFile = async (url, filename) => {
               <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <HiOutlinePhoto className="h-10 w-10 text-primary" />
               </div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-3">Edit Post Image</h2>
-              <p className="text-slate-600 text-lg leading-relaxed max-w-md mx-auto">
+              <h2 className="text-3xl font-bold text-foreground mb-3">Edit Post Image</h2>
+              <p className="text-muted-foreground text-lg leading-relaxed max-w-md mx-auto">
                 Upload a new image to replace the current one. Your post will be updated instantly.
               </p>
             </div>
@@ -776,14 +776,14 @@ const downloadFile = async (url, filename) => {
               {/* Current Image Preview */}
                 <div className="relative">
                 <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Current Image</h3>
-                  <p className="text-sm text-slate-500">This is the image currently displayed in your post</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Current Image</h3>
+                  <p className="text-sm text-muted-foreground">This is the image currently displayed in your post</p>
                 </div>
                 <div className="relative inline-block">
                   <img
                     src={imagePreview || post.attachment.url}
                     alt="Current"
-                    className="w-full max-w-md h-80 object-cover rounded-2xl border-2 border-slate-200 shadow-lg"
+                    className="w-full max-w-md h-80 object-cover rounded-2xl border-2 border-border/50 shadow-lg"
                   />
                   {uploadingImage && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl">
@@ -799,8 +799,8 @@ const downloadFile = async (url, filename) => {
                 {/* Upload Controls */}
               <div className="space-y-6">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Upload New Image</h3>
-                  <p className="text-sm text-slate-500">Choose a new image to replace the current one</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Upload New Image</h3>
+                  <p className="text-sm text-muted-foreground">Choose a new image to replace the current one</p>
                 </div>
                 
                 <div className="flex justify-center">
