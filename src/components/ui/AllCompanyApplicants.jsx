@@ -1,173 +1,37 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import CompanyNavbar from "./CompanyNavbar";
-import {
-  LayoutDashboard,
-  FileText,
-  Building2,
-  Users2,
-  Star,
-  MapPin,
-  Clock,
-  X,
-  AlertCircle,
-    CheckCircle,  
-    Ban, 
-    Eye, 
-    XCircle,
-    ClipboardList,
-    ArrowLeft,
-} from "lucide-react";
-import Link from "next/link";
-import { db } from "@/config/firebase";
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  collection,
-  getDocs,
-} from "firebase/firestore";
-import toast, { Toaster } from "react-hot-toast";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { db } from "@/config/firebase";
+import Link from "next/link"; 
+import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore";
+import toast, { Toaster } from "react-hot-toast";
+import { Users, Clock, CheckCircle, XCircle, BarChart3, Search } from "lucide-react";
 
-const STATUS_LIST = ["pending", "approved", "rejected"];
+const STATUS_LIST = [
+  { key: "all", label: "All Freelancers", icon: Users, color: "text-blue-600", bg: "bg-blue-600" },
+  { key: "pending", label: "Pending Review", icon: Clock, color: "text-yellow-600", bg: "bg-yellow-500" },
+  { key: "approved", label: "Approved", icon: CheckCircle, color: "text-green-600", bg: "bg-green-600" },
+  { key: "rejected", label: "Rejected", icon: XCircle, color: "text-red-600", bg: "bg-red-600" },
+];
 
-const STATUS_ICONS = {
-  pending: <AlertCircle className="w-4 h-4 text-yellow-500" />,  
-  approved: <CheckCircle className="w-4 h-4 text-green-600" />,  
-  rejected: <Ban className="w-4 h-4 text-red-600" />,           
-};
-
-
-const ApplicantCard = ({ applicant, onUpdateStatus, onViewProfile, setSelectedToReject, setShowRejectModal }) => {
-  const status = applicant.status?.toLowerCase() || "pending";
-
-  return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-white rounded-xl shadow-sm mb-4 hover:shadow-lg">
-  <div className="flex items-start space-x-4">
-    <div className="relative w-14 h-14 rounded-full overflow-hidden ring-2 ring-[#b30000]">
-      <Image
-        src={applicant.image || "/default-avatar.png"}
-        alt={applicant.name || "Applicant"}
-        fill
-        className="object-cover"
-      />
-    </div>
-    <div>
-      <h3 className="font-semibold text-lg text-gray-900">{applicant.name || "Unnamed Applicant"}</h3>
-      <p className="text-gray-600 text-sm mt-1">Applied for: <span className="font-medium">{applicant.jobTitle || "Not specified"}</span></p>
-      <p className="text-xs text-gray-500 uppercase tracking-wide mt-0.5">
-        Status: <span className={`font-semibold capitalize ${status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-yellow-600'}`}>
-          {status}
-        </span>
-      </p>
-      <div className="flex flex-wrap text-gray-500 mt-2 gap-4 text-sm">
-        {applicant.experience && (
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4 text-[#b30000]" /> {applicant.experience}
-          </div>
-        )}
-        {applicant.location && (
-          <div className="flex items-center gap-1">
-            <MapPin className="w-4 h-4 text-[#b30000]" /> {applicant.location}
-          </div>
-        )}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-        {applicant.skills?.map((skill) => (
-          <span
-            key={skill}
-            className="bg-[#b30000] bg-opacity-10 text-[#b30000] px-3 py-1 rounded-full font-semibold select-none"
-          >
-            {skill}
-          </span>
-        ))}
-      </div>
-      {applicant.date && (
-        <p className="text-xs text-gray-400 mt-2 italic">Applied on {applicant.date}</p>
-      )}
-    </div>
-  </div>
-  <div className="flex flex-col md:flex-row items-center gap-3 mt-4 md:mt-0">
-    {applicant.rating && (
-      <span className="flex items-center gap-1 text-yellow-500 font-semibold text-sm">
-        <Star className="w-5 h-5" /> {applicant.rating}/5
-      </span>
-    )}
-
-    <button
-  onClick={() => onViewProfile(applicant)}
-  className="bg-[#b30000] hover:bg-[#8B0000] transition-colors text-white px-5 py-2 rounded-md shadow-md flex items-center gap-2"
->
-  <Eye className="w-4 h-4" />
-  View Profile
-</button>
-
-
-   {status !== "approved" && (
-  <button
-    onClick={() =>
-      onUpdateStatus(applicant.jobId, applicant.id, "approved", applicant.name)
-    }
-    className="bg-green-600 hover:bg-green-700 transition-colors text-white px-5 py-2 rounded-md shadow-md flex items-center gap-2"
-  >
-    <CheckCircle className="w-4 h-4" />
-    Approve
-  </button>
-)}
-
-   {status !== "rejected" && (
-     <button
-       onClick={() => {
-         setSelectedToReject(applicant); 
-         setShowRejectModal(true);       
-       }}
-       className="bg-gray-300 hover:bg-gray-400 transition-colors text-black px-5 py-2 rounded-md shadow-md flex items-center gap-2"
-     >
-       <XCircle className="w-4 h-4" />
-       Reject
-     </button>
-   )}
-
-  </div>
-</div>
-
-  );
+const STATUS_BADGES = {
+  pending: { text: "New", bg: "bg-blue-100 text-blue-700" },
+  approved: { text: "Approved", bg: "bg-green-100 text-green-700" },
+  rejected: { text: "Reviewed", bg: "bg-yellow-100 text-yellow-700" },
 };
 
 export default function AllCompanyApplicants() {
-  const [tab, setTab] = useState("pending");
-  const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
-  const [selectedApplicant, setSelectedApplicant] = useState(null);
-  const [hasAccessToJob, setHasAccessToJob] = useState(true);
   const companyId = session?.user?.id;
-  const [applications, setApplications] = useState([]);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [selectedToReject, setSelectedToReject] = useState(null);
 
-  const [company, setCompany] = useState(null);
-    useEffect(() => {
-      const fetchCompany = async () => {
-        if (!companyId) return;
-        try {
-          const docRef = doc(db, "users", companyId);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setCompany(data);
-          } else {
-            console.warn("Company document not found");
-          }
-        } catch (err) {
-          console.error("Error fetching company:", err);
-        }
-      };
-  
-      fetchCompany();
-    }, [companyId]);
+  const [applications, setApplications] = useState([]);
+  const [tab, setTab] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState({ show: false, action: null, applicant: null });
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (!companyId) return;
@@ -194,15 +58,16 @@ export default function AllCompanyApplicants() {
 
                 const userRef = doc(db, "users", userId);
                 const userSnap = await getDoc(userRef);
-
                 if (!userSnap.exists()) return null;
 
                 return {
                   id: userId,
                   status,
                   jobId,
-                  jobTitle: job.title,
+                  skills: userSnap.data().skills || [],
+                  gradStatus: userSnap.data().gradStatus || "ITI Graduate",
                   ...userSnap.data(),
+                  jobTitle: job.title || "Untitled Job"
                 };
               })
             );
@@ -229,7 +94,6 @@ export default function AllCompanyApplicants() {
       if (!jobSnap.exists()) return;
 
       const jobData = jobSnap.data();
-
       const updatedApplicants = jobData.applicants.map((applicant) => {
         if (typeof applicant === "string") {
           return applicant === userId
@@ -244,7 +108,16 @@ export default function AllCompanyApplicants() {
 
       await updateDoc(jobRef, { applicants: updatedApplicants });
 
-      toast.success(`${name} has been ${newStatus}`);
+      toast.success(
+        `${name} has been ${newStatus}`,
+        {
+          style: {
+            background: newStatus === "approved" ? "#dcfce7" : "#fee2e2",
+            color: newStatus === "approved" ? "#166534" : "#991b1b",
+          },
+        }
+      );
+
       setApplications((prev) =>
         prev.map((a) =>
           a.id === userId && a.jobId === jobId
@@ -258,198 +131,276 @@ export default function AllCompanyApplicants() {
     }
   };
 
-  if (!hasAccessToJob) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-600 text-lg">
-        Access Denied
-      </div>
-    );
-  }
+  const filteredApplicants =
+    tab === "all"
+      ? applications
+      : applications.filter(
+          (a) => (a.status?.toLowerCase() || "pending") === tab
+        );
 
-  const filteredApplicants = applications.filter(
-    (a) => (a.status?.toLowerCase() || "pending") === tab
+  const searchFilteredApplicants = filteredApplicants.filter((a) =>
+    a.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9]">
+    <div className="min-h-screen bg-gray-50">
       <Toaster />
-      <CompanyNavbar />
+      <div className="sticky top-0 z-50">
+        <CompanyNavbar />
+      </div>
 
-      <main className="p-6 max-w-7xl mx-auto">
-        <div>
-        <h1 className="text-2xl md:text-3xl font-semibold text-[#b30000]">
-          {company?.name} <span className="text-[#203947] text-2xl">Dashboard</span>
-        </h1>
-       </div>
-        <p className="text-gray-600 mb-6">Manage your job postings and find the best ITI talent</p>
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="hidden md:flex flex-col w-64 min-h-screen bg-white/70 backdrop-blur-md border-r border-gray-200 p-6 space-y-8 shadow-lg">
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900 mb-1 tracking-wide">
+              Freelancer Management
+            </h1>
+            <p className="text-sm text-gray-600">
+              Review and approve freelancer applications
+            </p>
+          </div>
 
-        <div className="flex gap-4 border-b mb-6">
-          <Link href="/dashboardCompany" className="px-4 py-2 flex items-center gap-1 text-[#203947] font-medium hover:text-[#b30000] transition">
-                      <LayoutDashboard className="w-4 h-4" /> Overview
-                    </Link>
-                    <Link href="/companyjobs" className="  px-4 py-2 flex items-center gap-1  text-[#203947] font-medium hover:text-[#b30000] transition">
-                      <FileText className="w-4 h-4" /> My Jobs
-                    </Link>
-                   <button className="border-b-2 border-[#b30000] text-[#b30000] px-4 py-2 font-medium flex items-center gap-1">
-                  <Users2 className="w-4 h-4" /> Applications
-                        </button>
-          
-                    <Link href="/companyprofile" className="text-[#203947] px-4 py-2 font-medium flex items-center gap-1 hover:text-[#b30000] transition">
-                      <Building2 className="w-4 h-4" /> Company Profile
-                    </Link>
-        </div>
-
-        <div className="mb-6  pb-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* العنوان والوصف */}
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <ClipboardList className="text-[#b30000] w-5 h-5" />
-               
-                <span className="text-xl md:text-xl font-semibold text-[#203947] ">All Job Applications</span>
-              </h2>
-              
+          <section>
+            
+            <div className="flex flex-col gap-3">
+              {STATUS_LIST.map((s) => {
+                const Icon = s.icon;
+                const isActive = tab === s.key;
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => setTab(s.key)}
+                    className={`flex items-center justify-between px-5 py-3 rounded-lg font-semibold transition-shadow duration-300
+                      ${
+                        isActive
+                          ? `${s.bg} shadow-md text-white flex-row-reverse gap-4`
+                          : "bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700"
+                      } cursor-pointer `}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Icon
+                        className={`w-6 h-6 ${
+                          isActive ? "text-white" : s.color
+                        }`}
+                      />
+                      {s.label}
+                    </span>
+                    <span
+                      className={`text-sm font-medium px-3 py-1 rounded-full
+                        ${
+                          isActive
+                            ? " bg-opacity-30 text-white"
+                            : "bg-gray-300 text-gray-700"
+                        }`}
+                    >
+                      {s.key === "all"
+                        ? applications.length
+                        : s.key === "pending"
+                        ? applications.filter((a) => a.status === "pending").length
+                        : s.key === "approved"
+                        ? applications.filter((a) => a.status === "approved").length
+                        : applications.filter((a) => a.status === "rejected").length}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-        
-            {/* زر الرجوع */}
-           <Link
-          href="/companyjobs"
-          className="inline-flex items-center gap-2 text-sm font-medium bg-[#203947] text-white border  px-4 py-2 rounded-lg hover:bg-[#b30000] hover:text-white transition-colors duration-200 shadow-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Jobs
-        </Link>
+          </section>
+
+          <div className="mt-auto text-xs text-gray-400 text-center">
+            © 2025 Your Company
           </div>
         </div>
 
+        {/* Main Content */}
+        <div className="flex-1 p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
+            <h2 className="text-lg font-semibold">All Job Applications</h2>
 
-        
-        <div className="mb-6 flex flex-wrap gap-2">
-  {STATUS_LIST.map((status) => (
-    <button
-      key={status}
-      onClick={() => setTab(status)}
-      className={`
-        flex items-center gap-1 px-3 py-1.5
-        rounded-md
-        font-semibold text-xs
-        transition-all duration-300 ease-in-out
-        ${
-          tab === status
-            ? "bg-[#b30000] text-white shadow-md scale-105"
-            : "bg-gray-100 text-gray-700 hover:bg-[#b30000] hover:text-white"
-        }
-        focus:outline-none focus:ring-1 focus:ring-[#b30000] focus:ring-opacity-50
-      `}
-    >
-      {STATUS_ICONS[status.toLowerCase()]} 
-      {status.charAt(0).toUpperCase() + status.slice(1)} (
-      {applications.filter(
-        (a) => (a.status?.toLowerCase() || "pending") === status.toLowerCase()
-      ).length}
-      )
-    </button>
-  ))}
-</div>
-
-
-
-
-        {loading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, idx) => (
-              <div key={idx} className="h-24 bg-gray-200 animate-pulse rounded-xl"></div>
-            ))}
+            {/* Search Input */}
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-2.5 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search by job title..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-3 py-2 w-full border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
-        ) : filteredApplicants.length > 0 ? (
-          filteredApplicants.map((applicant) => (
-            <ApplicantCard
-              key={applicant.id + applicant.jobId}
-              applicant={applicant}
-              onUpdateStatus={handleUpdateStatus}
-              onViewProfile={setSelectedApplicant}
-              setSelectedToReject={setSelectedToReject}
-               setShowRejectModal={setShowRejectModal}
-            />
-          ))
-        ) : (
-          <p className="text-gray-500">No applications in this category.</p>
-        )}
-      </main>
 
-     {selectedApplicant && (
-  <div className="fixed inset-0  bg-black/40 bg-opacity-20 flex justify-center items-center z-50 p-4">
+          {loading ? (
+            <div className="space-y-4">
+              {Array(3).fill(0).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white p-4 rounded-lg shadow flex gap-4 animate-pulse"
+                >
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="w-1/3 h-4 bg-gray-200 rounded"></div>
+                    <div className="w-1/2 h-4 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : searchFilteredApplicants.length > 0 ? (
+            <div className="space-y-4">
+              {searchFilteredApplicants.map((applicant) => {
+                return (
+                  <div
+                    key={applicant.id + applicant.jobId}
+                    className="bg-white p-5 rounded-lg shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-lg transition"
+                  >
+                    {/* Left: Image + Info */}
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <Image
+                        src={applicant.profileImage || "/default-avatar.png"}
+                        alt={applicant.name}
+                        width={56}
+                        height={56}
+                        className="rounded-full object-cover flex-shrink-0"
+                      />
 
-    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full relative overflow-hidden">
-      <button
-        onClick={() => setSelectedApplicant(null)}
-        aria-label="Close profile modal"
-        className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 transition-colors duration-200"
-      >
-        <X className="w-6 h-6" />
-      </button>
-      <div className="flex flex-col items-center p-8 pt-12">
-        <div className="w-28 h-28 relative rounded-full overflow-hidden shadow-lg ring-2 ring-[#b30000]">
-          <Image
-            src={selectedApplicant.image || "/default-avatar.png"}
-            alt={selectedApplicant.name}
-            fill
-            className="object-cover"
-          />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {applicant.name}
+                          </h3>
+                          <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded whitespace-nowrap">
+                            {applicant.mainTrack ? `Main Track: ${applicant.mainTrack}` : "No Track Assigned"}
+                          </span>
+
+                        </div>
+                        <p className="text-sm text-gray-600 truncate max-w-md">
+                          Applied for: <span className="font-medium">{applicant.jobTitle}</span>
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-1 max-w-md">
+                          {applicant.skills?.map((skill) => (
+                            <span
+                              key={skill}
+                              className="text-xs bg-gray-100 px-2 py-0.5 rounded"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex flex-col items-end gap-2 min-w-[130px]">
+                      <div className="flex gap-4 text-sm whitespace-nowrap">
+                        <Link
+                          href={`/profile/${applicant.id || applicant.uid}`}
+                          className="text-indigo-600 hover:underline"
+                        >
+                          View Profile
+                        </Link>
+                        {applicant.status === "pending" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                setConfirmModal({
+                                  show: true,
+                                  action: "approved",
+                                  applicant,
+                                })
+                              }
+                              className="text-green-600 hover:underline font-semibold"
+                            >
+                              Approve 
+                            </button>
+                            <button
+                              onClick={() =>
+                                setConfirmModal({
+                                  show: true,
+                                  action: "rejected",
+                                  applicant,
+                                })
+                              }
+                              className="text-red-600 hover:underline font-semibold"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {(applicant.status === "approved" || applicant.status === "rejected") && (
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                              applicant.status === "approved"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-500">No applicants found.</p>
+          )}
         </div>
-        <h2 className="mt-6 text-2xl font-semibold text-gray-900">{selectedApplicant.name}</h2>
-        <p className="mt-1 text-sm text-red-700 font-medium">{selectedApplicant.role || "Role not specified"}</p>
-        <p className="text-xs text-gray-400 mt-2 uppercase tracking-wide font-semibold">
-          Status: <span className="capitalize">{selectedApplicant.status}</span>
-        </p>
-        <p className="mt-6 text-center text-gray-700 text-sm leading-relaxed">
-          {selectedApplicant.bio || "No additional info."}
-        </p>
-        <Link
-          href={`/applicant/${selectedApplicant.id}`}
-          className="mt-6 px-6 py-2 bg-[#b30000] text-white rounded-md hover:bg-[#8B0000] transition"
-          onClick={() => setSelectedApplicant(null)}
-        >
-          View Full Profile
-        </Link>
       </div>
-    </div>
-  </div>
-)}
 
- {showRejectModal && selectedToReject && (
-  <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-    <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-      <h2 className="text-lg font-semibold text-gray-800 mb-2">Reject Applicant</h2>
-      <p className="text-sm text-gray-600 mb-4">
-        Are you sure you want to reject{" "}
-        <span className="font-medium text-[#b30000]">{selectedToReject.name || "this applicant"}</span>?
-      </p>
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={() => setShowRejectModal(false)}
-          className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-full shadow-sm hover:bg-gray-200 hover:text-black transition"
-        >
-          Cancel
-        </button>
+      {/* Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
 
-        <button
-          onClick={() => {
-               handleUpdateStatus(selectedToReject.jobId, selectedToReject.id, "rejected", selectedToReject.name || "The applicant");
-            setShowRejectModal(false);
-            setSelectedToReject(null);
-          }}
-          className="px-4 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition cursor-pointer"
-        >
-          Reject
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
-
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-lg font-semibold mb-4">
+              Confirm {confirmModal.action === "approved" ? "Approve" : "Reject"}?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to {confirmModal.action}{" "}
+              {confirmModal.applicant.name}?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal({ show: false, action: null, applicant: null })}
+                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleUpdateStatus(
+                    confirmModal.applicant.jobId,
+                    confirmModal.applicant.id,
+                    confirmModal.action,
+                    confirmModal.applicant.name
+                  );
+                  setConfirmModal({ show: false, action: null, applicant: null });
+                }}
+                className={`px-4 py-2 rounded text-white ${
+                  confirmModal.action === "approved"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

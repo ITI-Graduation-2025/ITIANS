@@ -1,107 +1,211 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import {
-  Home,
-  MessageCircle,
-  User,
-  ChevronDown,
-  Settings,
-  LogOut,
-} from "lucide-react";
 
-const tabs = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Messages", href: "/messages", icon: MessageCircle },
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
+import { MdWork, MdSchool, MdPeople, MdChat } from "react-icons/md";
+import { signOut } from "next-auth/react";
+import { ChevronDown, User, Settings, LogOut, Bell } from "lucide-react";
+import { useUserContext } from "@/context/userContext";
+import UserInfo from "../pages/userInfo";
+
+
+import {
+  listenToNotifications,
+  markNotificationAsRead,
+  deleteOldNotifications,
+} from "@/services/notificationService";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+const categories = [
+  { name: "Jobs", href: "/jobs", icon: <MdWork className="w-6 h-6" /> },
+  { name: "Mentors", href: "/mentors", icon: <MdSchool className="w-6 h-6" /> },
+  { name: "Users", href: "/users", icon: <MdPeople className="w-6 h-6" /> },
+  { name: "Messages", href: "/chat", icon: <MdChat className="w-6 h-6" /> },
 ];
 
-function Dropdowncom() {
+export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const { user } = useUserContext();
 
-  const handleLogout = () => {
-    if (confirm("Are you sure you want to log out?")) {
-      window.location.href = "/login";
-    }
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    
+    deleteOldNotifications(user.id);
+
+    
+    const unsubscribe = listenToNotifications(user.id, (newNotifications) => {
+      setNotifications(newNotifications);
+    });
+
+    return () => unsubscribe();
+  }, [user?.id]);
+
+  const handleMarkAsRead = async (id, relatedId, type) => {
+    await markNotificationAsRead(id);
+    
   };
 
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-2 bg-transparent border-none cursor-pointer focus:outline-none"
-      >
-        <User size={20} className="text-gray-700" />
-        <span className="text-gray-800 font-medium">Admin</span>
-        <ChevronDown size={16} />
-      </button>
+  const avatar =
+    user?.avatar || user?.profileImage || "https://i.pravatar.cc/100?img=5";
+  const name = user?.name || user?.fullName || "User";
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-md border border-gray-200 z-50 w-48">
-          <Link
-            href="/dashboardCompany"
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100"
-          >
-            <User size={16} />
-            My dashboard
-          </Link>
-          <Link
-            href="/settingsform"
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100"
-          >
-            <Settings size={16} />
-            Settings
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-100"
-          >
-            <LogOut size={16} />
-            Logout
-          </button>
+  return (
+    <nav className="bg-white text-gray-800 font-semibold shadow-sm">
+      <div className="max-w-7xl mx-auto px-6 py-1 flex justify-between items-center">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <img
+            src="/logo.png"
+            alt="ITIANS Logo"
+            className="h-16 w-16 rounded-full"
+          />
+        </Link>
+
+        {/* Desktop Menu */}
+        <div className="hidden md:flex flex-1 items-center justify-between">
+          {/* Explore Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-2 text-base text-gray-800 hover:text-[#B71C1C] transition-colors duration-200 ml-12">
+              Explore
+              <FaChevronDown className="w-4 h-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-white text-gray-800 border border-gray-200 shadow-lg rounded-lg w-80">
+              <div className="grid grid-cols-2 gap-6 p-4">
+                {categories.map((category) => (
+                  <DropdownMenuItem key={category.name} asChild>
+                    <Link
+                      href={category.href}
+                      className="flex items-center gap-3 px-4 py-2 text-sm bg-gray-50 hover:bg-[#B71C1C] hover:text-white transition-colors duration-200 rounded-lg"
+                    >
+                      {category.icon}
+                      {category.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="flex items-center gap-6">
+            {/* Notification Icon */}
+            <div className="relative">
+              <Bell
+                className="w-6 h-6 text-gray-600 cursor-pointer hover:text-[#B71C1C] transition-colors"
+                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              />
+              {unreadCount > 0 && (
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </div>
+              )}
+
+              {isNotificationOpen && (
+                <div className="fixed right-4 mt-2 w-64 bg-white shadow-lg rounded-lg z-[99999] border border-gray-200 max-h-[16rem] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      No notifications
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 ${
+                          notification.read ? "bg-gray-50" : "bg-white"
+                        } cursor-pointer hover:bg-gray-50 transition-colors`}
+                        onClick={() =>
+                          handleMarkAsRead(
+                            notification.id,
+                            notification.relatedId,
+                            notification.type
+                          )
+                        }
+                      >
+                        <p className="text-sm text-gray-800">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {notification.createdAt &&
+                            new Date(
+                              notification.createdAt.toDate()
+                            ).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* User Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-2 bg-transparent border-none cursor-pointer focus:outline-none"
+                  type="button"
+                >
+                   <User size={18} className="text-gray-600" />
+                  <span className="text-gray-800 font-medium">{name}</span>
+                  <ChevronDown size={16} />
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent className="w-48" align="end">
+                <Link href="/dashboardCompany">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <User size={16} />
+                    My Dashboard
+                  </DropdownMenuItem>
+                </Link>
+
+                <Link href="/settingsform">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Settings size={16} />
+                    Settings
+                  </DropdownMenuItem>
+                </Link>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="cursor-pointer text-red-600"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      )}
-    </div>
-  );
-}
 
-export default function NavbarProfileCom() {
-  const pathname = usePathname();
+        {/* User Info for small devices */}
+        <div className="text-gray-800 hover:text-[#B71C1C] transition-colors duration-200 md:hidden">
+          <UserInfo />
+        </div>
 
-  return (
-    <nav className="bg-white shadow-sm px-6 py-3 flex justify-between items-center border-b border-gray-100">
-      <div className="flex items-center gap-2">
-        <Image
-          src="/logo.png"
-          alt="Logo"
-          width={30}
-          height={30}
-        />
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden text-gray-800"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {isOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+        </button>
       </div>
-
-      <div className="flex space-x-4 items-center text-sm font-medium">
-        {tabs.map(({ name, href, icon: Icon }) => {
-          const isActive = pathname === href;
-          return (
-            <Link
-              key={name}
-              href={href}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 ${
-                isActive
-                  ? "bg-[#E30613]/10 text-[#E30613] font-semibold ring-1 ring-[#E30613]"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-[#E30613]"
-              }`}
-            >
-              <Icon size={18} />
-              {name}
-            </Link>
-          );
-        })}
-      </div>
-
-      <Dropdowncom />
     </nav>
   );
 }

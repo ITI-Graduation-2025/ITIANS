@@ -36,15 +36,20 @@ import {
   query,
   where,
   getDocs,
+  updateDoc,
+  arrayUnion,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import toast, { Toaster } from "react-hot-toast";
-import { FaFacebook, FaLinkedin, FaGlobe, FaEnvelope } from "react-icons/fa";
 import NavbarProfileCom from "./NavbarProfileCom";
 import ReactPaginate from "react-paginate";
 import Link from "next/link";
+import LogoClickable from "./LogoClickable";
+import BackgroundClickable from "./BackgroundClickable";
+import EditableProfileViewCom from "./EditableProfileViewCom";
 
 function formatRelativeTime(date) {
+  if (!date) return "";
   const now = new Date();
   const diffMs = now - date;
   const diffSec = Math.floor(diffMs / 1000);
@@ -59,24 +64,48 @@ function formatRelativeTime(date) {
   if (diffDay === 1) return "Yesterday";
   return `${diffDay} days ago`;
 }
-const timestamp = new Date("2025-07-31T20:00:00Z");
-console.log(formatRelativeTime(timestamp));
-{
-  /* هنا عدلنا export,const */
-}
+
 export default function ProfileViewCom() {
   const { data: session } = useSession();
   const companyId = session?.user?.id;
-
   const user = session?.user;
 
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [showComments, setShowComments] = useState(false);
+  // const [showComments, setShowComments] = useState(false);
+  const [applicantImages, setApplicantImages] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const jobsPerPage = 3;
+
+  // Fetch applicant images safely
+  useEffect(() => {
+    let isMounted = true;
+    const loadImages = async () => {
+      if (!selectedJob?.applicants) return;
+      const images = {};
+      for (let applicant of selectedJob.applicants) {
+        try {
+          const userRef = doc(db, "users", applicant.userId);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            images[applicant.userId] =
+              userSnap.data().profileImage || "/default-user.png";
+          } else {
+            images[applicant.userId] = "/default-user.png";
+          }
+        } catch {
+          images[applicant.userId] = "/default-user.png";
+        }
+      }
+      if (isMounted) setApplicantImages(images);
+    };
+    loadImages();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedJob]);
 
   const {
     logo,
@@ -102,472 +131,293 @@ export default function ProfileViewCom() {
   const currentJobs = jobs.slice(indexOfFirstJob, indexOfLastJob);
   const totalPages = Math.ceil(jobs.length / jobsPerPage);
 
-  useEffect(() => {
-    async function fetchCompanyAndJobs() {
-      if (!companyId) return;
-
-      try {
-        const companyRef = doc(db, "users", companyId);
-        const companySnap = await getDoc(companyRef);
-        const companyData = companySnap.exists() ? companySnap.data() : {};
-
-        const jobsQuery = query(
-          collection(db, "jobs"),
-          where("companyId", "==", companyId),
-        );
-
-        const jobsSnapshot = await getDocs(jobsQuery);
-
-        const jobsData = jobsSnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
-
-        // إحصائيات الوظائف
-        const activeProjects = jobsData.filter(
-          (job) =>
-            job.status?.toLowerCase() === "active" ||
-            job.status?.toLowerCase() === "open",
-        ).length;
-
-        const totalJobs = jobsData.length;
-
-        let totalApplicants = 0;
-        let totalHired = 0;
-
-        jobsData.forEach((job) => {
-          if (!Array.isArray(job.applicants)) return;
-
-          totalApplicants += job.applicants.length;
-
-          totalHired += job.applicants.filter(
-            (applicant) => applicant?.status?.toLowerCase() === "approved",
-          ).length;
-        });
-
-        const successRate =
-          totalApplicants > 0
-            ? `${Math.round((totalHired / totalApplicants) * 100)}%`
-            : "0%";
-
-        console.log("Total Jobs:", totalJobs);
-
-        setCompany({
-          ...companyData,
-          stats: {
-            activeProjects,
-            totalHired,
-            successRate,
-          },
-        });
-
-        setJobs(jobsData);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching company and jobs:", error);
-        toast.error("Failed to load company data.");
-      }
-    }
-
-    fetchCompanyAndJobs();
-  }, [companyId]);
-
-  const goToPage = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  async function handleApply() {
-    if (!user?.id) {
-      toast.error("You must be logged in to apply.");
-      return;
-    }
-
-    const hasAlreadyApplied = selectedJob?.applicants?.some((applicant) =>
-      typeof applicant === "string"
-        ? applicant === user?.id
-        : applicant?.userId === user?.id,
-    );
-
-    if (hasAlreadyApplied) {
-      toast.error("You have already applied to this job.");
-      return;
-    }
+  async function fetchCompanyAndJobs() {
+    if (!companyId) return;
 
     try {
-      const jobRef = doc(db, "jobs", selectedJob.id);
+      const companyRef = doc(db, "users", companyId);
+      const companySnap = await getDoc(companyRef);
+      const companyData = companySnap.exists() ? companySnap.data() : {};
 
-      await updateDoc(jobRef, {
-        applicants: arrayUnion({
-          userId: user.id,
-          status: "pending",
-          appliedAt: new Date().toISOString(),
-        }),
+      const jobsQuery = query(
+        collection(db, "jobs"),
+        where("companyId", "==", companyId),
+      );
+      const jobsSnapshot = await getDocs(jobsQuery);
+
+      const jobsData = jobsSnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .sort(
+          (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
+        );
+
+      const activeProjects = jobsData.filter(
+        (job) =>
+          job.status?.toLowerCase() === "active" ||
+          job.status?.toLowerCase() === "open",
+      ).length;
+
+      const totalJobs = jobsData.length;
+      let jobsWithApproved = 0;
+      let totalHired = 0;
+
+      jobsData.forEach((job) => {
+        if (Array.isArray(job.applicants) && job.applicants.length > 0) {
+          const approvedApplicants = job.applicants.filter(
+            (applicant) => applicant?.status?.toLowerCase() === "approved",
+          );
+
+          if (approvedApplicants.length > 0) {
+            jobsWithApproved++;
+            totalHired += approvedApplicants.length; //
+          }
+        }
       });
 
-      toast.success("Application submitted successfully!");
+      const successRate =
+        totalJobs > 0
+          ? `${((jobsWithApproved / totalJobs) * 100).toFixed(1)}%`
+          : "0%";
+
+      setCompany({
+        ...companyData,
+        stats: { activeProjects, jobsWithApproved, totalHired, successRate },
+      });
+      setJobs(jobsData);
+      setLoading(false);
     } catch (error) {
-      console.error("Application error:", error);
-      toast.error("Something went wrong. Please try again.");
+      console.error("Error fetching company and jobs:", error);
+      toast.error("Failed to load company data.");
     }
   }
 
+  useEffect(() => {
+    fetchCompanyAndJobs();
+  }, [companyId]);
+
+  const goToPage = (pageNumber) => setCurrentPage(pageNumber);
+
   return (
     <main className="min-h-screen bg-[#f9f9f9] text-[#333]">
+      <Toaster position="top-right" />
       <NavbarProfileCom />
 
-      <div
-        className="text-white p-6 bg-cover bg-center"
-        style={{
-          backgroundImage:
-            "url('https://img.freepik.com/free-photo/business-people-working-office_23-2148902353.jpg')",
-        }}
-      >
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex gap-4 items-center">
-            <Image
-              src={logo || "/default-logo.png"}
-              alt={`${name || "Company"} Logo`}
-              width={48}
-              height={48}
-              className="rounded-md shadow bg-white"
-            />
-            <div>
-              <h1 className="text-2xl font-bold ">{name}</h1>
+      {loading ? (
+        <div className="max-w-6xl mx-auto space-y-4 p-4 animate-pulse">
+          <div className="w-full h-64 bg-gray-200 rounded-xl mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-gray-200 h-32 rounded-xl"></div>
+              ))}
+            </div>
+            <div className="space-y-4">
+              <div className="bg-gray-200 h-32 rounded-xl"></div>
+              <div className="bg-gray-200 h-64 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="relative w-full h-56  sm:h-64">
+            {/* الخلفية */}
+            <BackgroundClickable
+              currentBackgroundUrl={company?.backgroundUrl || ""}
+              onUploadSuccess={fetchCompanyAndJobs}
+              width="100%"
+              height="100%"
+            ></BackgroundClickable>
 
-              <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
-                {industry && (
-                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+            <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+              <LogoClickable
+                currentLogoUrl={company?.logo || "/default-logo.png"}
+                onUploadSuccess={fetchCompanyAndJobs}
+              />
+            </div>
+
+            {/* info*/}
+            <div className="absolute top-[57%] left-1/2 transform -translate-x-1/2 z-20 text-center text-white">
+              <h1 className="text-3xl font-bold ">
+                {company?.name || "Company Name"}
+              </h1>
+              <div className="flex flex-wrap justify-center gap-2 mt-2 text-sm">
+                {company?.industry && (
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
                     <Briefcase className="w-4 h-4 text-[#8B0000]" />
-                    <span>{industry}</span>
+                    <span>{company.industry}</span>
                   </div>
                 )}
                 {founded && (
-                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
                     <Calendar className="w-4 h-4 text-[#8B0000]" />
                     <span>Founded: {founded}</span>
                   </div>
                 )}
-                {location && (
-                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
+                {company?.location && (
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
                     <MapPin className="w-4 h-4 text-[#8B0000]" />
-                    <span>{location}</span>
-                  </div>
-                )}
-                {phone && (
-                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm transition-colors duration-200 font-medium text-sm text-gray-800 dark:text-white">
-                    <Phone className="w-4 h-4 text-[#8B0000]" />
-                    <span>{phone}</span>
+                    <span>{company.location}</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <p className="flex items-center justify-end gap-1">
-              <Star className="w-4 h-4 text-yellow-300" /> {rating}
-            </p>
-            <p className="text-sm">{reviewsCount} reviews</p>
-            {session?.user?.id !== companyId && (
-              <button className="mt-2 px-4 py-1 bg-white text-[#b30000] border border-[#b30000] rounded shadow hover:bg-[#b30000] hover:text-white transition">
-                Follow Company
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-        <div className="md:col-span-2">
-          <h2 className="text-xl font-semibold mb-2">
-            Active Job Postings{" "}
-            <span className="text-sm text-gray-500">
-              (
-              {
-                jobs.filter(
-                  (job) =>
-                    job.status?.toLowerCase() === "active" ||
-                    job.status?.toLowerCase() === "open",
-                ).length
-              }{" "}
-              open positions)
-            </span>
-          </h2>
-          <div className="space-y-4">
-            {jobs.length === 0 ? (
-              <div className="bg-white mt-20  rounded-xl p-8 text-center mr-20">
-                <div className="flex justify-center items-center mb-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-10 w-10 text-[#b30000]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-[#333] mb-2">
-                  No Job Postings Yet
-                </h3>
-                <p className="text-sm text-gray-700 max-w-md mx-auto mb-6">
-                  You haven’t posted any jobs yet. Start attracting top ITI
-                  talents by creating your first job posting now.
-                </p>
-                <Link
-                  href="/PostJob"
-                  className="px-6 py-2 rounded-full bg-gradient-to-r from-[#b30000] to-[#8B0000] text-white font-medium shadow hover:scale-105 transform transition"
-                >
-                  Post Your First Job
-                </Link>
-              </div>
-            ) : (
-              currentJobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
-                >
-                  {/* View Details */}
-                  <div>
-                    <h3 className="text-lg font-semibold">{job.title}</h3>
-                    <p className="text-sm text-gray-500">Type: {job.type}</p>
-                    <p className="text-sm text-gray-500">Level: {job.level}</p>
-                    <p className="text-sm text-gray-500">
-                      Applications: {job.applicants?.length || 0}
+          {/* Jobs + Stats + Editable Profile */}
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+            {/* Jobs Column */}
+            <div className="md:col-span-2">
+              <h2 className="text-xl font-semibold mb-2">
+                Active Job Postings{" "}
+                <span className="text-sm text-gray-500">
+                  (
+                  {
+                    jobs.filter(
+                      (job) =>
+                        job.status?.toLowerCase() === "active" ||
+                        job.status?.toLowerCase() === "open",
+                    ).length
+                  }{" "}
+                  open positions)
+                </span>
+              </h2>
+              <div className="space-y-4">
+                {jobs.length === 0 ? (
+                  <div className="bg-white mt-20 rounded-xl p-8 text-center mr-20">
+                    <h3 className="text-xl font-semibold text-[#333] mb-2">
+                      No Job Postings Yet
+                    </h3>
+                    <p className="text-sm text-gray-700 max-w-md mx-auto mb-6">
+                      You haven’t posted any jobs yet. Start attracting top ITI
+                      talents by creating your first job posting now.
                     </p>
-                    <button
-                      onClick={() => setSelectedJob(job)}
-                      className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
+                    <Link
+                      href="/PostJob"
+                      className="px-6 py-2 rounded-full bg-gradient-to-r from-[#b30000] to-[#8B0000] text-white font-medium shadow hover:scale-105 transform transition"
                     >
-                      View Details
-                    </button>
+                      Post Your First Job
+                    </Link>
                   </div>
-                  <div className="text-xs text-gray-400">
-                    {job.createdAt &&
-                      formatRelativeTime(new Date(job.createdAt))}
-                  </div>
-                </div>
-              ))
-            )}
+                ) : (
+                  currentJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded p-4 flex justify-between items-start"
+                    >
+                      <div>
+                        <h3 className="text-lg font-semibold">{job.title}</h3>
+                        <p className="text-sm text-gray-500">
+                          Type: {job.type}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Level: {job.level}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Applications: {job.applicants?.length || 0}
+                        </p>
+                        <button
+                          onClick={() => setSelectedJob(job)}
+                          className="mt-2 px-4 py-1 text-sm bg-[#b30000] text-white rounded hover:bg-[#8B0000] transition"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {job.createdAt?.toDate &&
+                          formatRelativeTime(job.createdAt.toDate())}
+                      </div>
+                    </div>
+                  ))
+                )}
 
-            {jobs.length > 0 && (
-              <ReactPaginate
-                breakLabel="..."
-                nextLabel={<ChevronRight size={16} />}
-                previousLabel={<ChevronLeft size={16} />}
-                onPageChange={(e) => goToPage(e.selected + 1)}
-                pageRangeDisplayed={3}
-                marginPagesDisplayed={1}
-                pageCount={totalPages}
-                forcePage={currentPage - 1}
-                containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
-                pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-                activeClassName="bg-[#b30000] text-white border-[#b30000]"
-                previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-                nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
-                breakClassName="px-2 py-1"
-              />
-            )}
-          </div>
-        </div>
-        <div className="space-y-4">
-          {/* Stats Section */}
-          <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold mb-2 text-[#203947]">
-              Company Statistics
-            </h2>
-            <ul className="text-sm mt-2 space-y-1 text-[#333]">
-              <li className="flex gap-2 items-center">
-                <Briefcase className="w-4 h-4 text-[#b30000]" />
-                {stats?.activeProjects ?? 0} Active Jobs
-              </li>
-              <li className="flex gap-2 items-center">
-                <Users className="w-4 h-4 text-[#b30000]" />
-                {stats?.totalHired ?? 0}+ Total Hired
-              </li>
-              <li className="flex gap-2 items-center">
-                <CheckCircle className="w-4 h-4 text-[#b30000]" />
-                {stats?.successRate ?? 0} Success Rate
-              </li>
-            </ul>
-          </div>
-
-          {/* About Section */}
-          <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold mb-2 text-[#203947]">About {name}</h2>
-            <p className="text-sm mt-1 text-[#333]">
-              {description || "No description provided."}
-            </p>
-          </div>
-
-          {/* Core Services */}
-          <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold mb-2 text-[#203947]">Core Services</h2>
-            {services?.length > 0 ? (
-              <ul className="text-sm mt-1 space-y-1 columns-2 text-[#333]">
-                {services.map((service) => (
-                  <li key={service}>{service}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500 mt-1">
-                No core services listed.
-              </p>
-            )}
-          </div>
-
-          {/* Technologies */}
-          <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold mb-2 text-[#203947]">
-              Technologies We Use
-            </h2>
-            {technologies?.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2 text-sm text-[#333]">
-                {technologies.map((tech) => (
-                  <div
-                    key={tech}
-                    className="px-2 py-1 bg-gray-100 rounded text-center"
-                  >
-                    {tech}
-                  </div>
-                ))}
+                {jobs.length > 0 && (
+                  <ReactPaginate
+                    breakLabel="..."
+                    nextLabel={<ChevronRight size={16} />}
+                    previousLabel={<ChevronLeft size={16} />}
+                    onPageChange={(e) => goToPage(e.selected + 1)}
+                    pageRangeDisplayed={3}
+                    marginPagesDisplayed={1}
+                    pageCount={totalPages}
+                    forcePage={currentPage - 1}
+                    containerClassName="flex items-center justify-center mt-6 gap-2 text-sm"
+                    pageClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                    activeClassName="bg-[#b30000] text-white border-[#b30000]"
+                    previousClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                    nextClassName="px-3 py-1 border border-gray-300 rounded-md hover:bg-[#f5f5f5]"
+                    breakClassName="px-2 py-1"
+                  />
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-gray-500">No technologies listed.</p>
-            )}
-          </div>
+            </div>
 
-          {/* Contact Info */}
-          <div className="bg-white shadow rounded p-3">
-            <h2 className="font-semibold mb-2 text-[#203947]">
-              Contact Information
-            </h2>
-            <div className="text-sm mt-2 space-y-2 text-[#333]">
-              {website ? (
-                <p>
-                  <FaGlobe className="inline w-4 h-4 mr-1 text-[#b30000]" />
-                  <a
-                    href={website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline text-[#203947]"
-                  >
-                    {website}
-                  </a>
-                </p>
-              ) : (
-                <p className="text-gray-500">No website provided.</p>
-              )}
-
-              {email ? (
-                <p>
-                  <FaEnvelope className="inline w-4 h-4 mr-1 text-[#b30000]" />
-                  <a
-                    href={`mailto:${email}`}
-                    className="hover:underline text-[#203947]"
-                  >
-                    {email}
-                  </a>
-                </p>
-              ) : (
-                <p className="text-gray-500">No email provided.</p>
-              )}
-
-              {linkedin ? (
-                <p>
-                  <FaLinkedin className="inline w-4 h-4 mr-1 text-[#b30000]" />
-                  <a
-                    href={linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline text-[#203947]"
-                  >
-                    {linkedin}
-                  </a>
-                </p>
-              ) : (
-                <p className="text-gray-500">No LinkedIn profile provided.</p>
-              )}
-
-              {facebook ? (
-                <p>
-                  <FaFacebook className="inline w-4 h-4 mr-1 text-[#b30000]" />
-                  <a
-                    href={facebook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline text-[#203947]"
-                  >
-                    {facebook}
-                  </a>
-                </p>
-              ) : (
-                <p className="text-gray-500">No Facebook page provided.</p>
-              )}
+            {/* Stats + Editable Profile */}
+            <div className="space-y-4">
+              <div className="bg-white shadow rounded p-3">
+                <h2 className="font-semibold mb-2 text-[#203947]">
+                  Company Statistics
+                </h2>
+                <ul className="text-sm mt-2 space-y-1 text-[#333]">
+                  <li className="flex gap-2 items-center">
+                    <Briefcase className="w-4 h-4 text-[#b30000]" />
+                    {stats?.activeProjects ?? 0} Active Jobs
+                  </li>
+                  <li className="flex gap-2 items-center">
+                    <Users className="w-4 h-4 text-[#b30000]" />
+                    {stats?.totalHired ?? 0}+ Total Hired
+                  </li>
+                  <li className="flex gap-2 items-center">
+                    <CheckCircle className="w-4 h-4 text-[#b30000]" />
+                    {stats?.successRate ?? 0} Success Rate
+                  </li>
+                </ul>
+              </div>
+              <EditableProfileViewCom />
             </div>
           </div>
-        </div>
 
-        <div className="space-y-4">
           {selectedJob && (
             <div className="fixed inset-0 z-50 bg-black/40 flex justify-center items-center px-4">
               <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative overflow-y-auto max-h-[90vh] space-y-6">
-                <Toaster
-                  position="top-right"
-                  toastOptions={{
-                    style: {
-                      background: "#fff",
-                      color: "#203947",
-                      border: "1px solid #ddd",
-                      padding: "12px 16px",
-                    },
-                  }}
-                />
-
                 {/* Job Title */}
                 <h2 className="text-2xl font-bold mb-4 text-[#203947]">
-                  {selectedJob.title}
+                  {selectedJob.title || "N/A"}
                 </h2>
 
                 {/* Job Details */}
                 <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
                   <p>
-                    <Briefcase className="inline w-4 h-4 mr-1   text-[#8B0000]" />{" "}
+                    <Briefcase className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
                     <span className="text-[#8B0000] font-semibold">Type:</span>{" "}
-                    {selectedJob.type}
+                    {selectedJob.type || "N/A"}
                   </p>
                   <p>
-                    <BadgeCheck className="inline w-4 h-4 mr-1  text-[#8B0000]" />{" "}
+                    <BadgeCheck className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
                     <span className="text-[#8B0000] font-semibold">Level:</span>{" "}
-                    {selectedJob.level}
+                    {selectedJob.level || "N/A"}
                   </p>
                   <p>
                     <DollarSign className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
                     <span className="text-[#8B0000] font-semibold">
                       Salary:
                     </span>{" "}
-                    {selectedJob.salary}
+                    {selectedJob.salary || "N/A"}
                   </p>
                   <p>
                     <MapPin className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
                     <span className="text-[#8B0000] font-semibold">
                       Location:
                     </span>{" "}
-                    {selectedJob.location}
+                    {selectedJob.location || "N/A"}
                   </p>
                   <p>
                     <Calendar className="inline w-4 h-4 mr-1 text-[#8B0000]" />{" "}
                     <span className="text-[#8B0000] font-semibold">
                       Deadline:
                     </span>{" "}
-                    {selectedJob.deadline &&
-                      new Date(selectedJob.deadline).toLocaleDateString()}
+                    {selectedJob.deadline?.toDate
+                      ? selectedJob.deadline.toDate().toLocaleDateString()
+                      : "N/A"}
                   </p>
                 </div>
 
@@ -602,7 +452,7 @@ export default function ProfileViewCom() {
                       <Star className="w-4 h-4" /> Skills Required
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {selectedJob.skills.split(",").map((skill, index) => (
+                      {selectedJob.skills?.split(",").map((skill, index) => (
                         <span
                           key={index}
                           className="bg-[#203947] text-white px-3 py-1 rounded-full text-xs font-medium"
@@ -615,64 +465,55 @@ export default function ProfileViewCom() {
                 )}
 
                 {/* Comments */}
-                <section className="mt-6">
-                  <button
-                    onClick={() => setShowComments((prev) => !prev)}
-                    className="text-md font-semibold text-[#8B0000] mb-3 flex items-center gap-2 focus:outline-none"
-                  >
-                    <MessageCircle className="w-5 h-5 text-[#8B0000]" />
-                    Comments
-                    {showComments ? (
-                      <ChevronDown className="w-4 h-4 text-[#203947]" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-[#203947]" />
-                    )}
-                  </button>
+                {/* <section className="mt-6">
+        <button
+          onClick={() => setShowComments((prev) => !prev)}
+          className="text-md font-semibold text-[#8B0000] mb-3 flex items-center gap-2 focus:outline-none"
+        >
+          <MessageCircle className="w-5 h-5 text-[#8B0000]" />
+          Comments
+          {showComments ? (
+            <ChevronDown className="w-4 h-4 text-[#203947]" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-[#203947]" />
+          )}
+        </button>
 
-                  {showComments && (
-                    <>
-                      {selectedJob?.comments?.length > 0 ? (
-                        <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                          {selectedJob.comments.map((comment, index) => (
-                            <li
-                              key={index}
-                              className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm flex gap-4 items-start"
-                            >
-                              <img
-                                src={comment.avatar || "/default-user.png"}
-                                alt={comment.userName}
-                                className="w-10 h-10 rounded-full object-cover mt-1 border"
-                              />
-                              <div className="flex-1">
-                                <div className="flex justify-between items-center mb-1">
-                                  <p className="font-semibold text-[#203947]">
-                                    {comment.userName}
-                                  </p>
-                                  <p className="text-gray-400 text-xs">
-                                    {comment.timestamp?.seconds
-                                      ? formatRelativeTime(
-                                          new Date(
-                                            comment.timestamp.seconds * 1000,
-                                          ),
-                                        )
-                                      : ""}
-                                  </p>
-                                </div>
-                                <p className="text-gray-700 text-sm">
-                                  {comment.text}
-                                </p>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-gray-500">
-                          No comments yet.
+        {showComments && (
+          <>
+            {selectedJob?.comments?.length > 0 ? (
+              <ul className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                {selectedJob.comments.map((comment, index) => (
+                  <li
+                    key={index}
+                    className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm flex gap-4 items-start"
+                  >
+                    <img
+                      src={applicantImages[comment.userId] || "/default-user.png"}
+                      alt={comment.userName || "User"}
+                      className="w-10 h-10 rounded-full object-cover mt-1 border"
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="font-semibold text-[#203947]">{comment.userName || "Unknown"}</p>
+                        <p className="text-gray-400 text-xs">
+                          {comment.timestamp?.seconds
+                            ? formatRelativeTime(new Date(comment.timestamp.seconds * 1000))
+                            : ""}
                         </p>
-                      )}
-                    </>
-                  )}
-                </section>
+                      </div>
+                      <p className="text-gray-700 text-sm">{comment.text || ""}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">No comments yet.</p>
+            )}
+          </>
+        )}
+      </section> */}
+
                 {/* Copy Job Link */}
                 <button
                   className="text-[#203947] flex items-center gap-2 text-sm hover:underline"
@@ -686,22 +527,8 @@ export default function ProfileViewCom() {
                   Copy Job Link
                 </button>
 
-                {/* Close Button */}
+                {/* Close */}
                 <div className="flex justify-between items-center pt-4">
-                  {user?.role === "freelancer" ? (
-                    <button
-                      onClick={handleApply}
-                      className="bg-[#8B0000] text-white px-4 py-2 rounded-md hover:bg-[#a30000] text-sm transition-all"
-                    >
-                      Apply Now
-                    </button>
-                  ) : (
-                    <p className="text-sm text-gray-400 italic">
-                      Only freelancers can apply for jobs.
-                    </p>
-                  )}
-                  <Toaster position="top-right" />
-
                   <button
                     className="bg-[#203947] text-white px-4 py-2 rounded-md hover:bg-[#8B0000] text-sm transition-all"
                     onClick={() => setSelectedJob(null)}
@@ -712,8 +539,8 @@ export default function ProfileViewCom() {
               </div>
             </div>
           )}
-        </div>
-      </div>
+        </>
+      )}
     </main>
   );
 }

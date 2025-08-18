@@ -19,8 +19,9 @@ const nextConfig = {
         hostname: "res.cloudinary.com",
       },
       {
-       protocol: "https", hostname: "i.pravatar.cc" 
-      },// أضف أي domains أخرى تحتاجها
+        protocol: "https",
+        hostname: "i.pravatar.cc",
+      }, // أضف أي domains أخرى تحتاجها
     ],
   },
 

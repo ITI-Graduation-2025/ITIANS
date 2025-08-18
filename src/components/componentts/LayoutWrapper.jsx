@@ -51,17 +51,25 @@ export default function LayoutWrapper({ children }) {
     "/mentor",
     "/dashboardCompany",
     "/dashboard",
-    "/mentor/[id]",
     "/pending",
     "/rejected",
     "/bookings",
+    "/companyjobs",
+    "/AllCompanyApplicants",
+    "/companyprofile",
+    "/ProfileViewCom",
+    "/PostJob",
+    "/settingsform",
+    "/ProfileEdit",
+    "/Activejobs",
   ];
 
   const hideBoth =
     hideBothExactPaths.includes(pathname) ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/mentor/") ||
-    pathname.startsWith("/rejected");
+    pathname.startsWith("/rejected") ||
+    pathname.startsWith("/Applicationjob/");
 
   // Specific path where only navbar is hidden
   const hideNavbar = pathname === "/profile" || pathname === "/community";

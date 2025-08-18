@@ -1,5 +1,3 @@
-// ✅ src/services/firebase/notificationService.js
-
 import { db } from "@/config/firebase";
 import {
   collection,
@@ -16,8 +14,7 @@ import {
 import { getMessaging } from "firebase/messaging";
 import { getAuth } from "firebase/auth";
 
-// ---- Push Notification ----// ✅ src/services/notificationService.js
-
+// ---- Push Notification ----
 export async function sendPushNotification({ token, title, body, data }) {
   try {
     const response = await fetch("/api/notify", {
@@ -40,6 +37,7 @@ export async function sendPushNotification({ token, title, body, data }) {
     return { success: false, error: error.message };
   }
 }
+
 // ---- Notification ----
 export async function getAllNotifications() {
   const snapshot = await getDocs(collection(db, "notifications"));
@@ -73,7 +71,7 @@ export function listenToNotifications(userId, callback) {
   const q = query(
     collection(db, "notifications"),
     where("recipientId", "==", userId),
-    orderBy("createdAt", "desc"),
+    orderBy("createdAt", "desc")
   );
   return onSnapshot(q, (snapshot) => {
     // Helper function to convert Timestamp to ISO string
@@ -113,6 +111,16 @@ export async function deleteNotification(notificationId) {
   return { id: notificationId };
 }
 
+// ✅ Mark notification as read
+export async function markNotificationAsRead(notificationId) {
+  try {
+    const notificationRef = doc(db, "notifications", notificationId);
+    await updateDoc(notificationRef, { read: true });
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+  }
+}
+
 // --- New Function to Delete Old Notifications ---
 export async function deleteOldNotifications(userId) {
   try {
@@ -121,16 +129,14 @@ export async function deleteOldNotifications(userId) {
     const q = query(
       collection(db, "notifications"),
       where("recipientId", "==", userId),
-      where("createdAt", "<", tenDaysAgo),
+      where("createdAt", "<", tenDaysAgo)
     );
     const snapshot = await getDocs(q);
     const deletePromises = snapshot.docs.map((docSnap) =>
-      deleteDoc(doc(db, "notifications", docSnap.id)),
+      deleteDoc(doc(db, "notifications", docSnap.id))
     );
     await Promise.all(deletePromises);
-    // console.log(
-    //   `Deleted ${deletePromises.length} old notifications for user ${userId}`,
-    // );
+    // console.log(`Deleted ${deletePromises.length} old notifications for user ${userId}`);
   } catch (error) {
     console.error("Error deleting old notifications:", error);
   }

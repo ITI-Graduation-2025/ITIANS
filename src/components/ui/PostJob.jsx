@@ -1,9 +1,10 @@
-"use client";  
+"use client";
 
-import React, { useState , useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/config/firebase";
+import CompanyNavbar from "./CompanyNavbar";
 import {
   collection,
   addDoc,
@@ -19,7 +20,6 @@ import toast, { Toaster } from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 
-
 export default function PostJob() {
   const { data: session } = useSession();
   const [formData, setFormData] = useState({
@@ -34,11 +34,13 @@ export default function PostJob() {
     requirements: "",
     email: "",
     deadline: "",
+    
+
   });
 
   const [loading, setLoading] = useState(false);
   const params = useParams();
-const jobId = params?.jobId;
+  const jobId = params?.jobId;
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -92,7 +94,6 @@ const jobId = params?.jobId;
       const deadlineDate = new Date(formData.deadline);
       const deadlineTimestamp = Timestamp.fromDate(deadlineDate);
 
-      // إنشاء الوظيفة
       await addDoc(collection(db, "jobs"), {
         ...formData,
         deadline: deadlineTimestamp,
@@ -106,7 +107,15 @@ const jobId = params?.jobId;
         postedAt: serverTimestamp(),
       });
 
-      toast.success("Job posted successfully!");
+      // toast.success("Job posted successfully!");
+      await addDoc(collection(db, "notifications"), {
+  recipientId: userId, 
+  type: "job_posted",
+  message: `You posted a new job: ${formData.title}`,
+  createdAt: serverTimestamp(),
+  read: false,
+});
+
 
       const companyRef = doc(db, "users", userId);
       const companySnap = await getDoc(companyRef);
@@ -165,31 +174,34 @@ const jobId = params?.jobId;
   };
 
   useEffect(() => {
-  const clearNewApplications = async () => {
-    const jobRef = doc(db, "jobs", jobId);
-    await updateDoc(jobRef, {
-      newApplications: [],
-    });
-  };
+    const clearNewApplications = async () => {
+      if (!jobId) return;
+      const jobRef = doc(db, "jobs", jobId);
+      await updateDoc(jobRef, {
+        newApplications: [],
+      });
+    };
 
-  clearNewApplications();
-}, [jobId]);
+    clearNewApplications();
+  }, [jobId]);
+
+ 
 
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
-      <Toaster position="top-right" />
+      <CompanyNavbar />
+      {/* <Toaster position="top-right" /> */}
       <main className="p-6 max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold text-gray-800">Post a New Job</h1>
           <Link
             href="/companyjobs"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#b30000] text-white font-semibold text-sm  transition-all duration-300 shadow-sm hover:shadow-md group"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#b30000] text-white font-semibold text-sm transition-all duration-300 shadow-sm hover:shadow-md group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
             <span>Back to My Jobs</span>
           </Link>
-
         </div>
         <p className="text-gray-600 mb-6">
           Connect with skilled ITI graduates for your projects
@@ -215,19 +227,19 @@ const jobId = params?.jobId;
           <div className="grid md:grid-cols-2 gap-4">
             <InputField label="Contact Email" name="email" value={formData.email} onChange={handleChange} type="email" />
             <InputField label="Application Deadline" name="deadline" value={formData.deadline} onChange={handleChange} type="date" />
+            <InputField label="Job Duration" name="duration" value={formData.duration} onChange={handleChange} placeholder="e.g., 3 months, 6 months, 1 year" />         
           </div>
 
           <div className="pt-4 text-center">
             <button
               type="submit"
               disabled={loading}
-              className={`group relative overflow-hidden bg-[#b30000] text-white px-6 py-2 rounded-full shadow-md hover:from-red-700 hover:to-red-800 transition-all duration-300 ease-in-out flex items-center justify-center gap-2 mx-auto ${loading ? 'opacity-60 cursor-not-allowed' : ''
+              className={`group relative overflow-hidden bg-[#b30000] text-white px-6 py-2 rounded-full shadow-md hover:from-red-700 hover:to-red-800 transition-all duration-300 ease-in-out flex items-center justify-center gap-2 mx-auto ${loading ? "opacity-60 cursor-not-allowed" : ""
                 }`}
             >
               <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               {loading ? "Posting..." : "Post Job"}
             </button>
-
           </div>
         </form>
       </main>
@@ -235,7 +247,7 @@ const jobId = params?.jobId;
   );
 }
 
-//  دالة لتحديث حالة المتقدم (قبول/رفض) داخل الوظيفة
+// 
 export async function updateApplicantStatus(jobId, applicantId, status) {
   try {
     const jobRef = doc(db, "jobs", jobId);
@@ -251,7 +263,7 @@ export async function updateApplicantStatus(jobId, applicantId, status) {
       app.applicantId === applicantId ? { ...app, status } : app
     );
 
-    await updateDoc(jobRef, { applicants: updatedApplicants ,newApplications: arrayUnion(user.id), });
+    await updateDoc(jobRef, { applicants: updatedApplicants });
     toast.success(`Applicant ${status} successfully`);
   } catch (error) {
     console.error("Failed to update applicant status:", error);
@@ -259,10 +271,61 @@ export async function updateApplicantStatus(jobId, applicantId, status) {
   }
 }
 
-// ✅ مثال استخدام الدالة:
-// updateApplicantStatus("job123", "applicant456", "accepted");
+// 
+export async function markJobCompleted(jobId, applicantId) {
+  const jobRef = doc(db, "jobs", jobId);
+  const jobSnap = await getDoc(jobRef);
+  if (!jobSnap.exists()) return;
 
-function InputField({ label, name, value, onChange, type = "text" }) {
+  const jobData = jobSnap.data();
+  
+  const updatedApplicants = jobData.applicants.map(app =>
+    
+    app.applicantId === applicantId && app.status === "approved"
+      ? { ...app, status: "completed" }
+      : app
+  );
+
+  await updateDoc(jobRef, { applicants: updatedApplicants });
+  toast.success("Job status has been updated to completed");
+}
+
+
+// 
+export async function handlePaymentToAdmin(jobId, companyId, adminId, amount) {
+  try {
+    const jobRef = doc(db, "jobs", jobId);
+    const jobSnap = await getDoc(jobRef);
+
+    if (!jobSnap.exists()) return;
+
+    const jobData = jobSnap.data();
+
+  
+    await addDoc(collection(db, "payments"), {
+      from: companyId,
+      to: adminId,
+      jobId,
+      amount,
+      status: "pending",
+      createdAt: serverTimestamp()
+    });
+
+    // 
+    await updateDoc(jobRef, {
+      status: "Completed"
+    });
+
+    toast.success("Payment sent and job marked as completed");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to send payment");
+  }
+}
+
+
+
+function InputField({ label, name, value, onChange, type = "text", placeholder }) {
   return (
     <div>
       <label className="text-sm text-gray-500">{label} *</label>
@@ -271,7 +334,7 @@ function InputField({ label, name, value, onChange, type = "text" }) {
         name={name}
         value={value}
         onChange={onChange}
-        placeholder={label}
+        placeholder={placeholder || label}
         className="w-full border rounded px-3 py-2 mt-1"
       />
     </div>
@@ -315,6 +378,7 @@ function TextAreaField({ label, name, value, onChange, max = 500 }) {
     </div>
   );
 }
+
 
 
 

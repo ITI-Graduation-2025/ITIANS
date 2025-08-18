@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import CompanyNavbar from './CompanyNavbar';
+import LogoClickable from "./LogoClickable";
 import {
   LayoutDashboard,
   FileText,
@@ -35,7 +36,7 @@ export default function CompanyProfile() {
 
   const companyId = session?.user?.id;
 
-  // ✅ حماية الصفحة - السماح فقط للشركات
+  
   useEffect(() => {
     if (status === 'loading') return;
 
@@ -44,7 +45,7 @@ export default function CompanyProfile() {
     }
   }, [session, status]);
 
-  // ✅ تحميل بيانات الشركة
+  
   useEffect(() => {
     const fetchCompanyData = async () => {
       try {
@@ -56,41 +57,8 @@ export default function CompanyProfile() {
         if (docSnap.exists()) {
           const companyData = docSnap.data();
 
-          const jobsSnapshot = await getDocs(collection(db, 'jobs'));
-          const jobs = jobsSnapshot.docs.map((doc) => doc.data());
-
-          const activeJobs = jobs.filter(
-            (job) => job.status === 'Active' && job.companyId === companyId
-          ).length;
-
-          let totalHires = 0;
-          let totalApplicants = 0;
-
-          jobs.forEach((job) => {
-            if (job.companyId === companyId && Array.isArray(job.applicants)) {
-              job.applicants.forEach((applicant) => {
-                if (typeof applicant === 'object' && applicant.status) {
-                  totalApplicants++;
-                  if (applicant.status.toLowerCase() === 'approved') {
-                    totalHires++;
-                  }
-                }
-              });
-            }
-          });
-
-          const successRate =
-            totalApplicants > 0
-              ? `${Math.round((totalHires / totalApplicants) * 100)}%`
-              : '0%';
-
           setCompany({
-            ...companyData,
-            stats: {
-              totalHires,
-              successRate,
-              activeJobs
-            }
+            ...companyData
           });
         } else {
           console.log('No company profile found for:', companyId);
@@ -105,7 +73,8 @@ export default function CompanyProfile() {
     }
   }, [companyId]);
 
-  // ✅ Skeleton أثناء التحميل
+
+  
   if (!company) {
     return (
       <div className="min-h-screen bg-[#f9f9f9] p-6 animate-pulse">
@@ -122,59 +91,38 @@ export default function CompanyProfile() {
       </div>
     );
   }
-
-  // ✅ محتوى الصفحة
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
       <CompanyNavbar />
 
-      <main className="p-6 max-w-7xl mx-auto">
+      <main className="p-6 max-w-7xl mx-auto ">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-[#b30000]">
-            {company?.name}{' '}
-            <span className="text-[#203947] text-2xl">Dashboard</span>
-          </h1>
-        </div>
-        <p className="text-gray-600 mb-6">
-          Manage your job postings and find the best ITI talent
-        </p>
+         <h1 className="text-2xl font-bold text-[#003366] ml-2">
+   Profile Details
+</h1>
+</div>
+<p className=" text-gray-600 p-3">
+  Access and manage all your company details.
+</p>
 
-        <div className="flex gap-4 border-b mb-6">
-          <Link href="/dashboardCompany" className="px-4 py-2 flex items-center gap-1 text-[#203947] font-medium hover:text-[#b30000] transition">
-            <LayoutDashboard className="w-4 h-4" /> Overview
-          </Link>
-          <Link href="/companyjobs" className="px-4 py-2 flex items-center gap-1 text-[#203947] hover:text-[#b30000] font-medium">
-            <FileText className="w-4 h-4" /> My Jobs
-          </Link>
-          <Link href="/AllCompanyApplicants" className="px-4 py-2 flex items-center font-medium gap-1 text-[#203947] hover:text-[#b30000]">
-            <Users2 className="w-4 h-4" /> Applications
-          </Link>
-          <Link href="/companyprofile" className="text-[#b30000] border-b-2 border-[#b30000] px-4 py-2 font-medium flex items-center gap-1 hover:text-[#b30000] transition">
-            <Building2 className="w-4 h-4" /> Company Profile
-          </Link>
-        </div>
+
+        
 
         <section className="bg-white p-6 rounded-xl shadow-md border">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-4">
-              <div className="bg-red-100 text-red-600 p-4 rounded-xl">
-                <Building2 className="w-8 h-8" />
-              </div>
+             <div className="p-1 rounded-xl">
+  <img
+    src={company.logo || "/default-logo.png"}
+    alt="Company Logo"
+    className="w-22 h-22 object-cover rounded-full border-2 border-blue-600"
+  />
+</div>
+
               <div>
                 <h2 className="font-bold text-lg">{company.name}</h2>
                 <p className="text-sm text-gray-600">{company.industry}</p>
-                <p className="text-yellow-600 text-sm mt-1">
-                  {company.rating > 0 ? (
-                    <>
-                      ⭐ {company.rating}/5{' '}
-                      <span className="text-gray-500">
-                        ({company.reviews} reviews)
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-gray-500">No rating yet</span>
-                  )}
-                </p>
+                
               </div>
             </div>
             <Link
@@ -226,7 +174,7 @@ export default function CompanyProfile() {
                 <p className="text-gray-900 font-semibold">Website</p>
                 <a
                   href={company.website}
-                  className="font-semibold text-[#b30000] hover:underline"
+                  className="font-semibold "
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -260,7 +208,7 @@ export default function CompanyProfile() {
             </div>
           </div>
 
-        <div className="mt-6 bg-red-50 p-4 rounded-lg text-center">
+        {/* <div className="mt-6 bg-red-50 p-4 rounded-lg text-center">
             <h3 className="font-semibold mb-4 flex items-center justify-center gap-1 text-gray-900">
               <BarChart3 className="w-4 h-4 text-[#b30000]" />
               Company Stats
@@ -272,7 +220,7 @@ export default function CompanyProfile() {
         <Briefcase className="w-4 h-4 text-[#8B0000]" />
         <p>Active Jobs:</p>
       </div>
-      <p className="text-red-600 font-semibold">{company.stats.activeJobs}</p>
+      <p className="text-gray-900 font-semibold">{company.stats.activeJobs}</p>
     </div>
 
     <div className="flex flex-col items-center gap-1">
@@ -280,7 +228,7 @@ export default function CompanyProfile() {
         <UserCheck className="w-4 h-4 text-[#8B0000]" />
         <p>Total Hires:</p>
       </div>
-      <p className="text-red-600 font-semibold">{company.stats.totalHires}</p>
+      <p className="text-gray-900 font-semibold">{company.stats.totalHires}</p>
     </div>
 
     <div className="flex flex-col items-center gap-1">
@@ -288,10 +236,10 @@ export default function CompanyProfile() {
         <TrendingUp className="w-4 h-4 text-[#8B0000]" />
         <p>Success Rate:</p>
       </div>
-      <p className="text-red-600 font-semibold">{company.stats.successRate}</p>
+      <p className="text-gray-900 font-semibold">{company.stats.successRate}</p>
     </div>
   </div>
-</div>
+</div> */}
 
 
           <div className="flex items-start gap-3 mt-6">

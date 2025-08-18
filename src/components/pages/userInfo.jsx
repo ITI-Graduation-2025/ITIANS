@@ -82,7 +82,7 @@ export default function UserInfo() {
     if (data?.user?.role === "mentor") {
       return `/mentor/${data?.user?.id}`;
     } else if (data?.user?.role === "company") {
-      return `/companies/${data?.user?.id}`;
+      return "/dashboardCompany";
     } else if (data?.user?.role === "admin") {
       return `/dashboard`;
     } else {
@@ -247,7 +247,7 @@ export default function UserInfo() {
           >
             <Link href={profileLink} className="flex items-center gap-3">
               <FaRegUser className="text-[#B71C1C] group-hover:text-white" />
-              <span>Profile</span>
+              <span>My Profile</span>
             </Link>
           </DropdownMenuItem>
 

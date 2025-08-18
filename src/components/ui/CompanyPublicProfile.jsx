@@ -47,9 +47,12 @@ import {
 } from "firebase/firestore";
 
 import ReactPaginate from "react-paginate";
-import { Toaster, toast } from "sonner";
+import { toast, Toaster } from "sonner";
+import BackgroundClickable from "./BackgroundClickable";
+
 import { useSession } from "next-auth/react";
 import { use } from "react";
+import NavbarProfileCom from "./NavbarProfileCom";
 
 {
   /*formatRelativeTime  */
@@ -79,29 +82,30 @@ export default function CompanyPublicProfile({ params }) {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [showComments, setShowComments] = useState(false);
+  // const [showComments, setShowComments] = useState(false);
   const [user, setUser] = useState(null);
+  const [bannerUrl, setBannerUrl] = useState(null);
   {
     /*apply job  */
   }
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
   const [showActionsIndex, setShowActionsIndex] = useState(null);
 
-  {
-    /*comments  */
-  }
-  const [editingComment, setEditingComment] = useState(null);
+  // {
+  //   /*comments  */
+  // }
+  // const [editingComment, setEditingComment] = useState(null);
 
-  const handleDeleteComment = (index) => {
-    const updatedComments = [...selectedJob.comments];
-    updatedComments.splice(index, 1);
-    setSelectedJob({ ...selectedJob, comments: updatedComments });
-  };
+  // const handleDeleteComment = (index) => {
+  //   const updatedComments = [...selectedJob.comments];
+  //   updatedComments.splice(index, 1);
+  //   setSelectedJob({ ...selectedJob, comments: updatedComments });
+  // };
 
-  const handleEditComment = (index) => {
-    const commentToEdit = selectedJob.comments[index];
-    setEditingComment({ index, text: commentToEdit.text });
-  };
+  // const handleEditComment = (index) => {
+  //   const commentToEdit = selectedJob.comments[index];
+  //   setEditingComment({ index, text: commentToEdit.text });
+  // };
 
   {
     /*pageinate  */
@@ -119,6 +123,7 @@ export default function CompanyPublicProfile({ params }) {
         id: session.user.id,
         email: session.user.email,
         name: session.user.name,
+        role: session.user.role,
       });
     }
   }, [session]);
@@ -168,9 +173,12 @@ export default function CompanyPublicProfile({ params }) {
               id: doc.id,
               ...doc.data(),
             }))
-            .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
+            .sort(
+              (a, b) =>
+                (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
+            );
 
-          // إحصائيات الوظائف
+          // 🔹 إحصائيات الوظائف
           const activeProjects = jobsData.filter(
             (job) =>
               job.status?.toLowerCase() === "active" ||
@@ -178,31 +186,32 @@ export default function CompanyPublicProfile({ params }) {
           ).length;
 
           const totalJobs = jobsData.length;
-
-          let totalApplicants = 0;
+          let jobsWithApproved = 0;
           let totalHired = 0;
 
           jobsData.forEach((job) => {
-            if (!Array.isArray(job.applicants)) return;
+            if (Array.isArray(job.applicants) && job.applicants.length > 0) {
+              const approvedApplicants = job.applicants.filter(
+                (applicant) => applicant?.status?.toLowerCase() === "approved",
+              );
 
-            totalApplicants += job.applicants.length;
-
-            totalHired += job.applicants.filter(
-              (applicant) => applicant?.status?.toLowerCase() === "approved",
-            ).length;
+              if (approvedApplicants.length > 0) {
+                jobsWithApproved++;
+                totalHired += approvedApplicants.length;
+              }
+            }
           });
 
           const successRate =
-            totalApplicants > 0
-              ? `${Math.round((totalHired / totalApplicants) * 100)}%`
+            totalJobs > 0
+              ? `${((jobsWithApproved / totalJobs) * 100).toFixed(1)}%`
               : "0%";
-
-          console.log("Total Jobs:", totalJobs);
 
           setCompany({
             ...companyData,
             stats: {
               activeProjects,
+              jobsWithApproved,
               totalHired,
               successRate,
             },
@@ -229,6 +238,30 @@ export default function CompanyPublicProfile({ params }) {
   const goToPage = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
+
+  useEffect(() => {
+    if (!companyId) return;
+
+    const companyRef = doc(db, "users", companyId);
+
+    const unsubscribe = onSnapshot(companyRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setCompany(data);
+        setBannerUrl(
+          data.backgroundUrl ||
+            "https://res.cloudinary.com/dtn4wkie9/image/upload/v1692100000/default-banner.jpg",
+        );
+        setLoading(false);
+      } else {
+        setCompany(null);
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [companyId]);
+
   {
     /*apply jobs  */
   }
@@ -277,7 +310,7 @@ export default function CompanyPublicProfile({ params }) {
         newApplications: arrayUnion(user.id),
       });
 
-      // تحديث الحالة محليًا
+      // تحديث الحالة
       setSelectedJob((prev) => ({
         ...prev,
         applicants: [...(prev?.applicants || []), newApplicant],
@@ -320,64 +353,62 @@ export default function CompanyPublicProfile({ params }) {
     founded,
     phone,
     facebook,
+    banner,
   } = company || {};
+
+  const BannerContent = () => (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      {/* اللوجو */}
+      <div className="w-30 h-30 rounded-full overflow-hidden border-2 border-blue-600">
+        <Image
+          src={
+            logo ||
+            "https://res.cloudinary.com/dtn4wkie9/image/upload/v1692100000/default-logo.png"
+          }
+          alt={`${name || "Company"} Logo`}
+          width={80}
+          height={80}
+          className="object-cover w-full h-full"
+        />
+      </div>
+
+      {/* comname*/}
+      <h1 className="text-2xl sm:text-3xl font-bold mt-4">{name}</h1>
+
+      {/* info*/}
+      <div className="flex flex-wrap justify-center gap-2 mt-2 text-sm ">
+        {industry && (
+          <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+            <Briefcase className="w-4 h-4 text-[#8B0000]" />
+            <span>{industry}</span>
+          </div>
+        )}
+        {founded && (
+          <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+            <Calendar className="w-4 h-4 text-[#8B0000]" />
+            <span>Founded: {founded}</span>
+          </div>
+        )}
+        {location && (
+          <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full ">
+            <MapPin className="w-4 h-4 text-[#8B0000]" />
+            <span>{location}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-[#333]">
       {/* Banner Section */}
       <div
-        className="text-white p-6 bg-cover bg-center"
+        className="bg-cover bg-center h-[250px] text-white"
         style={{
-          backgroundImage:
-            "url('https://img.freepik.com/free-photo/business-people-working-office_23-2148902353.jpg')",
+          backgroundImage: `url('${bannerUrl}')`,
         }}
       >
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex gap-4 items-center">
-            <Image
-              src={logo || "/default-logo.png"}
-              alt={`${name || "Company"} Logo`}
-              width={48}
-              height={48}
-              className="rounded-md shadow bg-white"
-            />
-            <div>
-              <h1 className="text-2xl font-bold">{name}</h1>
-              <div className="flex flex-wrap gap-4 text-sm mt-2 text-[#333]">
-                {industry && (
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-                    <Briefcase className="w-4 h-4 text-[#8B0000]" />
-                    <span>{industry}</span>
-                  </div>
-                )}
-                {founded && (
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-                    <Calendar className="w-4 h-4 text-[#8B0000]" />
-                    <span>Founded: {founded}</span>
-                  </div>
-                )}
-                {location && (
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-                    <MapPin className="w-4 h-4 text-[#8B0000]" />
-                    <span>{location}</span>
-                  </div>
-                )}
-                {phone && (
-                  <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-gray-800">
-                    <Phone className="w-4 h-4 text-[#8B0000]" />
-                    <span>{phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="flex items-center justify-end gap-1">
-              <Star className="w-4 h-4 text-yellow-300" /> {rating}
-            </p>
-            <p className="text-sm">{reviewsCount} reviews</p>
-          </div>
-        </div>
+        <BannerContent />
       </div>
 
       {/* Content */}
@@ -444,7 +475,7 @@ export default function CompanyPublicProfile({ params }) {
               </div>
             )}
 
-            {/* Pagination should only appear if there are jobs */}
+            {/* Pagination  */}
             {currentJobs.length > 0 && (
               <ReactPaginate
                 breakLabel="..."
@@ -588,6 +619,12 @@ export default function CompanyPublicProfile({ params }) {
                   </a>
                 </p>
               )}
+              {phone && (
+                <p>
+                  <Phone className="inline w-4 h-4 mr-1 text-[#b30000]" />
+                  {phone}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -684,7 +721,7 @@ export default function CompanyPublicProfile({ params }) {
                   </div>
                 </section>
               )}
-              {/*Comments*/}
+              {/* Comments
               <section className="mt-6">
                 <button
                   onClick={() => setShowComments((prev) => !prev)}
@@ -779,7 +816,7 @@ export default function CompanyPublicProfile({ params }) {
                     )}
                   </>
                 )}
-              </section>
+              </section> */}
 
               <button
                 className="text-[#203947] flex items-center gap-2 text-sm hover:underline"
@@ -794,69 +831,59 @@ export default function CompanyPublicProfile({ params }) {
               </button>
 
               <div className="flex justify-between items-center pt-4 gap-3">
-                {user &&
-                  (() => {
-                    const deadlinePassed =
-                      selectedJob.deadline &&
-                      new Date(selectedJob.deadline) < new Date();
-
-                    const isPaused =
-                      selectedJob?.status?.toLowerCase() === "paused";
-
-                    const isRejected =
-                      Array.isArray(selectedJob?.applicants) &&
-                      selectedJob.applicants.some(
+                {user?.role?.toLowerCase() === "freelancer" && selectedJob && (
+                  <button
+                    onClick={
+                      !(
+                        selectedJob.deadline?.toDate() < new Date() ||
+                        selectedJob.status?.toLowerCase() === "paused" ||
+                        hasAlreadyApplied ||
+                        selectedJob.applicants?.some(
+                          (applicant) =>
+                            applicant.userId === user.id &&
+                            applicant.status?.toLowerCase() === "rejected",
+                        )
+                      )
+                        ? handleApply
+                        : undefined
+                    }
+                    disabled={
+                      selectedJob.deadline?.toDate() < new Date() ||
+                      selectedJob.status?.toLowerCase() === "paused" ||
+                      hasAlreadyApplied ||
+                      selectedJob.applicants?.some(
                         (applicant) =>
-                          typeof applicant === "object" &&
                           applicant.userId === user.id &&
                           applicant.status?.toLowerCase() === "rejected",
-                      );
-
-                    const baseBtnClasses =
-                      "px-4 py-2 rounded-md text-white text-sm min-w-[120px] text-center";
-
-                    if (deadlinePassed) {
-                      return (
-                        <button
-                          disabled
-                          className={`${baseBtnClasses} bg-gray-400 cursor-not-allowed`}
-                        >
-                          Deadline Passed
-                        </button>
-                      );
+                      )
                     }
-
-                    if (isPaused) {
-                      return (
-                        <button
-                          disabled
-                          className={`${baseBtnClasses} bg-orange-500 cursor-not-allowed`}
-                        >
-                          Job Paused
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <button
-                        onClick={
-                          hasAlreadyApplied || isRejected
-                            ? undefined
-                            : handleApply
-                        }
-                        disabled={hasAlreadyApplied || isRejected}
-                        className={`${baseBtnClasses} ${
-                          hasAlreadyApplied || isRejected
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-[#8B0000] hover:bg-[#a30000]"
-                        }`}
-                      >
-                        {isRejected || hasAlreadyApplied
+                    className={`px-4 py-2 rounded-md text-white text-sm min-w-[120px] text-center ${
+                      selectedJob.deadline?.toDate() < new Date() ||
+                      selectedJob.status?.toLowerCase() === "paused" ||
+                      hasAlreadyApplied ||
+                      selectedJob.applicants?.some(
+                        (applicant) =>
+                          applicant.userId === user.id &&
+                          applicant.status?.toLowerCase() === "rejected",
+                      )
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-[#8B0000] hover:bg-[#a30000]"
+                    }`}
+                  >
+                    {selectedJob.deadline?.toDate() < new Date()
+                      ? "Deadline Passed"
+                      : selectedJob.status?.toLowerCase() === "paused"
+                        ? "Job Paused"
+                        : hasAlreadyApplied ||
+                            selectedJob.applicants?.some(
+                              (applicant) =>
+                                applicant.userId === user.id &&
+                                applicant.status?.toLowerCase() === "rejected",
+                            )
                           ? "Already Applied"
                           : "Apply Now"}
-                      </button>
-                    );
-                  })()}
+                  </button>
+                )}
 
                 <button
                   className="px-4 py-2 rounded-md text-white text-sm min-w-[120px] text-center bg-[#203947] hover:bg-[#8B0000] transition-all"
