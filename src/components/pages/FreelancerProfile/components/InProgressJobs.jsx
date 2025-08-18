@@ -6,7 +6,7 @@ import {
   FiClock,
   FiDollarSign,
   FiMapPin,
-  FiTarget,
+  FiTarget,FiCheckCircle,
 } from "react-icons/fi";
 import { toast } from "sonner";
 
@@ -171,37 +171,20 @@ export const InProgressJobs = ({
               </div>
             ))}
           </div>
-        ) : hasCurrentJob ? (
-          <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl border border-blue-200">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
-                <FaBriefcase className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-slate-800 mb-2">
-                  Current Project
-                </h3>
-                <p className="text-slate-700 text-sm leading-relaxed">
-                  {currentJob}
-                </p>
-              </div>
-            </div>
-          </div>
         ) : (
-          <div className="p-8 bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 text-center">
-            <div className="w-20 h-20 bg-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
-              <FiClock className="text-slate-400 w-10 h-10" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">
-              No Active Projects
-            </h3>
-            <p className="text-slate-500 text-sm">
-              {isOwner
-                ? "Start a new project to showcase your ongoing work"
-                : "This freelancer isn't working on any projects currently"}
-            </p>
-          </div>
-        )}
+                  <div className="p-8 bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 text-center">
+                              <div className="w-20 h-20 bg-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                                <FiClock className="text-slate-400 w-10 h-10" />
+                              </div>
+                              <h3 className="text-lg font-semibold text-slate-700 mb-2">No Active Projects Yet</h3>
+                              <p className="text-slate-500 text-sm">
+                                {isOwner 
+                                  ? "Complete your first project to start building your portfolio"
+                                  : "This freelancer hasn't completed any projects yet"
+                                }
+                              </p>
+                            </div>
+                )}
       </div>
     </div>
   );
