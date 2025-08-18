@@ -165,6 +165,8 @@ export const EditModal = ({ type, onClose, refetchUser }) => {
         setUser({ ...user, workExperiences: tempValue });
       } else if (type === "certificates") {
         await updateUser(user.id, { certificates: tempValue });
+        // Update local user context immediately
+        setUser({ ...user, certificates: tempValue });
       } else if (type === "profileImage") {
         await updateUser(user.id, { profileImage: tempValue });
         // Update local user context to ensure consistency

@@ -137,7 +137,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
           setIsModalOpen={setIsModalOpen}
         />
         
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Left Column - Skills & Resume & Certificates */}
           <div className="xl:col-span-1 space-y-6">
             <Skills skills={skills} isOwner={isOwner} setIsModalOpen={setIsModalOpen} />
@@ -157,7 +157,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
           </div>
           
           {/* Right Column - Experience & Jobs & Posts */}
-          <div className="xl:col-span-3 space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             <Experience
               workExperiences={user.workExperiences || []}
               experienceYears={user.experienceYears}

@@ -15,6 +15,7 @@ export const EditPostModal = ({
   const [editFile, setEditFile] = useState(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [removeExistingFile, setRemoveExistingFile] = useState(false);
   const fileInputRef = useRef();
 
   if (!isOpen || !post) return null;
@@ -37,6 +38,8 @@ export const EditPostModal = ({
         const reader = new FileReader();
         reader.onloadend = () => {
           setEditFile(reader.result);
+          // If user uploads a new file, they're no longer removing the existing one
+          setRemoveExistingFile(false);
         };
         reader.readAsDataURL(file);
       }
@@ -44,6 +47,8 @@ export const EditPostModal = ({
       // Upload to Cloudinary
       const fileUrl = await upload(e);
       setEditFile(fileUrl);
+      // If user uploads a new file, they're no longer removing the existing one
+      setRemoveExistingFile(false);
       toast.success("File uploaded successfully!");
     } catch (err) {
       console.error("Upload error:", err);
@@ -59,10 +64,15 @@ export const EditPostModal = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    // If user removes the new file, check if they want to keep the existing one
+    if (post.attachment && !removeExistingFile) {
+      // User might want to keep the existing file
+      setRemoveExistingFile(false);
+    }
   };
 
   const handleSubmit = async () => {
-    if (!editContent.trim() && !editFile) {
+    if (!editContent.trim() && !editFile && !removeExistingFile) {
       toast.error('Please add some content or a file');
       return;
     }
@@ -81,6 +91,9 @@ export const EditPostModal = ({
           type: file?.type || "application/octet-stream",
           name: file?.name || "file",
         };
+      } else if (removeExistingFile) {
+        // Remove the existing file
+        updateData.attachment = null;
       }
 
       await updatePost(post.id, updateData);
@@ -98,6 +111,7 @@ export const EditPostModal = ({
   const handleClose = () => {
     setEditContent(post.content || "");
     setEditFile(null);
+    setRemoveExistingFile(false);
     onClose();
   };
 
@@ -163,14 +177,33 @@ export const EditPostModal = ({
                   </div>
                 )}
                 <button
-                  onClick={() => setEditFile(null)}
+                  onClick={() => {
+                    // Remove the current file from the post
+                    setEditFile(null);
+                    // Mark that we want to remove the existing file
+                    setRemoveExistingFile(true);
+                  }}
                   className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors"
                   title="Remove current file"
                 >
                   <X className="w-3 h-3" />
                 </button>
               </div>
-              <p className="text-xs text-slate-500">Click the X to remove this file</p>
+              <div className="text-xs text-slate-500">
+                {removeExistingFile ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500 font-medium">File will be removed when you save</span>
+                    <button
+                      onClick={() => setRemoveExistingFile(false)}
+                      className="text-blue-500 hover:text-blue-700 underline text-xs"
+                    >
+                      Undo
+                    </button>
+                  </div>
+                ) : (
+                  "Click the X to remove this file"
+                )}
+              </div>
             </div>
           )}
 
@@ -241,7 +274,7 @@ export const EditPostModal = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={(!editContent.trim() && !editFile) || isSubmitting}
+            disabled={(!editContent.trim() && !editFile && !removeExistingFile) || isSubmitting}
             className="px-8 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             {isSubmitting ? 'Updating...' : 'Update Post'}
