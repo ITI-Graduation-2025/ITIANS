@@ -7,83 +7,46 @@ import { CreatePostModal } from "./CreatePostModal";
 
 export const Posts = ({ userPosts = [], currentUser, isOwner, userName }) => {
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editingPost, setEditingPost] = useState(null);
   const [deletingPost, setDeletingPost] = useState(null);
   const [creatingPost, setCreatingPost] = useState(false);
 
-  // Load posts from Firebase and filter for current user
+  // Use the userPosts prop directly instead of fetching and filtering again
   useEffect(() => {
-    const loadPosts = async () => {
-      try {
-        setLoading(true);
-        const allPosts = await getAllPosts();
-        // Filter posts to show only current user's posts
-        const userPosts = allPosts.filter(post => post.authorId === (currentUser?.uid || currentUser?.id));
-        setPosts(userPosts);
-    } catch (err) {
-        setError("Failed to load posts");
-        console.error("Error loading posts:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (currentUser) {
-      loadPosts();
-
-      // Subscribe to real-time updates
-      const unsubscribe = subscribeToPosts((updatedPosts) => {
-        // Filter updated posts for current user only
-        const userPosts = updatedPosts.filter(post => post.authorId === (currentUser?.uid || currentUser?.id));
-        setPosts(userPosts);
-      });
-
-      return () => unsubscribe();
+    if (userPosts && Array.isArray(userPosts)) {
+      setPosts(userPosts);
+      setLoading(false);
     }
-  }, [currentUser]);
+  }, [userPosts]);
+
+  // Subscribe to real-time updates only if we're the owner
+  useEffect(() => {
+    if (!isOwner || !currentUser) return;
+
+    const unsubscribe = subscribeToPosts((updatedPosts) => {
+      // Filter updated posts for current user only when we're the owner
+      const userPosts = updatedPosts.filter(post => post.authorId === (currentUser?.uid || currentUser?.id));
+      setPosts(userPosts);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, isOwner]);
 
   const handlePostUpdated = () => {
-    // Refresh posts after update
-    const loadPosts = async () => {
-      try {
-        const allPosts = await getAllPosts();
-        const userPosts = allPosts.filter(post => post.authorId === (currentUser?.uid || currentUser?.id));
-        setPosts(userPosts);
-    } catch (err) {
-        console.error("Error refreshing posts:", err);
-      }
-    };
-    loadPosts();
+    // Posts are now managed by parent component, no need to refetch here
+    // The parent will handle updates through the subscription
   };
 
   const handlePostDeleted = () => {
-    // Refresh posts after deletion
-    const loadPosts = async () => {
-      try {
-        const allPosts = await getAllPosts();
-        const userPosts = allPosts.filter(post => post.authorId === (currentUser?.uid || currentUser?.id));
-        setPosts(userPosts);
-    } catch (err) {
-        console.error("Error refreshing posts:", err);
-      }
-    };
-    loadPosts();
+    // Posts are now managed by parent component, no need to refetch here
+    // The parent will handle updates through the subscription
   };
 
   const handlePostCreated = () => {
-    // Refresh posts after creation
-    const loadPosts = async () => {
-      try {
-        const allPosts = await getAllPosts();
-        const userPosts = allPosts.filter(post => post.authorId === (currentUser?.uid || currentUser?.id));
-        setPosts(userPosts);
-    } catch (err) {
-        console.error("Error refreshing posts:", err);
-      }
-    };
-    loadPosts();
+    // Posts are now managed by parent component, no need to refetch here
+    // The parent will handle updates through the subscription
   };
 
   if (loading) {
