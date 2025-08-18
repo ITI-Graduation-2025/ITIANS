@@ -5,6 +5,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { ResumeEditModal } from "./ResumeEditModal";
 import { ResumeUploadModal } from "./ResumeUploadModal";
+import { getCleanCloudinaryUrl, convertRawToAutoUrl, convertImageToAutoUrl } from "@/utils/upload";
 
 export const ResumeSection = ({
   userName,
@@ -49,44 +50,117 @@ export const ResumeSection = ({
   const downloadResume = async () => {
     setDownloading(true);
     try {
-      const response = await fetch(resumeUrl);
-      const blob = await response.blob();
-      
-      // Create a temporary URL for the blob
-      const url = window.URL.createObjectURL(blob);
-      
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Extract filename from Cloudinary URL or use default
+      // Extract filename from Cloudinary URL or use default FIRST
       let filename = `${userName || 'user'}_resume`;
       
       // Try to get the original filename from Cloudinary URL
-      const urlParts = resumeUrl.split('/');
-      const lastPart = urlParts[urlParts.length - 1];
-      if (lastPart && lastPart.includes('.')) {
-        const extension = lastPart.split('.').pop();
-        filename = `${userName || 'user'}_resume.${extension}`;
+      if (resumeUrl.includes('cloudinary.com')) {
+        const urlParts = resumeUrl.split('/');
+        const lastPart = urlParts[urlParts.length - 1];
+        
+        if (lastPart && lastPart.includes('.')) {
+          const extension = lastPart.split('.').pop();
+          // Filter out Cloudinary transformations
+          if (extension && extension.length <= 4 && !extension.includes('_')) {
+            filename = `${userName || 'user'}_resume.${extension}`;
+          } else {
+            filename = `${userName || 'user'}_resume.pdf`;
+          }
+        } else {
+          // Check resource type for documents
+          if (resumeUrl.includes('/raw/upload/') || resumeUrl.includes('/auto/upload/')) {
+            filename = `${userName || 'user'}_resume.pdf`;
+          } else {
+            filename = `${userName || 'user'}_resume.jpg`;
+          }
+        }
       } else {
-        // Default to PDF if no extension found
-        filename = `${userName || 'user'}_resume.pdf`;
+        // For non-Cloudinary URLs, try to extract extension
+        const urlParts = resumeUrl.split('/');
+        const lastPart = urlParts[urlParts.length - 1];
+        if (lastPart && lastPart.includes('.')) {
+          const extension = lastPart.split('.').pop();
+          filename = `${userName || 'user'}_resume.${extension}`;
+        } else {
+          filename = `${userName || 'user'}_resume.pdf`;
+        }
       }
       
-      link.download = filename;
+      // For Cloudinary URLs, try multiple URL variations for better compatibility
+      let downloadUrls = [resumeUrl]; // Start with original URL
       
-      // Append to body, click, and remove
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (resumeUrl.includes('cloudinary.com')) {
+        // Add converted URL if it's a raw upload
+        if (resumeUrl.includes('/raw/upload/')) {
+          downloadUrls.push(convertRawToAutoUrl(resumeUrl));
+        }
+        // Add converted URL if it's an image upload but the file is a PDF
+        if (resumeUrl.includes('/image/upload/') && filename.toLowerCase().includes('.pdf')) {
+          downloadUrls.push(convertImageToAutoUrl(resumeUrl));
+        }
+        // Add cleaned URL
+        downloadUrls.push(getCleanCloudinaryUrl(resumeUrl));
+      }
       
-      // Clean up the URL
-      window.URL.revokeObjectURL(url);
+      // Try each URL variation
+      for (let downloadUrl of downloadUrls) {
+        try {
+          // First attempt: direct download
+          try {
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = filename;
+            link.target = "_blank";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            toast.success("Resume downloaded successfully!");
+            return;
+          } catch (directError) {
+            console.log("Direct download failed, trying blob method...");
+            
+            // Second attempt: blob download
+            const response = await fetch(downloadUrl, {
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            
+            if (!response.ok) {
+              console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
+              continue; // Try next URL
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up the URL
+            window.URL.revokeObjectURL(url);
+            
+            toast.success("Resume downloaded successfully!");
+            return;
+          }
+        } catch (urlError) {
+          console.log(`Failed to download from ${downloadUrl}:`, urlError);
+          continue; // Try next URL
+        }
+      }
       
-      toast.success("Resume downloaded successfully!");
+      // If all URLs failed, throw an error
+      throw new Error("All download attempts failed");
     } catch (error) {
       console.error('Download failed:', error);
-      toast.error("Failed to download resume.");
+      
+      // Final fallback: open in new tab with the original URL
+      window.open(resumeUrl, "_blank");
+      toast.error("Download failed. File opened in new tab. You can save it from there.");
     } finally {
       setDownloading(false);
     }

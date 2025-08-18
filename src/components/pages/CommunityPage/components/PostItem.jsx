@@ -1,26 +1,23 @@
 import { db } from "@/config/firebase";
 import { sendPushNotification } from "@/services/notificationService";
 import { createPost, deletePost, updatePost } from "@/services/postServices";
-import { upload } from "@/utils/upload";
+import { upload, getCleanCloudinaryUrl, convertRawToAutoUrl, convertImageToAutoUrl } from "@/utils/upload";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import {
   HiOutlineArrowDownTray,
-  HiOutlineArrowPath,
-  HiOutlineChatBubbleLeftRight,
+  HiOutlineArrowPathRoundedSquare,
+  HiOutlineChatBubbleLeft,
   HiOutlineEllipsisHorizontal,
-  HiOutlineHandThumbUp,
+  HiOutlineHeart,
   HiOutlinePaperClip,
   HiOutlinePencil,
+  HiOutlinePencilSquare,
   HiOutlinePhoto,
   HiOutlineTrash,
-  HiOutlineXMark,
-  HiOutlineHeart,
-  HiOutlineChatBubbleLeft,
-  HiOutlineArrowPathRoundedSquare,
-  HiOutlinePencilSquare,
+  HiOutlineXMark
 } from "react-icons/hi2";
 import PostComments from "./PostComments";
 
@@ -259,36 +256,168 @@ export default function PostItem({ post, currentUser, disableEditDelete = false 
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const downloadFile = async (url, filename) => {
-    try {
-      // Use our API endpoint to handle the download
-      const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
-
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename || "download";
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      console.log("Download started for:", filename);
-    } catch (err) {
-      console.error("Download error:", err);
-      // Fallback: open in new tab
-      window.open(url, "_blank");
-      alert("File opened in new tab. You can save it from there.");
+const downloadFile = async (url, filename) => {
+  try {
+    // Check if it's a document vs image based on file extension
+    const isDocument = filename.toLowerCase().includes('.pdf') || 
+                      filename.toLowerCase().includes('.doc') ||
+                      filename.toLowerCase().includes('.docx');
+    
+          // For Cloudinary URLs, try multiple URL variations for better compatibility
+    let downloadUrls = [url]; // Start with original URL
+    
+    if (url.includes('cloudinary.com')) {
+      // Add converted URL if it's a raw upload
+      if (url.includes('/raw/upload/')) {
+        downloadUrls.push(convertRawToAutoUrl(url));
+      }
+      // Add converted URL if it's an image upload but the file is a PDF
+      if (url.includes('/image/upload/') && filename.toLowerCase().includes('.pdf')) {
+        downloadUrls.push(convertImageToAutoUrl(url));
+      }
+      // Add cleaned URL
+      downloadUrls.push(getCleanCloudinaryUrl(url));
     }
-  };
+    
+    // Try each URL variation
+    for (let downloadUrl of downloadUrls) {
+      try {
+        if (isDocument) {
+          // For documents, try direct download first, then fallback to blob
+          try {
+            // First attempt: direct download
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = filename;
+            link.target = "_blank";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log("Document download started for:", filename, "using URL:", downloadUrl);
+            return;
+          } catch (directError) {
+            console.log("Direct download failed, trying blob method...");
+            
+            // Second attempt: blob download
+            const response = await fetch(downloadUrl, {
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            
+            if (!response.ok) {
+              console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
+              continue; // Try next URL
+            }
+            
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up the URL
+            window.URL.revokeObjectURL(blobUrl);
+            
+            console.log("Document blob download started for:", filename, "using URL:", downloadUrl);
+            return;
+          }
+        } else {
+          // For images, try direct download first, then fallback to blob
+          try {
+            // First attempt: direct download
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = filename;
+            link.target = "_blank";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log("Image download started for:", filename, "using URL:", downloadUrl);
+            return;
+          } catch (directError) {
+            console.log("Direct download failed, trying blob method...");
+            
+            // Second attempt: blob download
+            const response = await fetch(downloadUrl, {
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            
+            if (!response.ok) {
+              console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
+              continue; // Try next URL
+            }
+            
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up the URL
+            window.URL.revokeObjectURL(blobUrl);
+            
+            console.log("Image blob download started for:", filename, "using URL:", downloadUrl);
+            return;
+          }
+        }
+      } catch (urlError) {
+        console.log(`Failed to download from ${downloadUrl}:`, urlError);
+        continue; // Try next URL
+      }
+    }
+    
+    // If all URLs failed, throw an error
+    throw new Error("All download attempts failed");
+  } catch (err) {
+    console.error("Download error:", err);
+    
+          // Final fallback: open in new tab with the original URL
+    window.open(url, "_blank");
+    alert("Download failed. File opened in new tab. You can save it from there.");
+  }
+};
+
 
   const getFileExtension = (url) => {
     try {
+      // Handle Cloudinary URLs specifically
+      if (url.includes('cloudinary.com')) {
+        const urlParts = url.split('/');
+        const lastPart = urlParts[urlParts.length - 1];
+        
+        // Extract extension from the last part
+        if (lastPart && lastPart.includes('.')) {
+          const extension = lastPart.split('.').pop();
+          // Filter out Cloudinary transformations
+          if (extension && extension.length <= 4 && !extension.includes('_')) {
+            return extension;
+          }
+        }
+        
+        // Check if it's a document by looking for resource_type in URL
+        if (url.includes('/raw/upload/') || url.includes('/auto/upload/')) {
+          return 'pdf'; // Default for documents
+        }
+        
+        return 'jpg'; // Default for images
+      }
+      
+      // Handle regular URLs
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
       const extension = pathname.split(".").pop();
-      return extension || "jpg"; // Default to jpg for images
+      return extension || "jpg";
     } catch {
       return "jpg";
     }
@@ -299,6 +428,18 @@ export default function PostItem({ post, currentUser, disableEditDelete = false 
       return attachment.name;
     }
 
+    // Try to extract filename from Cloudinary URL
+    if (attachment?.url && attachment.url.includes('cloudinary.com')) {
+      const urlParts = attachment.url.split('/');
+      const lastPart = urlParts[urlParts.length - 1];
+      
+      // If the last part has an extension, use it
+      if (lastPart && lastPart.includes('.')) {
+        return lastPart;
+      }
+    }
+
+    // Fallback: generate filename with proper extension
     const extension = getFileExtension(attachment?.url || "");
     const timestamp = new Date().getTime();
     return `post_${post.id}_${timestamp}.${extension}`;

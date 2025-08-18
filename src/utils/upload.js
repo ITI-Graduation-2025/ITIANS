@@ -2,13 +2,40 @@ export const upload = async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
 
+  const imageTypes = ["image/png", "image/jpeg", "image/jpg", "image/gif"];
+  const docTypes = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ];
+
+  if (imageTypes.includes(file.type)) {
+console.log("image");
+
+    return await uploadImage(e);
+  } else if (docTypes.includes(file.type)) {
+    console.log("d");
+    
+    return await uploadDocument(e);
+  } else {
+    throw new Error("Unsupported file type. Please select an image or document.");
+  }
+};
+
+
+
+export const uploadImage = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", "next-upload-preset");
+  
 
   try {
     const res = await fetch(
-      "https://api.cloudinary.com/v1_1/dnhbcvgfb/image/upload",
+      "https://api.cloudinary.com/v1_1/dhs4vhvyj/image/upload",
       {
         method: "POST",
         body: formData,
@@ -50,11 +77,16 @@ export const uploadDocument = async (e) => {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", "next-upload-preset");
-  formData.append("resource_type", "raw");
+  
+  // Use 'auto' for documents to let Cloudinary handle the type
+  formData.append("resource_type", "auto");
+  
+  // Add flags for better compatibility
+  formData.append("flags", "attachment");
 
   try {
     const res = await fetch(
-      "https://api.cloudinary.com/v1_1/dnhbcvgfb/raw/upload",
+      "https://api.cloudinary.com/v1_1/dhs4vhvyj/auto/upload",
       {
         method: "POST",
         body: formData,
@@ -75,5 +107,65 @@ export const uploadDocument = async (e) => {
   } catch (error) {
     console.error("Document upload error:", error);
     throw error;
+  }
+};
+
+// Utility function to clean Cloudinary URLs for better download compatibility
+export const getCleanCloudinaryUrl = (url) => {
+  if (!url || !url.includes('cloudinary.com')) {
+    return url;
+  }
+  
+  try {
+    let cleanUrl = url;
+    
+    // For documents, ensure we're using the right resource type
+    // But keep the version timestamp as it's required for Cloudinary
+    if (cleanUrl.includes('/raw/upload/')) {
+      cleanUrl = cleanUrl.replace('/raw/upload/', '/auto/upload/');
+    }
+    
+    return cleanUrl;
+  } catch (error) {
+    console.error('Error cleaning Cloudinary URL:', error);
+    return url;
+  }
+};
+
+// Function to convert raw upload URLs to auto upload URLs for better download compatibility
+export const convertRawToAutoUrl = (url) => {
+  if (!url || !url.includes('cloudinary.com')) {
+    return url;
+  }
+  
+  try {
+    // Convert /raw/upload/ to /auto/upload/ for better compatibility
+    if (url.includes('/raw/upload/')) {
+      return url.replace('/raw/upload/', '/auto/upload/');
+    }
+    
+    return url;
+  } catch (error) {
+    console.error('Error converting raw to auto URL:', error);
+    return url;
+  }
+};
+
+// Function to convert image upload URLs to auto upload URLs for PDF files
+export const convertImageToAutoUrl = (url) => {
+  if (!url || !url.includes('cloudinary.com')) {
+    return url;
+  }
+  
+  try {
+    // Convert /image/upload/ to /auto/upload/ for PDF files
+    if (url.includes('/image/upload/') && url.toLowerCase().includes('.pdf')) {
+      return url.replace('/image/upload/', '/auto/upload/');
+    }
+    
+    return url;
+  } catch (error) {
+    console.error('Error converting image to auto URL:', error);
+    return url;
   }
 };

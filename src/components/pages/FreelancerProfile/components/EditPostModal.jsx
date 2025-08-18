@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { updatePost } from "@/services/postServices";
 import { upload } from "@/utils/upload";
 import { toast } from "sonner";
-import { X, Pencil, Image, Trash2 } from "lucide-react";
+import { X, Pencil, Image, Trash2, FileText } from "lucide-react";
 
 export const EditPostModal = ({ 
   isOpen, 
