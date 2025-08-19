@@ -186,6 +186,7 @@ export default function CommunityPage() {
               posts={filteredPosts}
               currentUser={currentUser}
               search={search}
+              onSearch={onSearch}
             />
           </div>
 
