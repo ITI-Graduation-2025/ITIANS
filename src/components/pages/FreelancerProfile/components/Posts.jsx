@@ -1,440 +1,218 @@
-import { useState, useRef } from "react";
-import { updatePost, deletePost } from "@/services/postServices";
-import { upload } from "@/utils/upload";
-import { toast } from "sonner";
-import { HiOutlinePencil, HiOutlineTrash, HiOutlineXMark, HiOutlinePhoto, HiOutlineArrowDownTray } from "react-icons/hi2";
+import { useState, useEffect } from "react";
+import { getAllPosts, subscribeToPosts } from "@/services/postServices";
+import PostItem from "@/components/pages/CommunityPage/components/PostItem";
+import { EditPostModal } from "./EditPostModal";
+import { DeletePostModal } from "./DeletePostModal";
+import { CreatePostModal } from "./CreatePostModal";
 
-export const Posts = ({ userPosts = [], currentUser, isOwner }) => {
+export const Posts = ({ userPosts = [], currentUser, isOwner, userName }) => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [editingPost, setEditingPost] = useState(null);
-  const [editContent, setEditContent] = useState("");
-  const [editImage, setEditImage] = useState(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [deletingPost, setDeletingPost] = useState(null);
-  const editImageRef = useRef();
+  const [creatingPost, setCreatingPost] = useState(false);
 
-  const handleEditPost = (post) => {
-    setEditingPost(post.id);
-    setEditContent(post.content || "");
-    setEditImage(post.attachment?.url || null);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editContent.trim() && !editImage) return;
-
-    try {
-      const updateData = {
-        content: editContent,
-      };
-
-      if (editImage) {
-        updateData.attachment = {
-          url: editImage,
-          type: "image/jpeg", // Default type, you might want to store the actual type
-          name: "image.jpg",
-        };
-      } else {
-        updateData.attachment = null;
-      }
-
-      await updatePost(editingPost, updateData);
-      setEditingPost(null);
-      setEditContent("");
-      setEditImage(null);
-      toast.success("Post updated successfully!");
-    } catch (err) {
-      console.error("Error updating post:", err);
-      toast.error("Failed to update post. Please try again.");
+  // Use the userPosts prop directly instead of fetching and filtering again
+  useEffect(() => {
+    if (userPosts && Array.isArray(userPosts)) {
+      setPosts(userPosts);
+      setLoading(false);
     }
+  }, [userPosts]);
+
+  // Subscribe to real-time updates only if we're the owner
+  useEffect(() => {
+    if (!isOwner || !currentUser) return;
+
+    const unsubscribe = subscribeToPosts((updatedPosts) => {
+      // Filter updated posts for current user only when we're the owner
+      const userPosts = updatedPosts.filter(post => post.authorId === (currentUser?.uid || currentUser?.id));
+      setPosts(userPosts);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, isOwner]);
+
+  const handlePostUpdated = () => {
+    // Posts are now managed by parent component, no need to refetch here
+    // The parent will handle updates through the subscription
   };
 
-  const handleDeletePost = async (postId) => {
-    if (!postId) return;
-
-    try {
-      await deletePost(postId);
-      setDeletingPost(null);
-      toast.success("Post deleted successfully!");
-    } catch (err) {
-      console.error("Error deleting post:", err);
-      toast.error("Failed to delete post. Please try again.");
-    }
+  const handlePostDeleted = () => {
+    // Posts are now managed by parent component, no need to refetch here
+    // The parent will handle updates through the subscription
   };
 
-  const showDeleteModal = (postId) => {
-    setDeletingPost(postId);
+  const handlePostCreated = () => {
+    // Posts are now managed by parent component, no need to refetch here
+    // The parent will handle updates through the subscription
   };
 
-  const hideDeleteModal = () => {
-    setDeletingPost(null);
-  };
+  if (loading) {
+    return (
+      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-12 text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent mx-auto mb-6"></div>
+        <h2 className="text-2xl font-semibold text-slate-700 mb-2">Loading Posts</h2>
+        <p className="text-slate-500">Gathering your posts...</p>
+      </div>
+    );
+  }
 
-  const cancelEdit = () => {
-    setEditingPost(null);
-    setEditContent("");
-    setEditImage(null);
-  };
-
-  const handleEditImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please select a valid image file");
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size should be less than 5MB");
-      return;
-    }
-
-    setUploadingImage(true);
-    try {
-      // Create a preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-
-      // Upload to Cloudinary
-      const imageUrl = await upload(e);
-      setEditImage(imageUrl);
-    } catch (err) {
-      console.error("Upload error:", err);
-      toast.error("Failed to upload image. Please try again.");
-      setEditImage(null);
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const removeEditImage = () => {
-    setEditImage(null);
-    if (editImageRef.current) {
-      editImageRef.current.value = "";
-    }
-  };
-
-  const isPostOwner = (post) => {
-    const currentUserId = currentUser?.uid || currentUser?.id;
-    const postAuthorId = post.authorId;
-    return currentUserId === postAuthorId;
-  };
-
-  const downloadFile = async (url, filename) => {
-    try {
-      // Use our API endpoint to handle the download
-      const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
-      
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename || 'download';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success("Download started!");
-    } catch (err) {
-      console.error("Download error:", err);
-      // Fallback: open in new tab
-      window.open(url, '_blank');
-      toast.info("File opened in new tab. You can save it from there.");
-    }
-  };
-
-  const getFileExtension = (url) => {
-    try {
-      const urlObj = new URL(url);
-      const pathname = urlObj.pathname;
-      const extension = pathname.split('.').pop();
-      return extension || 'jpg'; // Default to jpg for images
-    } catch {
-      return 'jpg';
-    }
-  };
-
-  const getFileName = (post, attachment) => {
-    if (attachment?.name) {
-      return attachment.name;
-    }
-    
-    const extension = getFileExtension(attachment?.url || '');
-    const timestamp = new Date().getTime();
-    return `post_${post.id}_${timestamp}.${extension}`;
-  };
+  if (error) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-6 rounded-lg shadow-sm">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary/5 to-primary/10 rounded-full -translate-y-10 translate-x-10"></div>
+    <div className="bg-gradient-to-br from-white via-slate-50/30 to-white rounded-3xl shadow-2xl border border-slate-200/50 p-8 relative overflow-hidden">
+      {/* Enhanced Background Patterns */}
+      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-full -translate-y-20 translate-x-20 blur-xl"></div>
+      <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 via-blue-400/5 to-transparent rounded-full translate-y-16 -translate-x-16 blur-xl"></div>
+      <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-full -translate-x-12 -translate-y-12 blur-lg"></div>
       
       <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/90 rounded-2xl flex items-center justify-center shadow-lg">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* Enhanced Header */}
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary via-primary/90 to-primary/80 rounded-3xl flex items-center justify-center shadow-2xl ring-4 ring-primary/20">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">Community Posts</h2>
-            <p className="text-slate-600 text-sm">
-              {userPosts.length} post{userPosts.length !== 1 ? 's' : ''} • Community engagement
-            </p>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-3 border-white shadow-lg"></div>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 bg-clip-text text-transparent mb-2">
+                Your Posts
+              </h2>
+              <div className="flex items-center gap-4">
+                <p className="text-slate-600 text-base">
+                  {posts.length} post{posts.length !== 1 ? 's' : ''} • Your community activity
+                </p>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-primary">Live Updates</span>
+                </div>
+              </div>
           </div>
         </div>
 
-        {userPosts.length > 0 ? (
-          <div className="space-y-4">
-            {userPosts.map((post, index) => (
-              <div
-                key={post.id || index}
-                className="group relative bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-5 hover:from-primary/5 hover:to-primary/10 hover:border-primary/200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-              >
-                {/* Post Header */}
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          {/* Create Post Button */}
+          {isOwner && (
+            <button
+              onClick={() => setCreatingPost(true)}
+              className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-primary to-primary/90 text-white rounded-2xl font-semibold hover:from-primary/90 hover:to-primary/80 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-105"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-800 text-sm">Community Post</p>
-                      <p className="text-xs text-slate-500">
-                        {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Recently'}
-                      </p>
-                    </div>
+              Create Post
+            </button>
+          )}
                   </div>
                   
+        {posts.length > 0 ? (
+          <div className="space-y-6">
+            {posts.map((post) => (
+              <div key={post.id} className="relative group">
+                <PostItem 
+                  post={post} 
+                  currentUser={currentUser}
+                  disableEditDelete={true} // Disable built-in edit/delete functionality
+                />
+                
+                {/* Custom Action Buttons for Profile View */}
                   {isOwner && (
-                    <div className="flex items-center gap-2">
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
                       <button
-                        onClick={() => setEditingPost(post.id)}
-                        className="p-2 text-slate-400 hover:text-primary hover:bg-white rounded-xl transition-all duration-200"
+                      onClick={() => setEditingPost(post)}
+                      className="w-10 h-10 bg-white/90 hover:bg-white backdrop-blur-sm text-slate-700 hover:text-primary rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg border border-slate-200/50"
                         title="Edit post"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
                       <button
-                        onClick={() => showDeleteModal(post.id)}
-                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+                      onClick={() => setDeletingPost(post)}
+                      className="w-10 h-10 bg-white/90 hover:bg-white backdrop-blur-sm text-red-600 hover:text-red-700 rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg border border-slate-200/50"
                         title="Delete post"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Post Content */}
-                {editingPost === post.id ? (
-                  <div className="space-y-4">
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full border border-slate-200 rounded-xl p-4 bg-white shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 resize-none"
-                      rows={3}
-                      placeholder="What's on your mind?"
-                    />
-                    
-                    {/* Edit Image Section */}
-                    {post.image && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium text-slate-700">Current Image:</p>
-                        <div className="relative inline-block">
-                          <img
-                            src={post.image}
-                            alt="Post attachment"
-                            className="w-32 h-32 object-cover rounded-xl shadow-sm"
-                          />
-                          <button
-                            onClick={() => setEditImage(null)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                            title="Remove image"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* New Image Upload */}
-                    <div className="space-y-3">
-                      <label className="block text-sm font-medium text-slate-700">
-                        {post.image ? 'Replace Image:' : 'Add Image:'}
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setEditImage(reader.result);
-                          }
-                        }}
-                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-colors"
-                      />
-                      {editImage && (
-                        <div className="relative inline-block">
-                          <img
-                            src={editImage}
-                            alt="Preview"
-                            className="w-32 h-32 object-cover rounded-xl shadow-sm"
-                          />
-                          <button
-                            onClick={() => setEditImage(null)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                            title="Remove preview"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Edit Actions */}
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => handleSaveEdit(post.id)}
-                        disabled={!editContent.trim() && !editImage}
-                        className="px-4 py-2 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-                      >
-                        Save Changes
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingPost(null);
-                          setEditContent("");
-                          setEditImage(null);
-                        }}
-                        className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-all duration-200"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Post Text */}
-                    <div className="bg-white/50 p-4 rounded-xl border border-slate-200">
-                      <p className="text-slate-700 text-base leading-relaxed">
-                        {post.content || "No content available"}
-                      </p>
-                    </div>
-                    
-                    {/* Post Image */}
-                    {post.image && (
-                      <div className="relative">
-                        <img
-                          src={post.image}
-                          alt="Post attachment"
-                          className="w-full h-auto max-h-48 object-cover rounded-xl shadow-sm"
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Post File Attachment */}
-                    {post.file && (
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200">
-                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="text-sm text-slate-700 font-medium">File Attachment</span>
-                      </div>
-                    )}
-                    
-                    {/* Repost Display */}
-                    {post.repost && (
-                      <div className="bg-white/70 p-4 rounded-xl border border-slate-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          <span className="text-xs text-primary font-medium">Repost</span>
-                        </div>
-                        <p className="text-sm text-slate-600">{post.repost}</p>
-                      </div>
-                    )}
-                    
-                    {/* Post Timestamp */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Recently'}
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-lg">
-              <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <svg className="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">No Posts Yet</h3>
-            <p className="text-slate-500 text-sm max-w-md mx-auto">
+            <h3 className="text-xl font-semibold text-slate-700 mb-3">No Posts Yet</h3>
+            <p className="text-slate-500 text-sm max-w-md mx-auto mb-6">
               {isOwner 
                 ? "Share your thoughts, achievements, or updates with the community to start building your presence"
                 : "This freelancer hasn't shared any posts yet"
               }
             </p>
+            {isOwner && (
+              <button
+                onClick={() => setCreatingPost(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create Your First Post
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deletingPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 mx-4">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-3">Delete Post?</h3>
-              <p className="text-slate-600 mb-8">
-                This action cannot be undone. The post will be permanently removed.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={() => setDeletingPost(null)}
-                  className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-all duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDeletePost(deletingPost)}
-                  className="px-6 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  Delete Post
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create Post Modal */}
+      <CreatePostModal
+        isOpen={creatingPost}
+        onClose={() => setCreatingPost(false)}
+        currentUser={currentUser}
+        onPostCreated={handlePostCreated}
+      />
+
+      {/* Edit Post Modal */}
+      <EditPostModal
+        isOpen={!!editingPost}
+        onClose={() => setEditingPost(null)}
+        post={editingPost}
+        onPostUpdated={handlePostUpdated}
+      />
+
+      {/* Delete Post Modal */}
+      <DeletePostModal
+        isOpen={!!deletingPost}
+        onClose={() => setDeletingPost(null)}
+        post={deletingPost}
+        onPostDeleted={handlePostDeleted}
+      />
     </div>
   );
 };

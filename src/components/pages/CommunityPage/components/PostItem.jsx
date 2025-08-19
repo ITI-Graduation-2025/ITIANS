@@ -1,30 +1,27 @@
 import { db } from "@/config/firebase";
 import { sendPushNotification } from "@/services/notificationService";
 import { createPost, deletePost, updatePost } from "@/services/postServices";
-import { upload } from "@/utils/upload";
+import { upload, getCleanCloudinaryUrl, convertRawToAutoUrl, convertImageToAutoUrl } from "@/utils/upload";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import {
   HiOutlineArrowDownTray,
-  HiOutlineArrowPath,
-  HiOutlineChatBubbleLeftRight,
+  HiOutlineArrowPathRoundedSquare,
+  HiOutlineChatBubbleLeft,
   HiOutlineEllipsisHorizontal,
-  HiOutlineHandThumbUp,
+  HiOutlineHeart,
   HiOutlinePaperClip,
   HiOutlinePencil,
+  HiOutlinePencilSquare,
   HiOutlinePhoto,
   HiOutlineTrash,
-  HiOutlineXMark,
-  HiOutlineHeart,
-  HiOutlineChatBubbleLeft,
-  HiOutlineArrowPathRoundedSquare,
-  HiOutlinePencilSquare,
+  HiOutlineXMark
 } from "react-icons/hi2";
 import PostComments from "./PostComments";
 
-export default function PostItem({ post, currentUser }) {
+export default function PostItem({ post, currentUser, disableEditDelete = false }) {
   if (!currentUser) {
     return <div>Loading user...</div>;
   }
@@ -57,6 +54,29 @@ export default function PostItem({ post, currentUser }) {
       } else {
         // Add user to likes array
         updatedLikes = [...currentLikes, userId];
+        
+        // Send like notification only when liking (not when unliking)
+        if (post.authorFcmToken && post.authorId !== userId) {
+          // Send push notification
+          await sendPushNotification({
+            token: post.authorFcmToken,
+            title: `${currentUser.name} liked your post`,
+            body: post.content.length > 50 ? `${post.content.substring(0, 50)}...` : post.content,
+            data: { url: `/community` },
+          });
+          
+          // Add notification to database
+          const likeNotification = {
+            recipientId: post.authorId,
+            senderId: userId,
+            type: "like",
+            message: `${currentUser.name} liked your post`,
+            relatedId: post.id,
+            read: false,
+            createdAt: serverTimestamp(),
+          };
+          await addDoc(collection(db, "notifications"), likeNotification);
+        }
       }
 
       await updatePost(post.id, {
@@ -259,36 +279,168 @@ export default function PostItem({ post, currentUser }) {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const downloadFile = async (url, filename) => {
-    try {
-      // Use our API endpoint to handle the download
-      const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
-
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename || "download";
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      console.log("Download started for:", filename);
-    } catch (err) {
-      console.error("Download error:", err);
-      // Fallback: open in new tab
-      window.open(url, "_blank");
-      alert("File opened in new tab. You can save it from there.");
+const downloadFile = async (url, filename) => {
+  try {
+    // Check if it's a document vs image based on file extension
+    const isDocument = filename.toLowerCase().includes('.pdf') || 
+                      filename.toLowerCase().includes('.doc') ||
+                      filename.toLowerCase().includes('.docx');
+    
+          // For Cloudinary URLs, try multiple URL variations for better compatibility
+    let downloadUrls = [url]; // Start with original URL
+    
+    if (url.includes('cloudinary.com')) {
+      // Add converted URL if it's a raw upload
+      if (url.includes('/raw/upload/')) {
+        downloadUrls.push(convertRawToAutoUrl(url));
+      }
+      // Add converted URL if it's an image upload but the file is a PDF
+      if (url.includes('/image/upload/') && filename.toLowerCase().includes('.pdf')) {
+        downloadUrls.push(convertImageToAutoUrl(url));
+      }
+      // Add cleaned URL
+      downloadUrls.push(getCleanCloudinaryUrl(url));
     }
-  };
+    
+    // Try each URL variation
+    for (let downloadUrl of downloadUrls) {
+      try {
+        if (isDocument) {
+          // For documents, try direct download first, then fallback to blob
+          try {
+            // First attempt: direct download
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = filename;
+            link.target = "_blank";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log("Document download started for:", filename, "using URL:", downloadUrl);
+            return;
+          } catch (directError) {
+            console.log("Direct download failed, trying blob method...");
+            
+            // Second attempt: blob download
+            const response = await fetch(downloadUrl, {
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            
+            if (!response.ok) {
+              console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
+              continue; // Try next URL
+            }
+            
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up the URL
+            window.URL.revokeObjectURL(blobUrl);
+            
+            console.log("Document blob download started for:", filename, "using URL:", downloadUrl);
+            return;
+          }
+        } else {
+          // For images, try direct download first, then fallback to blob
+          try {
+            // First attempt: direct download
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = filename;
+            link.target = "_blank";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log("Image download started for:", filename, "using URL:", downloadUrl);
+            return;
+          } catch (directError) {
+            console.log("Direct download failed, trying blob method...");
+            
+            // Second attempt: blob download
+            const response = await fetch(downloadUrl, {
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            
+            if (!response.ok) {
+              console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
+              continue; // Try next URL
+            }
+            
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up the URL
+            window.URL.revokeObjectURL(blobUrl);
+            
+            console.log("Image blob download started for:", filename, "using URL:", downloadUrl);
+            return;
+          }
+        }
+      } catch (urlError) {
+        console.log(`Failed to download from ${downloadUrl}:`, urlError);
+        continue; // Try next URL
+      }
+    }
+    
+    // If all URLs failed, throw an error
+    throw new Error("All download attempts failed");
+  } catch (err) {
+    console.error("Download error:", err);
+    
+          // Final fallback: open in new tab with the original URL
+    window.open(url, "_blank");
+    alert("Download failed. File opened in new tab. You can save it from there.");
+  }
+};
+
 
   const getFileExtension = (url) => {
     try {
+      // Handle Cloudinary URLs specifically
+      if (url.includes('cloudinary.com')) {
+        const urlParts = url.split('/');
+        const lastPart = urlParts[urlParts.length - 1];
+        
+        // Extract extension from the last part
+        if (lastPart && lastPart.includes('.')) {
+          const extension = lastPart.split('.').pop();
+          // Filter out Cloudinary transformations
+          if (extension && extension.length <= 4 && !extension.includes('_')) {
+            return extension;
+          }
+        }
+        
+        // Check if it's a document by looking for resource_type in URL
+        if (url.includes('/raw/upload/') || url.includes('/auto/upload/')) {
+          return 'pdf'; // Default for documents
+        }
+        
+        return 'jpg'; // Default for images
+      }
+      
+      // Handle regular URLs
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
       const extension = pathname.split(".").pop();
-      return extension || "jpg"; // Default to jpg for images
+      return extension || "jpg";
     } catch {
       return "jpg";
     }
@@ -299,6 +451,18 @@ export default function PostItem({ post, currentUser }) {
       return attachment.name;
     }
 
+    // Try to extract filename from Cloudinary URL
+    if (attachment?.url && attachment.url.includes('cloudinary.com')) {
+      const urlParts = attachment.url.split('/');
+      const lastPart = urlParts[urlParts.length - 1];
+      
+      // If the last part has an extension, use it
+      if (lastPart && lastPart.includes('.')) {
+        return lastPart;
+      }
+    }
+
+    // Fallback: generate filename with proper extension
     const extension = getFileExtension(attachment?.url || "");
     const timestamp = new Date().getTime();
     return `post_${post.id}_${timestamp}.${extension}`;
@@ -311,10 +475,10 @@ export default function PostItem({ post, currentUser }) {
   const isPostOwner = post.authorId === (currentUser?.uid || currentUser?.id);
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+            <div className="bg-card rounded-3xl shadow-xl border border-border/50 overflow-hidden backdrop-blur-sm hover:shadow-2xl transition-all duration-300">
       {/* Repost Header */}
       {post.repostOf && (
-        <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 px-6 py-3 flex items-center gap-2 text-sm text-slate-600">
+        <div className="bg-gradient-to-r from-muted/30 to-muted/50 border-b border-border/50 px-6 py-3 flex items-center gap-2 text-sm text-muted-foreground">
           <HiOutlineArrowPathRoundedSquare className="w-4 h-4 text-primary" />
           <span className="font-medium">{post.author} reposted</span>
         </div>
@@ -345,11 +509,11 @@ export default function PostItem({ post, currentUser }) {
             <div className="flex justify-between items-start">
               <div className="min-w-0">
                 <Link href={`/${post.role?.toLowerCase() === "mentor" ? "mentor" : post.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.authorId}`}>
-                  <h4 className="font-semibold text-slate-800 cursor-pointer hover:text-primary transition-colors truncate">
+                                      <h4 className="font-semibold text-foreground cursor-pointer hover:text-primary transition-colors truncate">
                     {post.author}
                   </h4>
                 </Link>
-                <div className="flex items-center space-x-2 text-sm text-slate-500">
+                                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <span className="capitalize">{post.role}</span>
                   <span>•</span>
                   <span>{formatTimestamp(post.createdAt)}</span>
@@ -357,24 +521,24 @@ export default function PostItem({ post, currentUser }) {
               </div>
 
               {/* Edit/Delete Menu */}
-              {isPostOwner && (
+              {isPostOwner && !disableEditDelete && (
                 <div className="relative group">
-                  <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                                      <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200">
                     <HiOutlineEllipsisHorizontal className="w-5 h-5" />
                   </button>
-                  <div className="absolute right-0 top-10 bg-white border border-slate-200 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[140px]">
+                  <div className="absolute right-0 top-10 bg-card border border-border/50 rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-[140px] backdrop-blur-sm">
                     <button
                       onClick={startEditing}
-                      className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center space-x-3 rounded-t-xl transition-colors"
+                      className="w-full px-4 py-3 text-left text-sm text-foreground hover:bg-muted/30 flex items-center space-x-3 rounded-t-xl transition-all duration-200 group"
                     >
-                      <HiOutlinePencil className="w-4 h-4" />
+                      <HiOutlinePencil className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                       <span>Edit Post</span>
                     </button>
                     <button
                       onClick={handleDeletePost}
-                      className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 rounded-b-xl transition-colors"
+                      className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 rounded-b-xl transition-all duration-200 group"
                     >
-                      <HiOutlineTrash className="w-4 h-4" />
+                      <HiOutlineTrash className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                       <span>Delete Post</span>
                     </button>
                   </div>
@@ -406,15 +570,15 @@ export default function PostItem({ post, currentUser }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 text-sm">
               <Link href={`/${post.repostOf?.role?.toLowerCase() === "mentor" ? "mentor" : post.repostOf?.role?.toLowerCase() === "company" ? "companies" : "profile"}/${post.repostOf?.authorId}`}>
-                    <span className="font-semibold text-slate-700 cursor-pointer hover:text-primary transition-colors">
+                                            <span className="font-semibold text-foreground cursor-pointer hover:text-primary transition-colors">
                   {post.repostOf.author}
                     </span>
               </Link>
-                  <span className="text-slate-500 capitalize">{post.repostOf.role}</span>
-                  <span className="text-slate-400">•</span>
-                  <span className="text-slate-400">{formatTimestamp(post.repostOf.timestamp)}</span>
+                                      <span className="text-muted-foreground capitalize">{post.repostOf.role}</span>
+                    <span className="text-muted-foreground/70">•</span>
+                    <span className="text-muted-foreground/70">{formatTimestamp(post.repostOf.timestamp)}</span>
             </div>
-                <p className="mt-1 text-slate-700 text-sm">{post.repostOf.content}</p>
+                                  <p className="mt-1 text-foreground text-sm">{post.repostOf.content}</p>
                 
                                  {/* Repost Attachment */}
             {post.repostOf.attachment && (
@@ -507,36 +671,48 @@ export default function PostItem({ post, currentUser }) {
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-slate-700 text-base leading-relaxed">{post.content}</p>
+              <Link href={`/community/${post.id}`} className="block">
+                <p className="mt-4 text-foreground text-base leading-relaxed cursor-pointer hover:text-primary transition-colors">{post.content}</p>
+              </Link>
             )}
 
                              {/* Post Attachment */}
             {post.attachment && (
-                   <div className="mt-4">
+              <div className="mt-4">
                 {isImageAttachment ? (
-                       <div className="relative w-full">
-                    <img
-                      src={post.attachment.url}
-                         alt="Post attachment"
-                         className="w-full h-auto max-h-96 object-cover rounded-xl border border-slate-200 shadow-sm"
-                    />
-                    <button
-                         onClick={() => downloadFile(post.attachment.url, getFileName(post, post.attachment))}
-                         className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                      title="Download image"
-                    >
-                      <HiOutlineArrowDownTray className="w-4 h-4" />
-                    </button>
-                    {isPostOwner && (
+                  <Link href={`/community/${post.id}`} className="block">
+                    <div className="relative w-full cursor-pointer">
+                      <img
+                        src={post.attachment.url}
+                        alt="Post attachment"
+                        className="w-full h-auto max-h-96 object-cover rounded-xl border border-slate-200 shadow-sm hover:opacity-90 transition-opacity"
+                      />
                       <button
-                        onClick={() => setEditingImage(true)}
-                           className="absolute top-3 left-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                        title="Edit image"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          downloadFile(post.attachment.url, getFileName(post, post.attachment));
+                        }}
+                        className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                        title="Download image"
                       >
-                        <HiOutlinePhoto className="w-4 h-4" />
+                        <HiOutlineArrowDownTray className="w-4 h-4" />
                       </button>
-                    )}
-                  </div>
+                      {isPostOwner && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingImage(true);
+                          }}
+                          className="absolute top-3 left-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                          title="Edit image"
+                        >
+                          <HiOutlinePhoto className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </Link>
                 ) : (
                   <div className="flex items-center gap-3">
                     <a
@@ -570,7 +746,7 @@ export default function PostItem({ post, currentUser }) {
             className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
               Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) 
                 ? "text-primary bg-primary/10" 
-                : "text-slate-600 hover:text-primary hover:bg-slate-50"
+                : "text-muted-foreground hover:text-primary hover:bg-muted/30"
             }`}
           >
             <HiOutlineHeart className={`w-5 h-5 ${Array.isArray(post.likes) && post.likes.includes(currentUser?.uid || currentUser?.id) ? 'fill-current' : ''}`} />
@@ -580,7 +756,7 @@ export default function PostItem({ post, currentUser }) {
         </button>
           
         <button
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all duration-200"
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-muted/30 transition-all duration-200"
           onClick={() => setOpenComments(!openComments)}
         >
             <HiOutlineChatBubbleLeft className="w-5 h-5" />
@@ -590,12 +766,24 @@ export default function PostItem({ post, currentUser }) {
         </button>
           
         <button
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all duration-200"
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-muted/30 transition-all duration-200"
           onClick={handleRepost}
         >
             <HiOutlineArrowPathRoundedSquare className="w-5 h-5" />
             <span className="font-medium">Repost</span>
         </button>
+
+        {/* View Post Button */}
+        <Link
+          href={`/community/${post.id}`}
+          className="flex items-center space-x-2 px-4 py-2 rounded-xl text-muted-foreground hover:text-blue-500 hover:bg-blue-50 transition-all duration-200"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          <span className="font-medium">View Post</span>
+        </Link>
         </div>
       </div>
 
@@ -613,10 +801,10 @@ export default function PostItem({ post, currentUser }) {
       {/* Image Edit Modal */}
       {editingImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative border border-slate-200 max-h-[90vh] overflow-auto">
+          <div className="bg-card rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative border border-border/50 max-h-[90vh] overflow-auto backdrop-blur-sm">
             <button
               onClick={() => setEditingImage(false)}
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 p-3 hover:bg-slate-100 rounded-full transition-all duration-200"
+              className="absolute top-6 right-6 text-muted-foreground hover:text-foreground p-3 hover:bg-muted/50 rounded-full transition-all duration-200"
             >
               <HiOutlineXMark className="w-6 h-6" />
             </button>
@@ -625,8 +813,8 @@ export default function PostItem({ post, currentUser }) {
               <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <HiOutlinePhoto className="h-10 w-10 text-primary" />
               </div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-3">Edit Post Image</h2>
-              <p className="text-slate-600 text-lg leading-relaxed max-w-md mx-auto">
+              <h2 className="text-3xl font-bold text-foreground mb-3">Edit Post Image</h2>
+              <p className="text-muted-foreground text-lg leading-relaxed max-w-md mx-auto">
                 Upload a new image to replace the current one. Your post will be updated instantly.
               </p>
             </div>
@@ -635,14 +823,14 @@ export default function PostItem({ post, currentUser }) {
               {/* Current Image Preview */}
                 <div className="relative">
                 <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Current Image</h3>
-                  <p className="text-sm text-slate-500">This is the image currently displayed in your post</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Current Image</h3>
+                  <p className="text-sm text-muted-foreground">This is the image currently displayed in your post</p>
                 </div>
                 <div className="relative inline-block">
                   <img
                     src={imagePreview || post.attachment.url}
                     alt="Current"
-                    className="w-full max-w-md h-80 object-cover rounded-2xl border-2 border-slate-200 shadow-lg"
+                    className="w-full max-w-md h-80 object-cover rounded-2xl border-2 border-border/50 shadow-lg"
                   />
                   {uploadingImage && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl">
@@ -658,8 +846,8 @@ export default function PostItem({ post, currentUser }) {
                 {/* Upload Controls */}
               <div className="space-y-6">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Upload New Image</h3>
-                  <p className="text-sm text-slate-500">Choose a new image to replace the current one</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Upload New Image</h3>
+                  <p className="text-sm text-muted-foreground">Choose a new image to replace the current one</p>
                 </div>
                 
                 <div className="flex justify-center">

@@ -12,6 +12,8 @@ import {
   HiOutlineXMark,
   HiOutlinePaperAirplane,
   HiOutlineUser,
+  HiOutlineCheck,
+  HiOutlineXCircle,
 } from "react-icons/hi2";
 
 export default function PostComments({
@@ -372,7 +374,7 @@ export default function PostComments({
         {commentCount > 0 && (
           <button
             onClick={toggleComments}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-primary hover:bg-white rounded-lg transition-all duration-200"
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-muted/30 rounded-xl transition-all duration-200"
           >
             {commentsOpen ? (
               <>
@@ -425,7 +427,7 @@ export default function PostComments({
                         </div>
 
                         {/* Comment Content */}
-                        <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-200 hover:shadow-md transition-all duration-200">
+                        <div className="flex-1 bg-card rounded-2xl p-4 shadow-sm border border-border/50 hover:shadow-md transition-all duration-200 backdrop-blur-sm">
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex items-center space-x-2">
                               <span className="font-semibold text-slate-800 text-sm">
@@ -452,18 +454,18 @@ export default function PostComments({
                               <div className="flex space-x-1">
                                 <button
                                   onClick={() => handleEditComment(idx, comment)}
-                                  className="p-2 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-all duration-200"
+                                  className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all duration-200 group"
                                   title="Edit comment"
                                 >
-                                  <HiOutlinePencilSquare className="w-3 h-3" />
+                                  <HiOutlinePencilSquare className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                                 </button>
                                 <button
                                   onClick={() => showDeleteModal(idx)}
-                                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                  className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 group"
                                   title="Delete comment"
                                 >
-                                  <HiOutlineTrash className="w-3 h-3" />
-                                </button>
+                                  <HiOutlineTrash className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+                        </button>
                               </div>
                             )}
                           </div>
@@ -534,15 +536,17 @@ export default function PostComments({
                               <div className="flex space-x-3 pt-2">
                                 <button
                                   onClick={() => handleSaveEdit(idx)}
-                                  className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+                                  className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-medium hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 flex items-center gap-2 group"
                                   disabled={!editContent.trim() && !editImage}
                                 >
+                                  <HiOutlineCheck className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                                   Save Changes
                                 </button>
                                 <button
                                   onClick={cancelEdit}
-                                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-200 transition-all duration-200"
+                                  className="px-4 py-2 bg-muted/50 text-muted-foreground rounded-xl text-xs font-medium hover:bg-muted transition-all duration-200 flex items-center gap-2 group"
                                 >
+                                  <HiOutlineXCircle className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                                   Cancel
                                 </button>
                               </div>
@@ -575,9 +579,9 @@ export default function PostComments({
                         <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white font-semibold ring-2 ring-slate-100">
                             U
                           </div>
-                        <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-                          <div className="font-semibold text-slate-800 text-sm mb-2">Unknown User</div>
-                          <div className="text-slate-700 text-sm">{comment}</div>
+                        <div className="flex-1 bg-card rounded-2xl p-4 shadow-sm border border-border/50 backdrop-blur-sm">
+                                                      <div className="font-semibold text-foreground text-sm mb-2">Unknown User</div>
+                            <div className="text-foreground text-sm">{comment}</div>
                         </div>
                       </li>
                     );
@@ -586,10 +590,10 @@ export default function PostComments({
             </ul>
           ) : (
             <div className="text-center py-8">
-              <div className="h-16 w-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <HiOutlineUser className="h-8 w-8 text-slate-400" />
+              <div className="h-16 w-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <HiOutlineChatBubbleLeftRight className="h-8 w-8 text-muted-foreground" />
               </div>
-              <p className="text-slate-500 text-sm">No comments yet. Be the first to comment!</p>
+              <p className="text-muted-foreground text-sm">No comments yet. Be the first to comment!</p>
             </div>
           )}
         </div>
@@ -597,7 +601,7 @@ export default function PostComments({
 
       {/* Comment Input Form */}
       <form className="space-y-4" onSubmit={handleSubmitComment}>
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+        <div className="bg-card rounded-2xl p-4 shadow-sm border border-border/50 backdrop-blur-sm">
           <div className="flex items-start space-x-3">
             {/* User Avatar */}
             <div className="flex-shrink-0">
@@ -631,13 +635,13 @@ export default function PostComments({
                 {/* Submit Button */}
           <button
             type="submit"
-                  className="absolute bottom-3 right-3 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+            className="absolute bottom-3 right-3 h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed group"
             disabled={
               !(commentInputs[post.id] && commentInputs[post.id].trim()) &&
               !commentImage
             }
           >
-                  <HiOutlinePaperAirplane className="w-4 h-4" />
+            <HiOutlineCheck className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
           </button>
         </div>
 
@@ -700,7 +704,7 @@ export default function PostComments({
         {/* Mentions Suggestions */}
         {suggestions.length > 0 && (
           <div className="relative">
-            <ul className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-48 overflow-y-auto z-20">
+            <ul className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border/50 rounded-2xl shadow-2xl max-h-48 overflow-y-auto z-20 backdrop-blur-sm">
             {suggestions.map((user) => (
               <li
                 key={user.id}
@@ -741,7 +745,7 @@ export default function PostComments({
       {/* Delete Confirmation Modal */}
       {deleteModal.show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/60">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative border border-slate-200">
+          <div className="bg-card rounded-3xl shadow-2xl w-full max-w-md p-8 relative border border-border/50 backdrop-blur-sm">
             <button
               onClick={hideDeleteModal}
               className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-all duration-200"
@@ -751,28 +755,30 @@ export default function PostComments({
 
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-6">
-                <HiOutlineTrash className="h-10 w-10 text-red-600" />
+                <HiOutlineXCircle className="h-10 w-10 text-red-600" />
               </div>
 
-              <h3 className="text-2xl font-bold text-slate-800 mb-3">
+              <h3 className="text-2xl font-bold text-foreground mb-3">
                 Delete Comment
               </h3>
 
-              <p className="text-slate-600 mb-8 leading-relaxed text-base">
+              <p className="text-muted-foreground mb-8 leading-relaxed text-base">
                 Are you sure you want to delete this comment? This action cannot be undone and will remove the comment permanently.
               </p>
 
               <div className="flex space-x-4">
                 <button
                   onClick={hideDeleteModal}
-                  className="flex-1 px-6 py-3 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 transition-all duration-200 font-medium hover:border-slate-300"
+                  className="flex-1 px-6 py-3 border border-border/50 rounded-xl text-muted-foreground hover:bg-muted/30 transition-all duration-200 font-medium flex items-center justify-center gap-2 group"
                 >
+                  <HiOutlineXCircle className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteComment}
-                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md flex items-center justify-center gap-2 group"
                 >
+                  <HiOutlineTrash className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
                   Delete Comment
                 </button>
               </div>

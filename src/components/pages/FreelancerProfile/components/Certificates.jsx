@@ -1,5 +1,5 @@
 import { FaCertificate } from "react-icons/fa";
-import { FiEdit, FiPlus } from "react-icons/fi";
+import { FiEdit, FiPlus, FiDownload, FiEye } from "react-icons/fi";
 
 export const Certificates = ({ certificates, setIsModalOpen, isOwner }) => {
   const certificatesArray = Array.isArray(certificates) ? certificates : [];
@@ -45,32 +45,79 @@ export const Certificates = ({ certificates, setIsModalOpen, isOwner }) => {
         </div>
 
         {certificatesArray.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-4">
             {certificatesArray.map((cert, index) => (
               <div
                 key={index}
-                className="group relative bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-4 hover:from-primary/5 hover:to-primary/10 hover:border-primary/200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                className="group relative bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-5 hover:from-primary/5 hover:to-primary/10 hover:border-primary/200 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
-                    <FaCertificate className="w-4 h-4 text-primary" />
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
+                    <FaCertificate className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-slate-800 mb-1 group-hover:text-slate-900 transition-colors text-sm">
-                      {cert.title || cert}
-                    </h3>
-                    {cert.year && (
-                      <p className="text-sm text-slate-600 group-hover:text-slate-700 transition-colors">
-                        Issued in {cert.year}
-                      </p>
-                    )}
-                    {cert.issuer && (
-                      <p className="text-xs text-slate-500 group-hover:text-slate-600 transition-colors">
-                        by {cert.issuer}
-                      </p>
-                    )}
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors text-lg">
+                        {cert.title || cert}
+                      </h3>
+                      {cert.fileUrl && (
+                        <div className="flex gap-2 ml-3">
+                          <a
+                            href={cert.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View certificate"
+                          >
+                            <FiEye size={16} />
+                          </a>
+                          <a
+                            href={cert.fileUrl}
+                            download={cert.fileName || "certificate"}
+                            className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                            title="Download certificate"
+                          >
+                            <FiDownload size={16} />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      {cert.year && (
+                        <p className="text-sm text-slate-600 group-hover:text-slate-700 transition-colors">
+                          Issued in {cert.year}
+                        </p>
+                      )}
+                      {cert.issuer && (
+                        <p className="text-sm text-slate-600 group-hover:text-slate-700 transition-colors">
+                          by {cert.issuer}
+                        </p>
+                      )}
+                      {cert.fileUrl && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <p className="text-xs text-slate-500 group-hover:text-slate-600 transition-colors">
+                            {cert.fileName || "File attached"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+                
+                {/* Show image preview if it's an image certificate */}
+                {cert.fileUrl && cert.fileUrl.match(/\.(jpg|jpeg|png|gif)$/i) && (
+                  <div className="mt-3 flex justify-center">
+                    <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden border border-slate-200">
+                      <img 
+                        src={cert.fileUrl} 
+                        alt="Certificate preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             </div>

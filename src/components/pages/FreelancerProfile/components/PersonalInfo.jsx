@@ -174,7 +174,7 @@ export const PersonalInfo = ({
           <div className="text-center p-3 bg-slate-50 rounded-2xl border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Current Job</p>
             <p className="text-base font-semibold text-primary">
-              {typeof currentJob === "string" && currentJob
+              {(typeof currentJob === "string") && currentJob
                 ? currentJob
                 : "Available"}
             </p>
@@ -221,7 +221,7 @@ export const PersonalInfo = ({
                 "No LinkedIn profile"
               )
             }
-            onEdit={isOwner ? () => setIsModalOpen("links") : undefined}
+            onEdit={isOwner ? () => setIsModalOpen("linkedin") : undefined}
             editable={isOwner}
           />
           <ProfileItem
@@ -240,7 +240,7 @@ export const PersonalInfo = ({
                 "No GitHub profile"
               )
             }
-            onEdit={isOwner ? () => setIsModalOpen("links") : undefined}
+            onEdit={isOwner ? () => setIsModalOpen("github") : undefined}
             editable={isOwner}
           />
         </div>

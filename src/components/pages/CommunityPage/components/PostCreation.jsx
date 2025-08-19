@@ -56,134 +56,155 @@ export default function PostCreation({ currentUser }) {
 
   if (!currentUser) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 text-center">
+      <div className="bg-card rounded-3xl shadow-xl border border-border/50 p-8 text-center backdrop-blur-sm">
         <div className="animate-pulse">
-          <div className="h-12 w-12 bg-slate-200 rounded-full mx-auto mb-4"></div>
-          <div className="h-4 bg-slate-200 rounded w-32 mx-auto"></div>
+          <div className="h-12 w-12 bg-muted rounded-full mx-auto mb-4"></div>
+          <div className="h-4 bg-muted rounded w-32 mx-auto"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+    <div className="bg-card rounded-3xl shadow-xl border border-border/50 overflow-hidden backdrop-blur-sm hover:shadow-2xl transition-all duration-300 group">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/90 px-6 py-4">
-        <div className="flex items-center space-x-3">
-          <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center">
-            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="bg-gradient-to-r from-primary via-primary to-primary/90 px-8 py-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-accent/20"></div>
+        <div className="relative flex items-center space-x-4">
+          <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm ring-2 ring-white/30">
+            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-white">Share Your Thoughts</h2>
+          <h2 className="text-xl font-bold text-white">Share Your Thoughts</h2>
         </div>
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/10 rounded-full translate-y-12 -translate-x-12"></div>
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-8">
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center space-x-2">
-            <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{error}</span>
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive text-sm flex items-center space-x-3 backdrop-blur-sm">
+            <div className="h-8 w-8 bg-destructive/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="h-5 w-5 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="font-medium">{error}</span>
           </div>
         )}
 
         <form onSubmit={handleAddPost}>
-          <div className="flex items-start space-x-4">
+          <div className="flex items-start space-x-6">
             {/* Profile Image */}
             <div className="flex-shrink-0">
               {currentUser.profileImage || currentUser.photo ? (
                 <Image
                   src={currentUser?.profileImage || currentUser?.photo || ""}
-                  className="h-12 w-12 rounded-full object-cover ring-2 ring-slate-100"
-                  width={48}
-                  height={48}
-                  alt={currentUser.fullName || "user"}
+                  className="h-14 w-14 rounded-full object-cover ring-4 ring-primary/20 shadow-lg group-hover:ring-primary/30 transition-all duration-300"
+                  width={56}
+                  height={56}
+                  alt={currentUser.name}
                 />
               ) : (
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-semibold text-lg ring-2 ring-slate-100">
+                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl ring-4 ring-primary/20 shadow-lg group-hover:ring-primary/30 transition-all duration-300">
                   {(currentUser?.name || "U").charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
 
-            {/* Post Content */}
+            {/* Post Input */}
             <div className="flex-1 space-y-4">
-              <textarea
-                value={postContent}
-                onChange={(e) => setPostContent(e.target.value)}
-                placeholder="What's on your mind? Share your projects, questions, or insights with the ITI community..."
-                className="w-full border border-slate-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 resize-none bg-slate-50/50 text-slate-700 placeholder-slate-400 transition-all duration-200"
-                rows={4}
-                disabled={uploading}
-              />
+              <div className="relative">
+                <textarea
+                  value={postContent}
+                  onChange={(e) => setPostContent(e.target.value)}
+                  placeholder="What's on your mind? Share your thoughts, experiences, or questions with the ITI community..."
+                  className="w-full min-h-[120px] p-4 bg-muted/30 border border-border/50 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-200 placeholder:text-muted-foreground/70 text-foreground backdrop-blur-sm"
+                  disabled={uploading}
+                />
+                {postContent.length > 0 && (
+                  <div className="absolute bottom-3 right-3 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                    {postContent.length} characters
+                  </div>
+                )}
+              </div>
 
               {/* Attachment Preview */}
               {postAttachment && (
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="relative bg-muted/30 border border-border/50 rounded-2xl p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      {postAttachment.type.startsWith("image") ? (
-                        <div className="h-12 w-12 rounded-lg bg-slate-200 flex items-center justify-center">
-                          <HiOutlinePhoto className="w-6 h-6 text-slate-500" />
-                        </div>
-                      ) : (
-                        <div className="h-12 w-12 rounded-lg bg-slate-200 flex items-center justify-center">
-                          <HiOutlinePaperClip className="w-6 h-6 text-slate-500" />
-                        </div>
-                      )}
+                      <div className="h-10 w-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                        <HiOutlinePaperClip className="h-6 w-6 text-primary" />
+                      </div>
                       <div>
-                        <div className="text-sm font-medium text-slate-700 truncate max-w-xs">
-                          {postAttachment.name}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {postAttachment.type}
-                        </div>
+                        <p className="font-medium text-foreground">
+                          {postAttachment.target.files[0].name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {(postAttachment.target.files[0].size / 1024 / 1024).toFixed(2)} MB
+                        </p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setPostAttachment(null)}
-                      disabled={uploading}
-                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                      className="h-8 w-8 bg-destructive/20 text-destructive rounded-full flex items-center justify-center hover:bg-destructive/30 transition-colors duration-200"
                     >
-                      <HiOutlineXMark className="w-4 h-4" />
+                      <HiOutlineXMark className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Action Bar */}
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center space-x-2">
-                  <label className="cursor-pointer flex items-center space-x-2 p-2 text-slate-600 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors">
-                    <HiOutlinePaperClip className="w-5 h-5" />
-                    <span className="text-sm font-medium">Attach</span>
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-4">
+                <div className="flex items-center space-x-3">
+                  {/* File Upload */}
+                  <label className="cursor-pointer">
                     <input
                       type="file"
                       className="hidden"
-                      onChange={(e) => setPostAttachment(e)}
+                      onChange={setPostAttachment}
+                      accept="image/*,.pdf,.doc,.docx"
                       disabled={uploading}
                     />
+                    <div className="h-10 w-10 bg-muted/50 hover:bg-muted border border-border/50 rounded-xl flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-105">
+                      <HiOutlinePaperClip className="h-5 w-5" />
+                    </div>
+                  </label>
+
+                  {/* Image Upload */}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={setPostAttachment}
+                      accept="image/*"
+                      disabled={uploading}
+                    />
+                    <div className="h-10 w-10 bg-muted/50 hover:bg-muted border border-border/50 rounded-xl flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-105">
+                      <HiOutlinePhoto className="h-5 w-5" />
+                    </div>
                   </label>
                 </div>
-                
+
+                {/* Submit Button */}
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-primary to-primary/90 text-white px-6 py-3 rounded-xl font-semibold hover:from-primary/90 hover:to-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                  disabled={
-                    uploading || (!postContent.trim() && !postAttachment)
-                  }
+                  disabled={uploading || (!postContent.trim() && !postAttachment)}
+                  className="px-8 py-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 flex items-center space-x-2"
                 >
                   {uploading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                       <span>Posting...</span>
-                    </div>
+                    </>
                   ) : (
-                    "Share Post"
+                    <span>Share Post</span>
                   )}
                 </button>
               </div>
