@@ -13,6 +13,22 @@ export async function POST(request) {
       );
     }
 
+    const admin = getAdmin();
+
+    // Check if admin is properly initialized
+    if (!admin || !admin.messaging) {
+      console.error("❌ Firebase Admin not properly initialized");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Firebase Admin not initialized",
+          details:
+            "Check environment variables and service account configuration",
+        },
+        { status: 500 },
+      );
+    }
+
     const message = {
       notification: { title, body },
       token,
@@ -23,14 +39,41 @@ export async function POST(request) {
       },
     };
 
-    const admin = getAdmin();
+    console.log("📤 Sending notification:", {
+      title,
+      body,
+      token: token.substring(0, 20) + "...",
+    });
+
     const response = await admin.messaging().send(message);
-    console.log("Push notification sent successfully:", response);
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
-    console.error("Error in /api/notify:", error);
+    console.log("✅ Push notification sent successfully:", response);
+
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: true,
+        messageId: response,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("❌ Error in /api/notify:", error);
+
+    // More detailed error logging
+    if (error.code) {
+      console.error("Firebase Error Code:", error.code);
+    }
+    if (error.message) {
+      console.error("Error Message:", error.message);
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || "Unknown error occurred",
+        code: error.code || "UNKNOWN_ERROR",
+        timestamp: new Date().toISOString(),
+      },
       { status: 500 },
     );
   }

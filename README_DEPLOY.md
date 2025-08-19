@@ -36,3 +36,4 @@ Notes:
 - For the Firebase SW, make sure all NEXT*PUBLIC_FIREBASE*\* vars exist; the file is generated during build by `next.config.mjs`.
 
 
+

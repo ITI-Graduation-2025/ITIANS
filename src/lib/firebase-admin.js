@@ -2,32 +2,52 @@ import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
 
+// Cache for admin instance
+let adminInstance = null;
+
 // Lazily initialize Firebase Admin to avoid throwing during import at build time
 export function getAdmin() {
-  if (admin.apps.length) return admin;
+  if (adminInstance) return adminInstance;
+
+  // Check if already initialized
+  if (admin.apps.length > 0) {
+    adminInstance = admin;
+    return adminInstance;
+  }
 
   let projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  let privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  // Clean up private key if it exists
+  if (privateKey) {
+    privateKey = privateKey.replace(/\\n/g, "\n");
+  }
 
   // If environment variables are not set, try to read from serviceAccount.json
   if (!clientEmail || !privateKey || !projectId) {
     try {
-      const serviceAccountPath = path.join(
-        process.cwd(),
-        "serviceAccount.json",
-      );
+      // Try multiple possible paths for serviceAccount.json
+      const possiblePaths = [
+        path.join(process.cwd(), "serviceAccount.json"),
+        path.join(process.cwd(), "src", "config", "serviceAccount.json"),
+        path.join(process.cwd(), "..", "serviceAccount.json"),
+      ];
 
-      if (fs.existsSync(serviceAccountPath)) {
-        const raw = fs.readFileSync(serviceAccountPath, "utf8");
-        const serviceAccount = JSON.parse(raw);
-        projectId = serviceAccount.project_id;
-        clientEmail = serviceAccount.client_email;
-        privateKey = serviceAccount.private_key;
-      } else {
-        console.warn(
-          "⚠️ serviceAccount.json not found, using environment variables",
-        );
+      for (const serviceAccountPath of possiblePaths) {
+        if (fs.existsSync(serviceAccountPath)) {
+          const raw = fs.readFileSync(serviceAccountPath, "utf8");
+          const serviceAccount = JSON.parse(raw);
+          projectId = serviceAccount.project_id;
+          clientEmail = serviceAccount.client_email;
+          privateKey = serviceAccount.private_key;
+          console.log("✅ Service account loaded from:", serviceAccountPath);
+          break;
+        }
+      }
+
+      if (!clientEmail || !privateKey || !projectId) {
+        console.warn("⚠️ serviceAccount.json not found in any location");
       }
     } catch (err) {
       console.warn("⚠️ Could not read serviceAccount.json:", err.message);
@@ -56,7 +76,8 @@ export function getAdmin() {
   }
 
   try {
-    admin.initializeApp({
+    // Initialize Firebase Admin
+    const app = admin.initializeApp({
       credential: admin.credential.cert({
         projectId,
         clientEmail,
@@ -64,8 +85,9 @@ export function getAdmin() {
       }),
     });
 
+    adminInstance = admin;
     console.log("✅ Firebase Admin initialized successfully");
-    return admin;
+    return adminInstance;
   } catch (error) {
     console.error("❌ Failed to initialize Firebase Admin:", error.message);
 
