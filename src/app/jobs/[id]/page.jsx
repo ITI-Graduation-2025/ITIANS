@@ -1,5 +1,5 @@
-"use client";
 
+"use client";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
@@ -21,10 +21,12 @@ import {
   arrayRemove,
   collection,
   getDocs,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { Toaster, toast } from "sonner";
+import { initializeFCM, sendPushNotification, sendJobApplicationNotification } from "@/services/notificationService";
 
 // Default styles for Toaster
 const defaultToastStyles = {
@@ -47,6 +49,7 @@ export default function JobDetailsPage() {
   const [editingComment, setEditingComment] = useState(null);
   const [isDeletePopupOpen, setIsDeletePopupOpen] = useState(false);
   const [deleteCommentIndex, setDeleteCommentIndex] = useState(null);
+  const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
   const textareaRef = useRef(null);
   const currentUser = useCurrentUser();
   const [userRole, setUserRole] = useState(null);
@@ -75,6 +78,7 @@ export default function JobDetailsPage() {
               display,
               role: data.role,
               profileImage: data.profileImage || null,
+              fcmToken: data.fcmToken || null,
             };
           })
           .filter((user) => user.display);
@@ -98,16 +102,18 @@ export default function JobDetailsPage() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const jobData = { id: docSnap.id, ...docSnap.data() };
-          if (jobData.createdAt) {
-            jobData.createdAt = jobData.createdAt;
+          if (jobData.createdAt && jobData.createdAt.toDate) {
+            jobData.createdAt = jobData.createdAt.toDate();
           }
-          if (jobData.deadline) {
-            jobData.deadline = jobData.deadline;
+          if (jobData.deadline && jobData.deadline.toDate) {
+            jobData.deadline = jobData.deadline.toDate();
           }
           if (jobData.comments) {
             jobData.comments = jobData.comments.map((comment) => ({
               ...comment,
-              timestamp: comment.timestamp,
+              timestamp: comment.timestamp.toDate
+                ? comment.timestamp.toDate()
+                : comment.timestamp,
             }));
           }
           if (
@@ -157,9 +163,16 @@ export default function JobDetailsPage() {
     return <p className="text-center text-[#901b20] p-10">Job not found.</p>;
   }
 
+  const isOwner = userRole === "company" && currentUser?.uid === job.companyId;
+
   const formatDate = (date) => {
     if (!date) return "N/A";
-    const dateObj = new Date(date);
+    const dateObj =
+      date instanceof Date
+        ? date
+        : date.toDate
+          ? date.toDate()
+          : new Date(date);
     return dateObj instanceof Date && !isNaN(dateObj)
       ? dateObj.toLocaleDateString("en-US", {
           year: "numeric",
@@ -171,7 +184,12 @@ export default function JobDetailsPage() {
 
   const isDeadlinePassed = () => {
     if (!job.deadline) return false;
-    const deadlineDate = new Date(job.deadline);
+    const deadlineDate =
+      job.deadline instanceof Date
+        ? job.deadline
+        : job.deadline.toDate
+          ? job.deadline.toDate()
+          : new Date(job.deadline);
     return deadlineDate < new Date();
   };
 
@@ -228,6 +246,9 @@ export default function JobDetailsPage() {
         applicationsCount: (jobData.applicationsCount || 0) + 1,
       });
 
+      // Send notification to company using the new function
+      await sendJobApplicationNotification(job.companyId, id, job.title);
+
       setJob((prev) => ({
         ...prev,
         applicants: prev.applicants
@@ -251,7 +272,92 @@ export default function JobDetailsPage() {
     }
   };
 
+  const handleAccept = async (userId) => {
+    if (!isOwner) {
+      toast.error("You are not authorized to accept applicants for this job.", {
+        position: "bottom-center",
+        duration: 3000,
+        style: defaultToastStyles.error,
+      });
+      return;
+    }
+
+    try {
+      const jobRef = doc(db, "jobs", id);
+      const jobSnap = await getDoc(jobRef);
+      if (!jobSnap.exists()) {
+        toast.error("Job not found.", {
+          position: "bottom-center",
+          duration: 3000,
+          style: defaultToastStyles.error,
+        });
+        return;
+      }
+
+      const jobData = jobSnap.data();
+      const applicant = jobData.applicants?.find(
+        (app) => app.userId === userId,
+      );
+      if (!applicant) {
+        toast.error("Applicant not found.", {
+          position: "bottom-center",
+          duration: 3000,
+          style: defaultToastStyles.error,
+        });
+        return;
+      }
+
+      const updatedApplicant = { ...applicant, status: "accepted" };
+      await updateDoc(jobRef, {
+        applicants: [
+          ...jobData.applicants.filter((app) => app.userId !== userId),
+          updatedApplicant,
+        ],
+      });
+
+      // Send notification to the accepted applicant
+      const applicantUser = users.find((u) => u.id === userId);
+      if (applicantUser?.fcmToken) {
+        await sendPushNotification({
+          token: applicantUser.fcmToken,
+          title: `Application Accepted for ${job.title}`,
+          body: `Congratulations! Your application for ${job.title} has been accepted.`,
+          data: { jobId: id },
+        });
+      }
+
+      setJob((prev) => ({
+        ...prev,
+        applicants: [
+          ...prev.applicants.filter((app) => app.userId !== userId),
+          updatedApplicant,
+        ],
+      }));
+      toast.success("Applicant accepted successfully!", {
+        position: "bottom-center",
+        duration: 3000,
+        style: defaultToastStyles.success,
+      });
+    } catch (error) {
+      console.error("Error accepting applicant:", error);
+      toast.error("Failed to accept applicant. Please try again.", {
+        position: "bottom-center",
+        duration: 3000,
+        style: defaultToastStyles.error,
+      });
+    }
+  };
+
   const handleReject = async (userId) => {
+    if (!isOwner) {
+      toast.error("You are not authorized to reject applicants for this job.", {
+        position: "bottom-center",
+        duration: 3000,
+        style: defaultToastStyles.error,
+      });
+      return;
+    }
+
     try {
       const jobRef = doc(db, "jobs", id);
       const jobSnap = await getDoc(jobRef);
@@ -284,6 +390,17 @@ export default function JobDetailsPage() {
           updatedApplicant,
         ],
       });
+
+      // Send notification to the rejected applicant
+      const applicantUser = users.find((u) => u.id === userId);
+      if (applicantUser?.fcmToken) {
+        await sendPushNotification({
+          token: applicantUser.fcmToken,
+          title: `Application Update for ${job.title}`,
+          body: `Your application for ${job.title} has been rejected.`,
+          data: { jobId: id },
+        });
+      }
 
       setJob((prev) => ({
         ...prev,
@@ -472,6 +589,7 @@ export default function JobDetailsPage() {
       const endIndex = startIndex + mention.length;
 
       const mentionText = mention.slice(1).split(" ")[0];
+      const mentionedUser = users.find((u) => u.display.split(" ")[0] === mentionText);
 
       if (startIndex > lastIndex) {
         parts.push(
@@ -482,12 +600,13 @@ export default function JobDetailsPage() {
       }
 
       parts.push(
-        <span
+        <Link
           key={`mention-${startIndex}`}
-          className="text-[#901b20] bg-[#FFE4E6] px-1 rounded-sm font-medium"
+          href={`/profile/${mentionedUser?.id}`}
+          className="text-[#901b20] bg-[#FFE4E6] px-1 rounded-sm font-medium hover:underline"
         >
           {mentionText}
-        </span>,
+        </Link>,
       );
 
       lastIndex = endIndex;
@@ -521,12 +640,14 @@ export default function JobDetailsPage() {
               <span className="text-gray-500 text-lg font-medium">
                 Posted on {formatDate(job.createdAt)}
               </span>
-              <span
-                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--primary)] text-[#FCEEEF] text-base font-semibold"
-                title="Number of Applicants"
-              >
-                {job.applicationsCount || 0}
-              </span>
+              {userRole !== "company" && (
+                <span
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--primary)] text-[#FCEEEF] text-base font-semibold"
+                  title="Number of Applicants"
+                >
+                  {job.applicationsCount || 0}
+                </span>
+              )}
             </div>
           </div>
 
@@ -603,43 +724,140 @@ export default function JobDetailsPage() {
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {userRole === "freelancer" && (
-              <button
-                onClick={handleApply}
-                disabled={isApplied || isDeadlinePassed()}
-                className={`flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold transition-all duration-200 ease-in-out shadow-md focus:ring-2 focus:ring-[var(--primary)] ${
-                  isApplied || isDeadlinePassed()
-                    ? "bg-gray-300 text-gray-700 cursor-not-allowed"
-                    : "bg-[var(--primary)] text-white hover:bg-[#6B1519] hover:scale-105 hover:shadow-lg"
-                }`}
-              >
-                {isDeadlinePassed()
-                  ? "Deadline Passed"
-                  : isApplied
-                    ? "Applied"
-                    : "Apply Now"}
-              </button>
-            )}
-            {["freelancer", "mentor"].includes(userRole) && (
-              <button
-                onClick={() => setIsCommentPopupOpen(true)}
-                className="flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold bg-[#901b20] text-white hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200 ease-in-out shadow-md"
-              >
-                Mention
-              </button>
-            )}
-            {userRole === "company" && (
-              <button
-                onClick={() => handleReject(currentUser?.uid)}
-                className="flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold bg-[#901b20] text-white hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200 ease-in-out shadow-md"
-              >
-                Reject Applicant (Test)
-              </button>
-            )}
-          </div>
+          {userRole !== "company" && (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {userRole === "freelancer" && (
+                <>
+                  <button
+                    onClick={handleApply}
+                    disabled={isApplied || isDeadlinePassed()}
+                    className={`flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold transition-all duration-200 ease-in-out shadow-md focus:ring-2 focus:ring-[var(--primary)] ${
+                      isApplied || isDeadlinePassed()
+                        ? "bg-gray-300 text-gray-700 cursor-not-allowed"
+                        : "bg-[var(--primary)] text-white hover:bg-[#6B1519] hover:scale-105 hover:shadow-lg"
+                    }`}
+                  >
+                    {isDeadlinePassed()
+                      ? "Deadline Passed"
+                      : isApplied
+                        ? "Applied"
+                        : "Apply Now"}
+                  </button>
+                  <button
+                    onClick={() => setIsCommentPopupOpen(true)}
+                    className="flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold bg-[#901b20] text-white hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200 ease-in-out shadow-md"
+                  >
+                    Mention
+                  </button>
+                </>
+              )}
+              {userRole === "mentor" && (
+                <button
+                  onClick={() => setIsCommentPopupOpen(true)}
+                  className="flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold bg-[#901b20] text-white hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200 ease-in-out shadow-md"
+                >
+                  Mention
+                </button>
+              )}
+              {isOwner && (
+                <button
+                  onClick={() => setIsApplicantsModalOpen(true)}
+                  className="flex-1 min-w-[150px] text-center px-6 py-2 rounded-lg text-lg font-semibold bg-[#901b20] text-white hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200 ease-in-out shadow-md"
+                >
+                  View Applicants
+                </button>
+              )}
+            </div>
+          )}
 
-          {isCommentPopupOpen && (
+          {isOwner && isApplicantsModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white p-10 rounded-2xl shadow-lg w-full max-w-md"
+              >
+                <h3 className="text-xl font-semibold text-[#901b20] mb-4">
+                  Applicants
+                </h3>
+                <div className="space-y-4 max-h-80 overflow-y-auto">
+                  {job.applicants && job.applicants.length > 0 ? (
+                    job.applicants.map((applicant) => {
+                      const applicantUser = users.find((u) => u.id === applicant.userId);
+                      const profileImage = applicantUser?.profileImage;
+                      const userName = applicantUser?.display || "Unknown User";
+                      const initial = userName.charAt(0).toUpperCase();
+                      const initialColor = getInitialColor(userName);
+
+                      return (
+                        <div
+                          key={applicant.userId}
+                          className="p-4 bg-white border border-gray-200 rounded-xl flex gap-4 relative shadow-sm hover:shadow-md transition-shadow duration-200"
+                        >
+                          {profileImage ? (
+                            <img
+                              src={profileImage}
+                              alt={userName}
+                              className="w-14 h-14 rounded-full object-cover shadow-sm"
+                            />
+                          ) : (
+                            <div
+                              className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-semibold ${initialColor} shadow-sm`}
+                            >
+                              {initial}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <Link
+                              href={`/profile/${applicant.userId}`}
+                              className="text-gray-900 font-bold hover:underline"
+                            >
+                              {userName}
+                            </Link>
+                            <p className="text-sm text-gray-500">
+                              Status: {applicant.status}
+                            </p>
+                          </div>
+                          {applicant.status === "pending" && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleAccept(applicant.userId)}
+                                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-green-500 transition-all duration-200"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleReject(applicant.userId)}
+                                className="px-4 py-2 bg-[#901b20] text-white rounded-lg hover:bg-[#6B1519] hover:shadow-lg hover:scale-105 focus:ring-2 focus:ring-[#901b20] transition-all duration-200"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-gray-500">No applicants yet.</p>
+                  )}
+                </div>
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => setIsApplicantsModalOpen(false)}
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 hover:scale-105 focus:ring-2 focus:ring-gray-500 transition-all duration-200"
+                  >
+                    Close
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {userRole !== "company" && isCommentPopupOpen && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -704,7 +922,7 @@ export default function JobDetailsPage() {
             </motion.div>
           )}
 
-          {isDeletePopupOpen && (
+          {userRole !== "company" && isDeletePopupOpen && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -739,7 +957,7 @@ export default function JobDetailsPage() {
             </motion.div>
           )}
 
-          {job.comments && job.comments.length > 0 && (
+          {userRole !== "company" && job.comments && job.comments.length > 0 && (
             <div className="mt-8">
               <h3 className="text-3xl font-semibold text-[#901b20] mb-4">
                 Comments
@@ -784,7 +1002,12 @@ export default function JobDetailsPage() {
                       )}
                       <div className="flex-1">
                         <div className="flex justify-between items-center">
-                          <p className="text-gray-900 font-bold">{userName}</p>
+                          <Link
+                            href={`/profile/${comment.userId}`}
+                            className="text-gray-900 font-bold hover:underline"
+                          >
+                            {userName}
+                          </Link>
                           {comment.userId === currentUser?.uid && (
                             <div className="flex gap-3">
                               <button

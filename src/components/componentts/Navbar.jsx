@@ -324,7 +324,7 @@ export default function Navbar({ onSearch }) {
 
   return (
     <nav className="bg-transparent backdrop-blur-md text-gray-800 font-semibold shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6  flex justify-between items-center">
+      <div className="max-w-8xl px-5  flex justify-between items-center">
         {/* Logo and ITIANS */}
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -620,3 +620,4 @@ export default function Navbar({ onSearch }) {
     </nav>
   );
 }
+/////////////////

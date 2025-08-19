@@ -170,17 +170,46 @@ export default function JobsPage() {
     }
   };
 
+  // const formatDate = (date) => {
+  //   if (!date) return "N/A";
+
+  //   if (typeof date === "string") {
+  //     return new Date(date).toLocaleDateString();
+  //   } else if (date instanceof Date) {
+  //     return date.toLocaleDateString();
+  //   }
+
+  //   return "N/A";
+  // };
+
   const formatDate = (date) => {
-    if (!date) return "N/A";
+  if (!date) return "N/A";
 
-    if (typeof date === "string") {
-      return new Date(date).toLocaleDateString();
-    } else if (date instanceof Date) {
-      return date.toLocaleDateString();
-    }
+  let dateObj;
 
+  if (typeof date === "string") {
+    // Attempt to parse string dates
+    dateObj = new Date(date);
+  } else if (date instanceof Date) {
+    dateObj = date;
+  } else if (date && typeof date === "object" && date.seconds) {
+    // Handle Firestore Timestamp
+    dateObj = new Date(date.seconds * 1000 + (date.nanoseconds / 1000000));
+  } else if (date && date.toDate && typeof date.toDate === "function") {
+    // Handle Firestore Timestamp with toDate method
+    dateObj = date.toDate();
+  } else {
     return "N/A";
-  };
+  }
+
+  return dateObj instanceof Date && !isNaN(dateObj)
+    ? dateObj.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "N/A";
+};
 
   const uniqueCompanies = getUniqueValues(jobs, "company");
 
