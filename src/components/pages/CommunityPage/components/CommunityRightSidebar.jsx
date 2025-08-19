@@ -80,7 +80,7 @@ export default function CommunityRightSidebar({ freelancers, mentors, search }) 
                     <div className="flex items-center space-x-1 text-muted-foreground">
                       <HiOutlineStar className="w-4 h-4 fill-current text-chart-1" />
                       <span className="text-xs font-medium text-foreground">
-                        {freelancer.rating || "5.0"}
+                        {freelancer.rating || ""}
                       </span>
                     </div>
                   </li>
@@ -118,7 +118,7 @@ export default function CommunityRightSidebar({ freelancers, mentors, search }) 
               {mentors.map((mentor, index) => (
                 <Link
                   key={mentor.name}
-                  href={`/profile/${mentor.id || mentor.uid}`}
+                  href={`/mentor/${mentor.id || mentor.uid}`}
                   className="block"
                 >
                   <li className="flex items-center space-x-3 p-3 hover:bg-muted/30 rounded-2xl cursor-pointer transition-all duration-200 group">
