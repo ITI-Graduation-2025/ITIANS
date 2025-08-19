@@ -1,5 +1,11 @@
+"use client";
+
 import Applications from "@/components/ui/Applications";
 
-export default function CompanyApplications() {
-  return <Applications />;
+export default function ApplicationsTabPage() {
+  return (
+  
+      <Applications />
+    
+  );
 }

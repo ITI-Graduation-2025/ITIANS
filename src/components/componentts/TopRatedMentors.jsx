@@ -441,7 +441,7 @@ export default function TopRatedMentors() {
 
                 {/* View Profile Button */}
                 <Link
-                  href={`/mentors/${mentor.id}`}
+                  href={`/mentor/${mentor.id}`}
                   className="inline-flex items-center gap-2 bg-[#901B20] text-white px-4 py-2 rounded-full hover:bg-[#7A1619] transition-all duration-300 transform hover:scale-105 text-sm font-medium"
                 >
                   <FaEye className="w-4 h-4" />

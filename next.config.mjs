@@ -18,7 +18,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "res.cloudinary.com",
       },
-      // أضف أي domains أخرى تحتاجها
+      {
+        protocol: "https",
+        hostname: "i.pravatar.cc",
+      }, // أضف أي domains أخرى تحتاجها
     ],
   },
 
@@ -97,12 +100,9 @@ messaging.onBackgroundMessage((payload) => {
   const filePath = join(process.cwd(), "public", "firebase-messaging-sw.js");
   try {
     await writeFile(filePath, workerContent, "utf8");
-    console.log("✅ تم إنشاء: public/firebase-messaging-sw.js");
-  } catch (error) {
-    console.error("❌ فشل في إنشاء ملف الـ Service Worker:", error);
     console.log("✅  public/firebase-messaging-sw.js");
-  // } catch (error) {
-  //   console.error("❌ Service Worker:", error);
+  } catch (error) {
+    console.error("❌ Service Worker:", error);
   }
 };
 

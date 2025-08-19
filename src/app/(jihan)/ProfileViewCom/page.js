@@ -1,3 +1,4 @@
+"use client";
 import ProfileViewCom from "@/components/ui/ProfileViewCom";
 
 export default function Home() {

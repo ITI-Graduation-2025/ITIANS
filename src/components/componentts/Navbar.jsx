@@ -18,15 +18,21 @@ import debounce from "lodash/debounce";
 import { getOrCreateChatId } from "@/lib/chatFunctions";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const categories = [
   { name: "Jobs", href: "/jobs", icon: <MdWork className="w-6 h-6" /> },
   { name: "Mentors", href: "/mentors", icon: <MdSchool className="w-6 h-6" /> },
   { name: "Users", href: "/users", icon: <MdPeople className="w-6 h-6" /> },
   { name: "Messages", href: "/chat", icon: <MdChat className="w-6 h-6" /> },
+  {
+    name: "Community",
+    href: "/community",
+    icon: <MdPeople className="w-6 h-6" />,
+  },
 ];
 
-export default function Navbar() {
+export default function Navbar({ onSearch }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchScope, setSearchScope] = useState("all");
@@ -56,7 +62,6 @@ export default function Navbar() {
     setSearchQuery("");
     setSearchResults([]);
     setShowResults(false);
-
   }, [pathname]);
 
   // إخفاء النتائج عند النقر خارج منطقة البحث
@@ -94,11 +99,11 @@ export default function Navbar() {
           const jobsResults = jobsSnapshot.docs
             .map((doc) => {
               // Preserve the original job type (Full Time, Part Time) in jobType field
-              const jobData = { 
-                id: doc.id, 
+              const jobData = {
+                id: doc.id,
                 searchType: "jobs", // Use searchType to avoid conflict with job.type
                 jobType: doc.data().type, // Original job type (Full Time, Part Time)
-                ...doc.data() 
+                ...doc.data(),
               };
               console.log("Job doc:", doc.id, jobData); // للتأكد من البيانات
               return jobData;
@@ -243,7 +248,6 @@ export default function Navbar() {
 
   const handleResultClick = async (result) => {
     try {
-      
       if (!result || !result.id) {
         console.error("Invalid result or missing ID:", result);
         return;
@@ -260,10 +264,10 @@ export default function Navbar() {
       } else {
         // Navigate to the respective scope page with the result ID
         let targetPath;
-        
+
         // Use searchType for jobs, fallback to type for others
         const resultType = result.searchType || result.type;
-        
+
         // Ensure resultType exists and is valid
         if (!resultType) {
           console.error("Result type is undefined:", result);
@@ -320,13 +324,15 @@ export default function Navbar() {
 
   return (
     <nav className="bg-transparent backdrop-blur-md text-gray-800 font-semibold shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-1 flex justify-between items-center">
+      <div className="max-w-8xl px-5  flex justify-between items-center">
         {/* Logo and ITIANS */}
         <Link href="/" className="flex items-center gap-2">
-          <img
+          <Image
             src="/logo.png"
             alt="ITIANS Logo"
-            className="h-16 w-16 rounded-full"
+            className="h-[60px] w-[60px] rounded-full"
+            width={70}
+            height={70}
           />
         </Link>
 
@@ -614,3 +620,4 @@ export default function Navbar() {
     </nav>
   );
 }
+/////////////////

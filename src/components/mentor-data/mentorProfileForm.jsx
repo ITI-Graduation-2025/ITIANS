@@ -1,19 +1,20 @@
 "use client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useUserContext } from "@/context/userContext";
+import { upload } from "@/utils/upload";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import EducationReviewStep from "./educationReviewStep";
 import PersonalInfoStep from "./personalInfoStep";
 import ProfessionalInfoStep from "./professionalInfoStep";
 import SpecializationStep from "./specializationStep";
 import BioLanguagesStep from "./bioLanguagesStep";
-import EducationReviewStep from "./educationReviewStep";
-import { setUser, updateUser } from "@/services/firebase";
-import { useRouter } from "next/navigation";
+import { getUser, setUser, updateUser } from "@/services/userServices";
+import { redirect, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { useUserContext } from "@/context/userContext";
 
 const TOTAL_STEPS = 5;
 
@@ -24,14 +25,25 @@ export default function MentorProfileForm({
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { data: session } = useSession();
-  const { refetchUser } = useUserContext();
+  const { data: session, update: updateSession } = useSession();
+  const { user, refetchUser } = useUserContext();
+  // console.log(session?.user, "session");
+  // console.log(refetchUser, "refetchUser");
+  // const mentor = getUser(user?.id);
+  // if (!mentor || mentor === "User not found") {
+  //   notFound(); // Show 404 page
+  // }
+  // if (!mentor?.profileUnderReview) {
+  //   redirect("/pending-review");
+  // }
+  // console.log(user, "user");
+  console.log(session, "data");
 
   const form = useForm({
     mode: "onChange",
     defaultValues: {
       ...initialData,
-      photo: initialData.photo || null,
+      profileImage: initialData.profileImage || null,
       country: initialData.country || "",
       customCountry: initialData.customCountry || "",
       nationality: initialData.nationality || "",
@@ -73,7 +85,7 @@ export default function MentorProfileForm({
   const getStepFields = (step) => {
     switch (step) {
       case 1:
-        return ["photo", "country", "nationality", "gender"];
+        return ["profileImage", "country", "nationality", "gender"];
       case 2:
         return [
           "company",
@@ -122,6 +134,8 @@ export default function MentorProfileForm({
   };
 
   const onSubmit = async (data) => {
+    console.log(data);
+
     if (currentStep !== TOTAL_STEPS) {
       toast.error("Please complete all steps before submitting.");
       return;
@@ -136,16 +150,58 @@ export default function MentorProfileForm({
 
       const uid = session.user.id;
 
-      if (mode === "edit") {
-        await updateUser(uid, data);
-        await refetchUser(); // ✅ تحديث البيانات في الكونتكست
-        toast.success("Profile updated successfully");
-      } else {
-        await updateUser(uid, data);
-        toast.success("Profile created successfully");
+      // Handle profile image upload
+      let profileImageUrl = data.profileImage;
+      if (data.profileImage && data.profileImage instanceof File) {
+        try {
+          const uploadResult = await upload({
+            target: { files: [data.profileImage] },
+          });
+          if (uploadResult) {
+            profileImageUrl = uploadResult;
+          } else {
+            console.warn(
+              "Upload returned undefined, keeping existing image or using default",
+            );
+            profileImageUrl = data.profileImage || null;
+          }
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          toast.error(
+            "Image upload failed, but continuing with profile submission",
+          );
+          profileImageUrl = null;
+        }
       }
 
-      router.push("/mentor");
+      // Clean the data to remove undefined values
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== undefined),
+      );
+
+      const updateData = {
+        ...cleanData,
+        profileImage: profileImageUrl,
+        profileUnderReview: true, // بدلاً من profileCompleted: true
+        profileCompleted: false,
+      };
+
+      if (mode === "edit") {
+        await updateUser(uid, updateData);
+        await refetchUser(); // Update context data
+        // Force refresh session to update immediately
+        await updateSession();
+        toast.success("Profile updated successfully");
+        router.push("/pending"); // Go to pending review after edit
+      } else {
+        await updateUser(uid, updateData);
+        // Force refresh session to update immediately
+        await updateSession();
+        toast.success(
+          "Profile submitted successfully! Please wait for admin review.",
+        );
+        router.push("/pending"); // Go to pending review after submission
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Failed to submit data");

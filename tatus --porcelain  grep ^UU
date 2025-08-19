@@ -1,0 +1,9 @@
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'public/firebase-messaging-sw.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/middleware.js', LF will be replaced by CRLF the next time Git touches it
+next.config.mjs
+package-lock.json
+src/components/componentts/LayoutWrapper.jsx
+src/components/componentts/Navbar.jsx
+src/components/pages/userInfo.jsx
+src/middleware.js

@@ -69,7 +69,7 @@ export function OverviewTab({ mentor }) {
                 Fluent in
               </h4>
               <div className="flex flex-wrap gap-2">
-                {mentor.languages.map((lang, index) => (
+                {mentor.languages?.map((lang, index) => (
                   <Badge
                     key={index}
                     variant="outline"
@@ -87,10 +87,10 @@ export function OverviewTab({ mentor }) {
             <h3 className="text-lg sm:text-xl font-semibold flex items-center space-x-2 text-[var(--foreground)]">
               <span>Experience</span>
               <Badge className="bg-[var(--muted)] text-[var(--muted-foreground)] text-[10px] sm:text-xs">
-                {mentor.workExperiences.length}
+                {mentor.workExperiences?.length || 0}
               </Badge>
             </h3>
-            {mentor.workExperiences.length > 1 && (
+            {mentor.workExperiences?.length > 1 && (
               <Dialog
                 open={openExperience === "all"}
                 onOpenChange={(open) => setOpenExperience(open ? "all" : null)}
@@ -125,7 +125,7 @@ export function OverviewTab({ mentor }) {
                       scrollbarWidth: "thin",
                     }}
                   >
-                    {mentor.workExperiences.map((exp, index) => (
+                    {mentor.workExperiences?.map((exp, index) => (
                       <div
                         key={index}
                         className="border-b border-[var(--border)] pb-4 mb-4 last:mb-0 last:border-b-0"
@@ -138,7 +138,7 @@ export function OverviewTab({ mentor }) {
                         </p>
                         <ul className="list-disc list-inside text-sm text-[var(--muted-foreground)] mt-2">
                           {exp.tasks
-                            .split(". ")
+                            ?.split(". ")
                             .map((task, i) => task && <li key={i}>{task}</li>)}
                         </ul>
                         <Badge
@@ -158,7 +158,7 @@ export function OverviewTab({ mentor }) {
             )}
           </div>
           <div className="space-y-4 sm:space-y-6">
-            {mentor.workExperiences.slice(0, 1).map((exp, index) => (
+            {mentor.workExperiences?.slice(0, 1).map((exp, index) => (
               <div
                 key={index}
                 className="flex items-start space-x-3 sm:space-x-4"
@@ -257,10 +257,10 @@ export function OverviewTab({ mentor }) {
             <h3 className="text-lg sm:text-xl font-semibold flex items-center space-x-2 text-[var(--foreground)]">
               <span>Education</span>
               <Badge className="bg-[var(--muted)] text-[var(--muted-foreground)] text-[10px] sm:text-xs">
-                {mentor.education.length}
+                {mentor.education?.length || 0}
               </Badge>
             </h3>
-            {mentor.education.length > 1 && (
+            {mentor.education?.length > 1 && (
               <Dialog
                 open={openEducation === "all"}
                 onOpenChange={(open) => setOpenEducation(open ? "all" : null)}
@@ -295,7 +295,7 @@ export function OverviewTab({ mentor }) {
                       scrollbarWidth: "thin",
                     }}
                   >
-                    {mentor.education.map((edu, index) => (
+                    {mentor.education?.map((edu, index) => (
                       <div
                         key={index}
                         className="border-b border-[var(--border)] pb-4 mb-4 last:mb-0 last:border-b-0"
@@ -323,7 +323,7 @@ export function OverviewTab({ mentor }) {
             )}
           </div>
           <div className="space-y-4 sm:space-y-6">
-            {mentor.education.slice(0, 1).map((edu, index) => (
+            {mentor.education?.slice(0, 1).map((edu, index) => (
               <div
                 key={index}
                 className="flex items-start space-x-3 sm:space-x-4"

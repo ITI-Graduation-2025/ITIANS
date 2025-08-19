@@ -33,7 +33,13 @@ export const authOptions = {
             email: userCredential.user.email,
             verificationStatus: userData?.verificationStatus,
             name: userData?.name || userCredential.user.displayName,
+            username: userData?.username || null,
             role: userData?.role || "freelancer",
+            profileImage: userData?.profileImage || null,
+            profileCompleted: userData?.profileCompleted || false,
+            profileUnderReview: userData?.profileUnderReview || false,
+            adminComment: userData?.adminComment || null,
+            adminActionDate: userData?.adminActionDate || null,
           };
         } catch (error) {
           let message = "Unknown error";
@@ -56,6 +62,12 @@ export const authOptions = {
       if (user) {
         token.role = user.role;
         token.verificationStatus = user.verificationStatus;
+        token.username = user.username;
+        token.profileImage = user.profileImage;
+        token.profileCompleted = user.profileCompleted;
+        token.profileUnderReview = user.profileUnderReview;
+        token.adminComment = user.adminComment;
+        token.adminActionDate = user.adminActionDate;
       }
       return token;
     },
@@ -64,6 +76,12 @@ export const authOptions = {
         session.user.id = token.sub;
         session.user.role = token.role;
         session.user.verificationStatus = token.verificationStatus;
+        session.user.username = token.username;
+        session.user.profileImage = token.profileImage;
+        session.user.profileCompleted = token.profileCompleted;
+        session.user.profileUnderReview = token.profileUnderReview;
+        session.user.adminComment = token.adminComment;
+        session.user.adminActionDate = token.adminActionDate;
       }
       return session;
     },
@@ -80,7 +98,8 @@ export const authOptions = {
   //   // signin , session, callbacks دي بتحكم ف اليوزر اني ابعته اشعار مثلا انه دخل خلاص يعني كل حاجه ممكن اعملها وهو لوج ان
   //   // callbcks هنا اقدر ازود معلومات عن اليوزر اللي داخل اضيف ع السيشن اللي دخل بيها داتا اضافيه
   // },
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key-for-development-only",
+  secret:
+    process.env.NEXTAUTH_SECRET || "fallback-secret-key-for-development-only",
   pages: {
     signIn: "/login", // custom sign in page
   },

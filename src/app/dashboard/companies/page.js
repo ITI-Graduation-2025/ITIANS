@@ -29,7 +29,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Search } from "lucide-react";
-import { setUser, getUser } from "@/services/firebase";
+import {
+  createUserDocWithUsername,
+  isUsernameAvailable,
+  getUser,
+} from "@/services/userServices";
+import {
+  generateUsernameSuggestions,
+  validateUsername,
+} from "@/utils/usernameUtils";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/config/firebase";
 
@@ -51,14 +59,27 @@ export default function CompanyForm() {
     handleSubmit,
     formState: { errors },
     control,
+    watch,
+    setValue,
   } = useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
   const router = useRouter();
 
   const registerOptions = {
     name: { required: "Company name is required" },
+    username: {
+      required: "Username is required",
+      pattern: {
+        value: /^[a-z0-9._]{3,20}$/,
+        message:
+          "Username must be 3-20 chars: lowercase letters, numbers, dot, underscore",
+      },
+    },
     industry: { required: "Industry is required" },
     location: { required: "Location is required" },
     size: { required: "Company size is required" },
@@ -124,16 +145,25 @@ export default function CompanyForm() {
         specializations: [],
       };
 
-      // Save user data to users collection
-      await setUser(user.uid, userData);
+      // Save user data to users collection with username reservation
+      await createUserDocWithUsername(user.uid, userData, data.username);
 
       // Store credentials for dialog
       setCredentials({ email: data.email, password });
       setIsDialogOpen(true);
     } catch (error) {
-      alert(
-        error.message || "Failed to create company account. Please try again.",
-      );
+      let errorMessage = "Failed to create company account. Please try again.";
+      if (error.code === "USERNAME_TAKEN") {
+        errorMessage = "This username is already taken.";
+      } else if (error.code === "USERNAME_INVALID") {
+        errorMessage =
+          "Invalid username format. Use 3-20 chars: a-z, 0-9, dot, underscore.";
+      } else if (error.code === "USERNAME_RESERVED") {
+        errorMessage = "This username is reserved and cannot be used.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      alert(errorMessage);
       console.error("Registration error:", error);
     } finally {
       setIsLoading(false);
@@ -149,6 +179,73 @@ export default function CompanyForm() {
     console.error("Form errors:", errors);
   };
 
+  const handleUsernameChange = async (e) => {
+    const raw = e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, "");
+    setUsername(raw);
+    setValue("username", raw, { shouldValidate: true });
+
+    // Validate format first
+    const validation = validateUsername(raw);
+    if (!validation.valid) {
+      setUsernameStatus("invalid");
+      setUsernameMessage(validation.error);
+      return;
+    }
+
+    if (!raw || raw.length < 3) {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Username must be at least 3 characters");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    try {
+      const available = await isUsernameAvailable(raw);
+      if (available) {
+        setUsernameStatus("available");
+        setUsernameMessage("Username is available");
+      } else {
+        setUsernameStatus("taken");
+        setUsernameMessage("Username is already taken");
+      }
+    } catch {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Could not check availability");
+    }
+  };
+
+  const handleSuggestUsername = async () => {
+    const name = watch("name");
+    if (!name) {
+      setUsernameMessage("Please enter company name first");
+      return;
+    }
+
+    const suggestions = generateUsernameSuggestions(name);
+    if (suggestions.length === 0) {
+      setUsernameMessage("Could not generate suggestions");
+      return;
+    }
+
+    // Try each suggestion until we find an available one
+    for (const suggestion of suggestions) {
+      try {
+        const available = await isUsernameAvailable(suggestion);
+        if (available) {
+          setUsername(suggestion);
+          setValue("username", suggestion, { shouldValidate: true });
+          setUsernameStatus("available");
+          setUsernameMessage("Suggested available username");
+          return;
+        }
+      } catch (error) {
+        console.error("Error checking suggestion:", error);
+      }
+    }
+
+    setUsernameMessage("Could not find an available suggestion");
+  };
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1 space-y-4 p-4 pt-6">
@@ -158,7 +255,7 @@ export default function CompanyForm() {
           </h2>
         </div>
 
-        <Card>
+        <Card className="shadow-dashboard-card dark:shadow-dashboard-card-dark">
           <CardHeader>
             <CardTitle>Create Company Account</CardTitle>
             <CardDescription>
@@ -193,6 +290,46 @@ export default function CompanyForm() {
                 </div>
                 <div className="space-y-2">
                   <Label
+                    htmlFor="username"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Username
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="e.g., company.name"
+                      {...register("username", registerOptions.username)}
+                      onChange={handleUsernameChange}
+                      className={`w-full ${errors.username ? "border-primary" : "border-gray-300"}`}
+                      value={username}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleSuggestUsername}
+                      disabled={!watch("name")}
+                    >
+                      Suggest
+                    </Button>
+                  </div>
+                  <p
+                    className={`text-xs mt-1 ${
+                      usernameStatus === "available"
+                        ? "text-green-600"
+                        : usernameStatus === "taken"
+                          ? "text-primary"
+                          : "text-gray-500"
+                    }`}
+                  >
+                    {errors.username?.message || usernameMessage}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label
                     htmlFor="industry"
                     className="text-sm font-medium text-gray-700"
                   >
@@ -211,8 +348,6 @@ export default function CompanyForm() {
                     </p>
                   )}
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label
                     htmlFor="location"
@@ -233,6 +368,8 @@ export default function CompanyForm() {
                     </p>
                   )}
                 </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label
                     htmlFor="size"
@@ -285,8 +422,6 @@ export default function CompanyForm() {
                     )}
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label
                     htmlFor="website"
@@ -307,6 +442,8 @@ export default function CompanyForm() {
                     </p>
                   )}
                 </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label
                     htmlFor="founded"
@@ -327,8 +464,6 @@ export default function CompanyForm() {
                     </p>
                   )}
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label
                     htmlFor="email"
@@ -349,6 +484,8 @@ export default function CompanyForm() {
                     </p>
                   )}
                 </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label
                     htmlFor="phone"

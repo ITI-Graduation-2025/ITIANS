@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function MentorProfile({ mentor, isOwner }) {
   const [isBioOpen, setIsBioOpen] = useState(false);
@@ -44,7 +45,7 @@ export function MentorProfile({ mentor, isOwner }) {
           <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
             <div className="w-24 sm:w-32 h-24 sm:h-32 bg-[var(--card)] rounded-full p-1">
               <Image
-                src={mentor.photo || "https://picsum.photos/200/300"}
+                src={mentor.profileImage || "https://picsum.photos/200/300"}
                 width={200}
                 height={200}
                 alt={mentor.name}
@@ -62,12 +63,18 @@ export function MentorProfile({ mentor, isOwner }) {
             </div>
           </div>
           <div className="ml-auto flex items-center space-x-3 pb-2">
-            <Button variant="outline" size="sm" className="cursor-pointer">
-              <MessageCircle className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="sm" className="cursor-pointer">
-              <Heart className="w-4 h-4" />
-            </Button>
+            {!isOwner && (
+              <>
+                <Button variant="outline" size="sm" className="cursor-pointer">
+                  <Link href={`/chat/${mentor.id}`}>
+                    <MessageCircle className="w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="cursor-pointer">
+                  <Heart className="w-4 h-4" />
+                </Button>
+              </>
+            )}
             <DropdownMenu>
               {isOwner && (
                 <DropdownMenuTrigger asChild>

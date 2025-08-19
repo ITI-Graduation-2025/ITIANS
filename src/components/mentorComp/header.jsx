@@ -121,9 +121,7 @@ export function Header() {
                       </p>
                       <p className="text-xs text-[var(--muted-foreground)] mt-1">
                         {notification.createdAt &&
-                          new Date(
-                            notification.createdAt.toDate(),
-                          ).toLocaleString()}
+                          new Date(notification.createdAt).toLocaleString()}
                       </p>
                     </div>
                   ))

@@ -45,40 +45,56 @@ import ChatbotWidget from "@/components/ChatbotWidget";
 export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
 
-  // Check if current path should hide both navbar and footer
-  const hideBoth =
-    hideBothExactPaths.includes(pathname) ||
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/mentor/");
-
-  // Specific path where only navbar is hidden
-  const hideNavbar = pathname === "/profile";
-
-  return (
-    <>
-      {!hideBoth && !hideNavbar && <Navbar />}
-      <main className="min-h-screen">
-        {children}
-      </main>
-      {!hideBoth && <Footer />}
-      
-      {/* Show chatbot on all pages except specific paths */}
-      {!pathname.startsWith("/login") && 
-       !pathname.startsWith("/register") && 
-       pathname !== "/chatbot" && (
-        <ChatbotWidget />
-      )}
-    </>
-  );
-} //Paths where both navbar and footer are hidden
   const hideBothExactPaths = [
     "/login",
     "/register",
     "/mentor",
-    "/dashboardCompany", 
+    "/dashboardCompany",
     "/dashboard",
-    "/mentor/[id]",
-    "/chatbot",
+    "/pending",
+    "/rejected",
+    "/bookings",
+    "/companyjobs",
+    "/AllCompanyApplicants",
+    "/companyprofile",
+    "/ProfileViewCom",
+    "/PostJob",
+    "/settingsform",
+    "/ProfileEdit",
+    "/Activejobs",
   ];
+
+  const hideBoth =
+    hideBothExactPaths.includes(pathname) ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/mentor/") ||
+    pathname.startsWith("/rejected") ||
+    pathname.startsWith("/Applicationjob/");
+
+  // Specific path where only navbar is hidden
+  const hideNavbar = pathname === "/profile" || pathname === "/community";
+
+  return (
+    <>
+      {!hideBoth && !hideNavbar && <Navbar />}
+      <main className="min-h-screen">{children}</main>
+      {!hideBoth && <Footer />}
+
+      {/* Show chatbot on all pages except specific paths */}
+      {!pathname.startsWith("/login") &&
+        !pathname.startsWith("/register") &&
+        pathname !== "/chatbot" && <ChatbotWidget />}
+    </>
+  );
+} //Paths where both navbar and footer are hidden
+const hideBothExactPaths = [
+  "/login",
+  "/register",
+  "/mentor",
+  "/dashboardCompany",
+  "/dashboard",
+  "/mentor/[id]",
+  "/chatbot",
+];
 
   

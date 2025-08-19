@@ -1,16 +1,17 @@
 // app/(islam)/mentor/page.js
-import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/nextAuth";
+import { getServerSession } from "next-auth";
 // import { getUser } from "@/services/firebase";
 import { getUser } from "@/services/userServices";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
+import { CommunityStats } from "@/components/mentorComp/commuintyStats";
 import { Header } from "@/components/mentorComp/header";
-import { Sidebar } from "@/components/mentorComp/sidebar";
 import { MentorProfile } from "@/components/mentorComp/mentor-profile";
+import { Sidebar } from "@/components/mentorComp/sidebar";
 import { TabsSection } from "@/components/mentorComp/tabs-section";
 import { Testimonials } from "@/components/mentorComp/testimonials";
-import { CommunityStats } from "@/components/mentorComp/commuintyStats";
+import Navbar from "@/components/componentts/Navbar";
 
 export default async function MentorHome() {
   // ✅ 1. Get the current session
@@ -22,11 +23,21 @@ export default async function MentorHome() {
   if (!mentor || mentor === "User not found") {
     notFound(); // Show 404 page
   }
+  if (mentor?.profileUnderReview) {
+    redirect("/pending");
+  }
+  if (!mentor?.profileCompleted) {
+    redirect("/mentorData");
+  }
+
+  // Ensure mentor.education is always an array
+  mentor.education = Array.isArray(mentor.education) ? mentor.education : [];
 
   // ✅ 3. Pass mentor as props to all components
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Navbar />
+      {/* <Header /> */}
       <div className="flex flex-col md:flex-row">
         <Sidebar />
         <main className="flex-1 md:ml-16 px-4 md:px-0">

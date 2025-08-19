@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 // import { getUser } from "@/services/firebase";
 import { getUser } from "@/services/userServices";
 import { useSession } from "next-auth/react";
@@ -13,10 +13,13 @@ export function UserProvider({ children, initialUser }) {
   const fetchUser = async () => {
     if (session?.user?.id) {
       const fetchedUser = await getUser(session.user.id);
-      // تحويل createdAt لـ string باستخدام toISOString إذا كان Timestamp
+
+      // تحويل createdAt لـ string إذا كان Timestamp
       if (
         fetchedUser &&
         fetchedUser.createdAt &&
+        typeof fetchedUser.createdAt === "object" &&
+        fetchedUser.createdAt.toDate &&
         typeof fetchedUser.createdAt.toDate === "function"
       ) {
         fetchedUser.createdAt = fetchedUser.createdAt.toDate().toISOString();
@@ -38,5 +41,9 @@ export function UserProvider({ children, initialUser }) {
 }
 
 export function useUserContext() {
-  return useContext(UserContext);
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error("useUserContext must be used within a UserProvider");
+  }
+  return context;
 }

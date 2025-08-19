@@ -15,10 +15,17 @@ import {
 } from "@/components/ui/select";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "@/config/firebase";
+import { auth, db, initializeFCM } from "@/config/firebase";
 import { toast } from "sonner";
-import { setUser } from "@/services/firebase";
-import { signIn } from "next-auth/react";
+import {
+  createUserDocWithUsername,
+  isUsernameAvailable,
+} from "@/services/userServices";
+import {
+  generateUsernameSuggestions,
+  validateUsername,
+} from "@/utils/usernameUtils";
+import { signIn, getSession } from "next-auth/react";
 
 export default function RegisterForm() {
   const {
@@ -29,12 +36,23 @@ export default function RegisterForm() {
     formState: { errors },
   } = useForm();
   const [isLoading, setIsLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState("idle"); // idle | checking | available | taken | invalid
+  const [usernameMessage, setUsernameMessage] = useState("");
   const router = useRouter();
 
   const registerOptions = {
     name: {
       required: "Name is required",
       minLength: { value: 3, message: "Name must be at least 3 characters" },
+    },
+    username: {
+      required: "Username is required",
+      pattern: {
+        value: /^[a-z0-9._]{3,20}$/,
+        message:
+          "Username must be 3-20 chars: lowercase letters, numbers, dot, underscore",
+      },
     },
     email: {
       required: "Email is required",
@@ -83,38 +101,56 @@ export default function RegisterForm() {
       // Update user profile with name
       await updateProfile(user, { displayName: data.name });
 
-      // Store user data in Firestore
+      // Store user data in Firestore with unique username reservation
+      await createUserDocWithUsername(
+        user.uid,
+        {
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          nationalId: data.nationalId,
+          verificationStatus: "Pending",
+          profileCompleted: false,
+          createdAt: new Date().toISOString(),
+        },
+        data.username,
+      );
 
-      await setUser(user.uid, {
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        nationalId: data.nationalId,
-        verificationStatus: "Pending",
-        createdAt: new Date().toISOString(),
-      });
+      // const signInResponse = await signIn("credentials", {
+      //   redirect: false,
+      //   email: data.email,
+      //   password: data.password,
+      // });
 
-      const signInResponse = await signIn("credentials", {
-        redirect: false,
-        email: data.email,
-        password: data.password,
-      });
+      // if (signInResponse?.error) {
+      //   throw new Error("Failed to sign in after registration");
+      // }
 
-      if (signInResponse?.error) {
-        throw new Error("Failed to sign in after registration");
-      }
+      // Wait for session to be updated
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      toast.success("Account created successfully");
-      if (data.role === "mentor") {
-        router.push("/mentorData");
-      } else if (data.role === "freelancer") {
-        router.push("/completeProfile");
-      } else {
-        router.push("/login");
-      }
+      // Get updated session
+      const session = await getSession();
+
+      // if (!session?.user?.id) {
+      //   throw new Error("Session not updated properly");
+      // }
+
+      toast.success("Account created successfully! Please login to continue.");
+
+      // Redirect to pending page
+      router.push("/login");
+      // await initializeFCM(user.uid); // استدعاء initializeFCM بـ userId
     } catch (error) {
       let errorMessage = "Something went wrong. Please try again.";
-      if (error.code === "auth/email-already-in-use") {
+      if (error.code === "USERNAME_TAKEN") {
+        errorMessage = "This username is already taken.";
+      } else if (error.code === "USERNAME_INVALID") {
+        errorMessage =
+          "Invalid username format. Use 3-20 chars: a-z, 0-9, dot, underscore.";
+      } else if (error.code === "USERNAME_RESERVED") {
+        errorMessage = "This username is reserved and cannot be used.";
+      } else if (error.code === "auth/email-already-in-use") {
         errorMessage = "This email is already registered.";
       } else if (error.code === "auth/invalid-email") {
         errorMessage = "Invalid email address.";
@@ -132,6 +168,73 @@ export default function RegisterForm() {
 
   const handleErrors = (errors) => {
     console.error("Form errors:", errors);
+  };
+
+  const handleUsernameChange = async (e) => {
+    const raw = e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, "");
+    setUsername(raw);
+    setValue("username", raw, { shouldValidate: true });
+
+    // Validate format first
+    const validation = validateUsername(raw);
+    if (!validation.valid) {
+      setUsernameStatus("invalid");
+      setUsernameMessage(validation.error);
+      return;
+    }
+
+    if (!raw || raw.length < 3) {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Username must be at least 3 characters");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    try {
+      const available = await isUsernameAvailable(raw);
+      if (available) {
+        setUsernameStatus("available");
+        setUsernameMessage("Username is available");
+      } else {
+        setUsernameStatus("taken");
+        setUsernameMessage("Username is already taken");
+      }
+    } catch {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Could not check availability");
+    }
+  };
+
+  const handleSuggestUsername = async () => {
+    const name = watch("name");
+    if (!name) {
+      setUsernameMessage("Please enter your name first");
+      return;
+    }
+
+    const suggestions = generateUsernameSuggestions(name);
+    if (suggestions.length === 0) {
+      setUsernameMessage("Could not generate suggestions");
+      return;
+    }
+
+    // Try each suggestion until we find an available one
+    for (const suggestion of suggestions) {
+      try {
+        const available = await isUsernameAvailable(suggestion);
+        if (available) {
+          setUsername(suggestion);
+          setValue("username", suggestion, { shouldValidate: true });
+          setUsernameStatus("available");
+          setUsernameMessage("Suggested available username");
+          return;
+        }
+      } catch (error) {
+        console.error("Error checking suggestion:", error);
+      }
+    }
+
+    setUsernameMessage("Could not find an available suggestion");
   };
 
   return (
@@ -155,6 +258,41 @@ export default function RegisterForm() {
             </p>
           )}
         </div>
+        <div className="space-y-2 mb-3 relative">
+          <Label htmlFor="username">Username</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="username"
+              type="text"
+              placeholder="e.g., ahmed.saad"
+              {...register("username", registerOptions.username)}
+              onChange={handleUsernameChange}
+              className={errors.username ? "border-primary" : ""}
+              value={username}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSuggestUsername}
+              disabled={!watch("name")}
+            >
+              Suggest
+            </Button>
+          </div>
+          <p
+            className={`text-xs mt-1 absolute bottom-[-20px] ${
+              usernameStatus === "available"
+                ? "text-green-600"
+                : usernameStatus === "taken"
+                  ? "text-primary"
+                  : "text-gray-500"
+            }`}
+          >
+            {errors.username?.message || usernameMessage}
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2 mb-3 relative ">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -170,8 +308,6 @@ export default function RegisterForm() {
             </p>
           )}
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 ">
         <div className="space-y-2 mb-3 relative">
           <Label htmlFor="role">Role</Label>
           <Select
@@ -195,6 +331,8 @@ export default function RegisterForm() {
             </p>
           )}
         </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 ">
         <div className="space-y-2 mb-3 relative">
           <Label htmlFor="nationalId">National ID</Label>
           <Input
@@ -211,9 +349,7 @@ export default function RegisterForm() {
             </p>
           )}
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-        <div className="space-y-2  mb-3 ">
+        <div className="space-y-2 mb-3 relative">
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
@@ -223,11 +359,13 @@ export default function RegisterForm() {
             className={errors.password ? "border-primary" : ""}
           />
           {errors.password && (
-            <p className="text-sm text-primary  absolute bottom-0 ">
+            <p className="text-sm text-primary mt-1 absolute bottom-0 ">
               {errors.password.message}
             </p>
           )}
         </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
         <div className="space-y-2 mb-3 ">
           <Label htmlFor="confirmPassword">Confirm Password</Label>
           <Input

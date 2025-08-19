@@ -17,6 +17,7 @@ import { db } from "@/config/firebase";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { MessageCircle, User } from "lucide-react";
 import { generateChatId } from "@/lib/chatFunctions";
+import Image from "next/image";
 const ITEMS_PER_PAGE = 6;
 
 export default function UsersList() {
@@ -45,9 +46,34 @@ export default function UsersList() {
         setLoading(true);
         setError(null);
         const querySnapshot = await getDocs(collection(db, "users"));
+
+        // Helper function to convert Timestamp to ISO string
+        const convertTimestamp = (timestamp) => {
+          if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+            return timestamp.toDate().toISOString();
+          } else if (timestamp?.seconds) {
+            // Handle Timestamp objects without toDate method
+            return new Date(timestamp.seconds * 1000).toISOString();
+          } else if (typeof timestamp === "string") {
+            return timestamp;
+          }
+          return timestamp;
+        };
+
         const usersData = querySnapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: convertTimestamp(data.createdAt),
+              updatedAt: convertTimestamp(data.updatedAt),
+              adminActionDate: convertTimestamp(data.adminActionDate),
+              fcmTokenUpdatedAt: convertTimestamp(data.fcmTokenUpdatedAt),
+            };
+          })
           .filter((user) => user.id !== currentUser?.uid);
+
         setUsers(usersData);
       } catch (e) {
         console.error("Error fetching users:", e);
@@ -84,15 +110,14 @@ export default function UsersList() {
 
   const handleViewProfile = (user) => {
     const role = user.role?.toLowerCase();
-
     if (role === "mentor") {
-      window.location.href = `/mentors/${user.id}`;
+      window.location.href = `/mentor/${user.id}`;
     } else if (role === "freelancer") {
-      window.location.href = `/profile`;
+      window.location.href = `/profile/${user.id}`;
     } else if (role === "company") {
-      window.location.href = `/company`;
+      window.location.href = `/companies/${user.id}`;
     } else {
-      window.location.href = `/profile`;
+      window.location.href = `/profile/${user.id}`;
     }
   };
 //EDIT HERE 
@@ -157,11 +182,13 @@ export default function UsersList() {
           >
             {/* Profile Image with circular border */}
             <div className="relative mb-6">
-              <div className="w-24 h-24 mx-auto rounded-full border-4 border-transparent overflow-hidden">
-                <img
+              <div className="w-40 h-40 mx-auto rounded-full border-4 border-transparent overflow-hidden">
+                <Image
                   src={user.profileImage || getDefaultAvatar(user.role)}
                   alt={user.name}
                   className="w-full h-full object-cover hover:grayscale-0 transition-all duration-300"
+                  width={100}
+                  height={100}
                 />
               </div>
             </div>

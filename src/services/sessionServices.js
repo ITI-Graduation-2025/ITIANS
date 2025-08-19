@@ -62,6 +62,36 @@ export const getBookedSessionsSnapshot = async (mentorId, callback) => {
 };
 
 // --- Session CRUD Operations ---
+export async function getAllSessions() {
+  const snapshot = await getDocs(collection(db, "sessions"));
+
+  // Helper function to convert Timestamp to ISO string
+  const convertTimestamp = (timestamp) => {
+    if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+      return timestamp.toDate().toISOString();
+    } else if (timestamp?.seconds) {
+      // Handle Timestamp objects without toDate method
+      return new Date(timestamp.seconds * 1000).toISOString();
+    } else if (typeof timestamp === "string") {
+      return timestamp;
+    }
+    return timestamp;
+  };
+
+  return snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: convertTimestamp(data.createdAt),
+      updatedAt: convertTimestamp(data.updatedAt),
+      date: convertTimestamp(data.date),
+      startTime: convertTimestamp(data.startTime),
+      endTime: convertTimestamp(data.endTime),
+    };
+  });
+}
+
 export async function getAvailableSessions(mentorId) {
   const q = query(
     collection(db, "sessions"),
@@ -69,7 +99,32 @@ export async function getAvailableSessions(mentorId) {
     where("isBooked", "==", false),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+  // Helper function to convert Timestamp to ISO string
+  const convertTimestamp = (timestamp) => {
+    if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+      return timestamp.toDate().toISOString();
+    } else if (timestamp?.seconds) {
+      // Handle Timestamp objects without toDate method
+      return new Date(timestamp.seconds * 1000).toISOString();
+    } else if (typeof timestamp === "string") {
+      return timestamp;
+    }
+    return timestamp;
+  };
+
+  return snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: convertTimestamp(data.createdAt),
+      updatedAt: convertTimestamp(data.updatedAt),
+      date: convertTimestamp(data.date),
+      startTime: convertTimestamp(data.startTime),
+      endTime: convertTimestamp(data.endTime),
+    };
+  });
 }
 
 export async function getBookedSessions(mentorId) {
@@ -78,7 +133,33 @@ export async function getBookedSessions(mentorId) {
     where("mentorId", "==", mentorId),
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+  // Helper function to convert Timestamp to ISO string
+  const convertTimestamp = (timestamp) => {
+    if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+      return timestamp.toDate().toISOString();
+    } else if (timestamp?.seconds) {
+      // Handle Timestamp objects without toDate method
+      return new Date(timestamp.seconds * 1000).toISOString();
+    } else if (typeof timestamp === "string") {
+      return timestamp;
+    }
+    return timestamp;
+  };
+
+  return snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: convertTimestamp(data.createdAt),
+      updatedAt: convertTimestamp(data.updatedAt),
+      date: convertTimestamp(data.date),
+      startTime: convertTimestamp(data.startTime),
+      endTime: convertTimestamp(data.endTime),
+      bookedAt: convertTimestamp(data.bookedAt),
+    };
+  });
 }
 
 export async function addSession(session, mentorId) {
@@ -176,6 +257,21 @@ export async function bookSession(sessionId, freelancerId, title) {
 
   await addDoc(collection(db, "notifications"), notification);
 }
+// get collection bookedSession
+export const getBookedSessionsForCommunity = async () => {
+  const q = query(collection(db, "bookedSessions"));
+  const snapshot = await getDocs(q);
+  const sessions = [];
+  for (const docSnap of snapshot.docs) {
+    const sessionData = { id: docSnap.id, ...docSnap.data() };
+    const mentorDoc = await getDoc(doc(db, "users", sessionData.mentorId));
+    sessionData.mentorName = mentorDoc.exists()
+      ? mentorDoc.data().name || "Mentor"
+      : "Mentor";
+    sessions.push(sessionData);
+  }
+  return sessions;
+};
 
 export const getAvailableSessionsForCommunity = async () => {
   const q = query(collection(db, "sessions"), where("isBooked", "==", false));
@@ -287,6 +383,9 @@ export const acceptSessionRequest = async (requestId, sessionId) => {
   try {
     const requestData = (await getDoc(requestRef)).data();
     const sessionData = (await getDoc(sessionRef)).data();
+
+    // Delete the accepted request from Firebase
+    await deleteDoc(requestRef);
 
     await updateDoc(sessionRef, {
       isBooked: true,
@@ -462,7 +561,7 @@ export const cancelSession = async (sessionId, mentorId, menteeId) => {
     await updateDoc(sessionRef, {
       isBooked: false,
       bookedBy: null,
-      status: "Pending",
+      status: "Cancelled",
       updatedAt: serverTimestamp(),
     });
 
@@ -511,6 +610,209 @@ export const cancelSession = async (sessionId, mentorId, menteeId) => {
     return { success: true };
   } catch (error) {
     console.error("Error cancelling session:", error);
+    throw error;
+  }
+};
+
+// get all collection sessionRequests
+
+export const getAllSessionRequests = async () => {
+  const snapshot = await getDocs(collection(db, "sessionRequests"));
+
+  // Helper function to convert Timestamp to ISO string
+  const convertTimestamp = (timestamp) => {
+    if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+      return timestamp.toDate().toISOString();
+    } else if (timestamp?.seconds) {
+      // Handle Timestamp objects without toDate method
+      return new Date(timestamp.seconds * 1000).toISOString();
+    } else if (typeof timestamp === "string") {
+      return timestamp;
+    }
+    return timestamp;
+  };
+
+  return snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: convertTimestamp(data.createdAt),
+      updatedAt: convertTimestamp(data.updatedAt),
+      requestedAt: convertTimestamp(data.requestedAt),
+    };
+  });
+};
+
+// Get completed sessions for statistics
+export const getCompletedSessionsSnapshot = async (mentorId, callback) => {
+  const q = query(
+    collection(db, "bookedSessions"),
+    where("mentorId", "==", mentorId),
+    where("status", "==", "Completed"),
+  );
+  const unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      // Helper function to convert Timestamp to ISO string
+      const convertTimestamp = (timestamp) => {
+        if (timestamp?.toDate && typeof timestamp.toDate === "function") {
+          return timestamp.toDate().toISOString();
+        } else if (timestamp?.seconds) {
+          // Handle Timestamp objects without toDate method
+          return new Date(timestamp.seconds * 1000).toISOString();
+        } else if (typeof timestamp === "string") {
+          return timestamp;
+        }
+        return timestamp;
+      };
+
+      const sessions = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: convertTimestamp(data.createdAt),
+          updatedAt: convertTimestamp(data.updatedAt),
+          date: convertTimestamp(data.date),
+          startTime: convertTimestamp(data.startTime),
+          endTime: convertTimestamp(data.endTime),
+          bookedAt: convertTimestamp(data.bookedAt),
+        };
+      });
+      callback(sessions);
+    },
+    (error) => {
+      console.error("Snapshot error:", error);
+      callback([]);
+    },
+  );
+  return unsubscribe;
+};
+
+// Get completed sessions count for a mentor
+export const getCompletedSessionsCount = async (mentorId) => {
+  try {
+    const q = query(
+      collection(db, "bookedSessions"),
+      where("mentorId", "==", mentorId),
+      where("status", "==", "Completed"),
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.size;
+  } catch (error) {
+    console.error("Error getting completed sessions count:", error);
+    return 0;
+  }
+};
+
+// Admin cancel session function
+export const adminCancelSession = async (sessionId, menteeId) => {
+  if (!sessionId || typeof sessionId !== "string") {
+    throw new Error("Invalid session ID provided.");
+  }
+
+  try {
+    // First check if it's a booked session
+    let bookedSessionRef = doc(db, "bookedSessions", sessionId);
+    let bookedSessionDoc = await getDoc(bookedSessionRef);
+    let sessionData = null;
+    let mentorId = null;
+
+    if (bookedSessionDoc.exists()) {
+      // It's a booked session
+      sessionData = bookedSessionDoc.data();
+      mentorId = sessionData.mentorId;
+
+      // Delete booked session
+      await deleteDoc(bookedSessionRef);
+    } else {
+      // Check if it's a regular session
+      const sessionRef = doc(db, "sessions", sessionId);
+      const sessionDoc = await getDoc(sessionRef);
+
+      if (!sessionDoc.exists()) {
+        throw new Error("Session not found.");
+      }
+
+      sessionData = sessionDoc.data();
+      mentorId = sessionData.mentorId;
+    }
+
+    // Update main session
+    const sessionRef = doc(db, "sessions", sessionId);
+    await updateDoc(sessionRef, {
+      isBooked: false,
+      bookedBy: null,
+      status: "Cancelled",
+      updatedAt: serverTimestamp(),
+      cancelledBy: "admin",
+      cancelReason: "Cancelled by administrator",
+    });
+
+    // Delete session requests
+    const requestsSnapshot = await getDocs(
+      query(
+        collection(db, "sessionRequests"),
+        where("sessionId", "==", sessionId),
+      ),
+    );
+    for (const docSnap of requestsSnapshot.docs) {
+      await deleteDoc(doc(db, "sessionRequests", docSnap.id));
+    }
+
+    // Send notifications to both mentor and mentee
+    if (mentorId) {
+      const mentorNotif = {
+        recipientId: mentorId,
+        senderId: "admin",
+        type: "session_cancelled",
+        message: `Your session has been cancelled by an administrator.`,
+        relatedId: sessionId,
+        read: false,
+        createdAt: serverTimestamp(),
+      };
+      await addDoc(collection(db, "notifications"), mentorNotif);
+
+      // Send push notification to mentor
+      const mentorDoc = await getDoc(doc(db, "users", mentorId));
+      const mentorFcmToken = mentorDoc.data()?.fcmToken;
+      if (mentorFcmToken) {
+        await sendPushNotification({
+          token: mentorFcmToken,
+          title: "Session Cancelled by Admin",
+          body: "Your session has been cancelled by an administrator.",
+        });
+      }
+    }
+
+    if (menteeId) {
+      const menteeNotif = {
+        recipientId: menteeId,
+        senderId: "admin",
+        type: "session_cancelled",
+        message: `Your session has been cancelled by an administrator.`,
+        relatedId: sessionId,
+        read: false,
+        createdAt: serverTimestamp(),
+      };
+      await addDoc(collection(db, "notifications"), menteeNotif);
+
+      // Send push notification to mentee
+      const menteeDoc = await getDoc(doc(db, "users", menteeId));
+      const menteeFcmToken = menteeDoc.data()?.fcmToken;
+      if (menteeFcmToken) {
+        await sendPushNotification({
+          token: menteeFcmToken,
+          title: "Session Cancelled by Admin",
+          body: "Your session has been cancelled by an administrator.",
+        });
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error cancelling session by admin:", error);
     throw error;
   }
 };
