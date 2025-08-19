@@ -5,13 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
 import { MdWork, MdSchool, MdPeople, MdChat } from "react-icons/md";
 import { signOut } from "next-auth/react";
-import {
-  ChevronDown,
-  User,
-  Settings,
-  LogOut,
-  Bell,
-} from "lucide-react";
+import { ChevronDown, User, Settings, LogOut, Bell } from "lucide-react";
 import { useUserContext } from "@/context/userContext";
 import UserInfo from "../pages/userInfo";
 
@@ -19,6 +13,7 @@ import {
   listenToNotifications,
   markNotificationAsRead,
   deleteOldNotifications,
+  getNotificationTarget,
 } from "@/services/notificationService";
 
 import {
@@ -68,7 +63,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
         setIsNotificationOpen(false);
       }
     };
@@ -78,17 +76,25 @@ export default function Navbar() {
 
   const handleMarkAsRead = async (id) => {
     await markNotificationAsRead(id);
+    const clicked = notifications.find((n) => n.id === id);
+    const target = getNotificationTarget(clicked);
+    if (target) window.location.href = target;
   };
 
   const name = user?.name || user?.fullName || "User";
-  const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+  const currentPath =
+    typeof window !== "undefined" ? window.location.pathname : "";
 
   return (
     <nav className="bg-white text-gray-800 font-semibold shadow-sm">
       <div className="max-w-7xl mx-auto px-6 py-1 flex justify-between items-center">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.png" alt="ITIANS Logo" className="h-16 w-16 rounded-full" />
+          <img
+            src="/logo.png"
+            alt="ITIANS Logo"
+            className="h-16 w-16 rounded-full"
+          />
         </Link>
 
         {/* Desktop Menu */}
@@ -152,7 +158,9 @@ export default function Navbar() {
               {isNotificationOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-lg z-[99999] border border-gray-200 max-h-[16rem] overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">No notifications</div>
+                    <div className="p-4 text-center text-gray-500">
+                      No notifications
+                    </div>
                   ) : (
                     notifications.map((notification) => (
                       <div
@@ -162,7 +170,9 @@ export default function Navbar() {
                         } cursor-pointer hover:bg-gray-50 transition-colors`}
                         onClick={() => handleMarkAsRead(notification.id)}
                       >
-                        <p className="text-sm text-gray-800">{notification.message}</p>
+                        <p className="text-sm text-gray-800">
+                          {notification.message}
+                        </p>
                         <p className="text-xs text-gray-500 mt-1">
                           {notification.createdAt
                             ? new Date(notification.createdAt).toLocaleString()
@@ -224,13 +234,13 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Menu Button */}
-        <button className="md:hidden text-gray-800" onClick={() => setIsOpen(!isOpen)}>
+        <button
+          className="md:hidden text-gray-800"
+          onClick={() => setIsOpen(!isOpen)}
+        >
           {isOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
         </button>
       </div>
     </nav>
   );
 }
-
-
-

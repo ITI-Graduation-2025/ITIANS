@@ -517,6 +517,7 @@ import {
   listenToNotifications,
   updateNotification,
   deleteOldNotifications,
+  getNotificationTarget,
 } from "@/services/notificationService";
 import { FaSignOutAlt, FaRegUser } from "react-icons/fa";
 import {
@@ -611,12 +612,10 @@ export default function UserInfo() {
   ) => {
     await updateNotification(notificationId, { read: true });
     setIsNotificationOpen(false);
-    if (sessionId) {
-      if (notificationType === "session_cancelled") {
-        toast.success("Session has been cancelled !.");
-      } else {
-        router.push(`/session/${sessionId}`);
-      }
+    const notification = notifications.find((n) => n.id === notificationId);
+    const target = getNotificationTarget(notification);
+    if (target) {
+      router.push(target);
     }
   };
 
@@ -674,29 +673,35 @@ export default function UserInfo() {
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-sm">
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 9 ? "9+" : unreadCount}
             </div>
           )}
         </button>
-        
+
         {isNotificationOpen && (
           <div className="absolute right-0 mt-2 w-80 bg-white shadow-2xl rounded-xl z-[99999] border border-gray-200 max-h-96 overflow-hidden">
             <div className="p-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="font-semibold text-gray-800 text-sm">Notifications</h3>
+              <h3 className="font-semibold text-gray-800 text-sm">
+                Notifications
+              </h3>
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-sm font-medium">No notifications</p>
-                  <p className="text-xs text-gray-400 mt-1">You're all caught up!</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    You're all caught up!
+                  </p>
                 </div>
               ) : (
                 notifications.map((notification) => (
                   <button
                     key={notification.id}
                     className={`w-full p-4 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
-                      !notification.read ? "bg-blue-50 border-l-4 border-l-[#B71C1C]" : ""
+                      !notification.read
+                        ? "bg-blue-50 border-l-4 border-l-[#B71C1C]"
+                        : ""
                     }`}
                     onClick={() =>
                       handleMarkAsRead(
@@ -707,9 +712,11 @@ export default function UserInfo() {
                     }
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-2 h-2 rounded-full mt-2 ${
-                        !notification.read ? "bg-[#B71C1C]" : "bg-gray-300"
-                      }`} />
+                      <div
+                        className={`w-2 h-2 rounded-full mt-2 ${
+                          !notification.read ? "bg-[#B71C1C]" : "bg-gray-300"
+                        }`}
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-800 leading-relaxed">
                           {notification.message}
@@ -736,7 +743,9 @@ export default function UserInfo() {
             className="flex items-center space-x-3 text-gray-700 hover:text-[#B71C1C] hover:bg-gray-100 px-3 py-2 rounded-lg transition-all duration-200 font-medium"
           >
             {userAvatar}
-            <span className="hidden md:block truncate max-w-32">{data.user.name}</span>
+            <span className="hidden md:block truncate max-w-32">
+              {data.user.name}
+            </span>
           </Button>
         </DropdownMenuTrigger>
 

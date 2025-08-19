@@ -366,7 +366,7 @@ export function listenToNotifications(userId, callback) {
   const q = query(
     collection(db, "notifications"),
     where("recipientId", "==", userId),
-    orderBy("createdAt", "desc")
+    orderBy("createdAt", "desc"),
   );
   return onSnapshot(q, (snapshot) => {
     // Helper function to convert Timestamp to ISO string
@@ -424,11 +424,11 @@ export async function deleteOldNotifications(userId) {
     const q = query(
       collection(db, "notifications"),
       where("recipientId", "==", userId),
-      where("createdAt", "<", tenDaysAgo)
+      where("createdAt", "<", tenDaysAgo),
     );
     const snapshot = await getDocs(q);
     const deletePromises = snapshot.docs.map((docSnap) =>
-      deleteDoc(doc(db, "notifications", docSnap.id))
+      deleteDoc(doc(db, "notifications", docSnap.id)),
     );
     await Promise.all(deletePromises);
     // console.log(`Deleted ${deletePromises.length} old notifications for user ${userId}`);
@@ -438,14 +438,18 @@ export async function deleteOldNotifications(userId) {
 }
 
 // --- New Function to Send Job Application Notification ---
-export async function sendJobApplicationNotification(companyId, jobId, jobTitle) {
+export async function sendJobApplicationNotification(
+  companyId,
+  jobId,
+  jobTitle,
+) {
   try {
     const notificationsRef = collection(db, "notifications");
     const q = query(
       notificationsRef,
       where("recipientId", "==", companyId),
       where("jobId", "==", jobId),
-      where("type", "==", "job_application")
+      where("type", "==", "job_application"),
     );
     const snapshot = await getDocs(q);
 
@@ -483,17 +487,19 @@ export async function markAllNotificationsAsRead(userId) {
     const q = query(
       notificationsRef,
       where("recipientId", "==", userId),
-      where("read", "==", false)
+      where("read", "==", false),
     );
     const snapshot = await getDocs(q);
     const updatePromises = snapshot.docs.map((docSnap) =>
       updateDoc(doc(db, "notifications", docSnap.id), {
         read: true,
         readAt: new Date(),
-      })
+      }),
     );
     await Promise.all(updatePromises);
-    console.log(`Marked ${updatePromises.length} notifications as read for user ${userId}`);
+    console.log(
+      `Marked ${updatePromises.length} notifications as read for user ${userId}`,
+    );
   } catch (error) {
     console.error("Error marking all notifications as read:", error);
   }
@@ -506,12 +512,64 @@ export async function getUnreadNotificationsCount(userId) {
     const q = query(
       notificationsRef,
       where("recipientId", "==", userId),
-      where("read", "==", false)
+      where("read", "==", false),
     );
     const snapshot = await getDocs(q);
     return snapshot.size;
   } catch (error) {
     console.error("Error getting unread notifications count:", error);
     return 0;
+  }
+}
+
+// --- Helper: Resolve navigation target for a notification ---
+export function getNotificationTarget(notification) {
+  if (!notification || typeof notification !== "object") return null;
+
+  const type = notification.type;
+  const relatedId = notification.relatedId;
+
+  switch (type) {
+    // Community/Post related
+    case "like":
+    case "comment":
+    case "comment_mention": {
+      if (relatedId) return `/community/${relatedId}`;
+      return "/community";
+    }
+
+    // Sessions related
+    case "session_accepted":
+    case "session_rejected":
+    case "session_cancelled": {
+      if (relatedId) return `/session/${relatedId}`;
+      return "/mentor/sessions";
+    }
+
+    // Jobs related
+    case "job_application": {
+      // Some job notifications store jobId explicitly
+      if (notification.jobId) return `/Applicationjob/${notification.jobId}`;
+      if (relatedId) return `/Applicationjob/${relatedId}`;
+      return "/companyjobs";
+    }
+    case "job_posted": {
+      return "/companyjobs";
+    }
+
+    // Account/Admin related
+    case "registration":
+    case "incomplete_profile":
+    case "profile_under_review":
+    case "account_approved":
+    case "profile_approved":
+    case "account_rejected":
+    case "profile_rejected":
+    case "account_suspended": {
+      return null; // handled specially by callers (toasts, logout, etc.)
+    }
+
+    default:
+      return null;
   }
 }

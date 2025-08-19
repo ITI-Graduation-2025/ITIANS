@@ -8,6 +8,7 @@ import {
   listenToNotifications,
   updateNotification,
   deleteOldNotifications,
+  getNotificationTarget,
 } from "@/services/notificationService";
 import { toast } from "sonner";
 import { signOut } from "next-auth/react";
@@ -161,6 +162,11 @@ export function PendingClient({ user }) {
       );
       return;
     }
+
+    // Generic navigation by type
+    const clicked = notifications.find((n) => n.id === notificationId);
+    const target = getNotificationTarget(clicked);
+    if (target) router.push(target);
   };
 
   const handleManualRefresh = () => {

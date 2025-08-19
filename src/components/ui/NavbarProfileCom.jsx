@@ -1,6 +1,5 @@
 "use client";
 
-
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
@@ -10,11 +9,11 @@ import { ChevronDown, User, Settings, LogOut, Bell } from "lucide-react";
 import { useUserContext } from "@/context/userContext";
 import UserInfo from "../pages/userInfo";
 
-
 import {
   listenToNotifications,
   markNotificationAsRead,
   deleteOldNotifications,
+  getNotificationTarget,
 } from "@/services/notificationService";
 
 import {
@@ -43,10 +42,8 @@ export default function Navbar() {
   useEffect(() => {
     if (!user?.id) return;
 
-    
     deleteOldNotifications(user.id);
 
-    
     const unsubscribe = listenToNotifications(user.id, (newNotifications) => {
       setNotifications(newNotifications);
     });
@@ -56,7 +53,9 @@ export default function Navbar() {
 
   const handleMarkAsRead = async (id, relatedId, type) => {
     await markNotificationAsRead(id);
-    
+    const clicked = notifications.find((n) => n.id === id);
+    const target = getNotificationTarget(clicked);
+    if (target) window.location.href = target;
   };
 
   const avatar =
@@ -130,7 +129,7 @@ export default function Navbar() {
                           handleMarkAsRead(
                             notification.id,
                             notification.relatedId,
-                            notification.type
+                            notification.type,
                           )
                         }
                       >
@@ -138,12 +137,15 @@ export default function Navbar() {
                           {notification.message}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-  {notification.createdAt &&
-    (typeof notification.createdAt.toDate === "function"
-      ? new Date(notification.createdAt.toDate()).toLocaleString()
-      : new Date(notification.createdAt).toLocaleString())}
-</p>
-
+                          {notification.createdAt &&
+                            (typeof notification.createdAt.toDate === "function"
+                              ? new Date(
+                                  notification.createdAt.toDate(),
+                                ).toLocaleString()
+                              : new Date(
+                                  notification.createdAt,
+                                ).toLocaleString())}
+                        </p>
                       </div>
                     ))
                   )}
@@ -158,7 +160,7 @@ export default function Navbar() {
                   className="flex items-center gap-2 bg-transparent border-none cursor-pointer focus:outline-none"
                   type="button"
                 >
-                   <User size={18} className="text-gray-600" />
+                  <User size={18} className="text-gray-600" />
                   <span className="text-gray-800 font-medium">{name}</span>
                   <ChevronDown size={16} />
                 </button>
@@ -210,4 +212,3 @@ export default function Navbar() {
     </nav>
   );
 }
-

@@ -6,6 +6,7 @@ import {
   listenToNotifications,
   updateNotification,
   deleteOldNotifications, // استيراد الوظيفة الجديدة
+  getNotificationTarget,
 } from "@/services/notificationService";
 import { Search, ChevronDown, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,12 +38,11 @@ export function Header() {
   ) => {
     await updateNotification(notificationId, { read: true });
     setIsNotificationOpen(false);
-    if (sessionId) {
-      if (notificationType === "session_cancelled") {
-        toast.success("Session has been cancelled !.");
-      } else {
-        router.push(`/session/${sessionId}`);
-      }
+    const notification = notifications.find((n) => n.id === notificationId);
+    const target = getNotificationTarget(notification);
+    if (target) return router.push(target);
+    if (notificationType === "session_cancelled") {
+      toast.success("Session has been cancelled !.");
     }
   };
 
