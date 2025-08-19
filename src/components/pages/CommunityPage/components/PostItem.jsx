@@ -648,36 +648,48 @@ const downloadFile = async (url, filename) => {
                 </div>
               </div>
             ) : (
-                                <p className="mt-4 text-foreground text-base leading-relaxed">{post.content}</p>
+              <Link href={`/community/${post.id}`} className="block">
+                <p className="mt-4 text-foreground text-base leading-relaxed cursor-pointer hover:text-primary transition-colors">{post.content}</p>
+              </Link>
             )}
 
                              {/* Post Attachment */}
             {post.attachment && (
-                   <div className="mt-4">
+              <div className="mt-4">
                 {isImageAttachment ? (
-                       <div className="relative w-full">
-                    <img
-                      src={post.attachment.url}
-                         alt="Post attachment"
-                         className="w-full h-auto max-h-96 object-cover rounded-xl border border-slate-200 shadow-sm"
-                    />
-                    <button
-                         onClick={() => downloadFile(post.attachment.url, getFileName(post, post.attachment))}
-                         className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                      title="Download image"
-                    >
-                      <HiOutlineArrowDownTray className="w-4 h-4" />
-                    </button>
-                    {isPostOwner && (
+                  <Link href={`/community/${post.id}`} className="block">
+                    <div className="relative w-full cursor-pointer">
+                      <img
+                        src={post.attachment.url}
+                        alt="Post attachment"
+                        className="w-full h-auto max-h-96 object-cover rounded-xl border border-slate-200 shadow-sm hover:opacity-90 transition-opacity"
+                      />
                       <button
-                        onClick={() => setEditingImage(true)}
-                           className="absolute top-3 left-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                        title="Edit image"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          downloadFile(post.attachment.url, getFileName(post, post.attachment));
+                        }}
+                        className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                        title="Download image"
                       >
-                        <HiOutlinePhoto className="w-4 h-4" />
+                        <HiOutlineArrowDownTray className="w-4 h-4" />
                       </button>
-                    )}
-                  </div>
+                      {isPostOwner && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setEditingImage(true);
+                          }}
+                          className="absolute top-3 left-3 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                          title="Edit image"
+                        >
+                          <HiOutlinePhoto className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </Link>
                 ) : (
                   <div className="flex items-center gap-3">
                     <a
@@ -737,6 +749,18 @@ const downloadFile = async (url, filename) => {
             <HiOutlineArrowPathRoundedSquare className="w-5 h-5" />
             <span className="font-medium">Repost</span>
         </button>
+
+        {/* View Post Button */}
+        <Link
+          href={`/community/${post.id}`}
+          className="flex items-center space-x-2 px-4 py-2 rounded-xl text-muted-foreground hover:text-blue-500 hover:bg-blue-50 transition-all duration-200"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          <span className="font-medium">View Post</span>
+        </Link>
         </div>
       </div>
 
