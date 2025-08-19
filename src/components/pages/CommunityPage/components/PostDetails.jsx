@@ -2,6 +2,8 @@ import { useState } from "react";
 import { sendPushNotification } from "@/services/notificationService";
 import { updatePost } from "@/services/postServices";
 import { upload, getCleanCloudinaryUrl, convertRawToAutoUrl, convertImageToAutoUrl } from "@/utils/upload";
+import { db } from "@/config/firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
@@ -43,6 +45,32 @@ export default function PostDetails({ post, currentUser }) {
       } else {
         // Add user to likes array
         updatedLikes = [...currentLikes, userId];
+        
+        // Send like notification only when liking (not when unliking)
+        if (post.authorFcmToken && post.authorId !== userId) {
+          // Send push notification
+          await sendPushNotification({
+            title: `${currentUser.name} liked your post`,
+            body: post.content.length > 50 ? `${post.content.substring(0, 50)}...` : post.content,
+            data: {
+              type: "like",
+              postId: post.id,
+            },
+            fcmToken: post.authorFcmToken,
+          });
+          
+          // Add notification to database
+          const likeNotification = {
+            recipientId: post.authorId,
+            senderId: userId,
+            type: "like",
+            message: `${currentUser.name} liked your post`,
+            relatedId: post.id,
+            read: false,
+            createdAt: serverTimestamp(),
+          };
+          await addDoc(collection(db, "notifications"), likeNotification);
+        }
       }
 
       await updatePost(post.id, {

@@ -54,6 +54,29 @@ export default function PostItem({ post, currentUser, disableEditDelete = false 
       } else {
         // Add user to likes array
         updatedLikes = [...currentLikes, userId];
+        
+        // Send like notification only when liking (not when unliking)
+        if (post.authorFcmToken && post.authorId !== userId) {
+          // Send push notification
+          await sendPushNotification({
+            token: post.authorFcmToken,
+            title: `${currentUser.name} liked your post`,
+            body: post.content.length > 50 ? `${post.content.substring(0, 50)}...` : post.content,
+            data: { url: `/community` },
+          });
+          
+          // Add notification to database
+          const likeNotification = {
+            recipientId: post.authorId,
+            senderId: userId,
+            type: "like",
+            message: `${currentUser.name} liked your post`,
+            relatedId: post.id,
+            read: false,
+            createdAt: serverTimestamp(),
+          };
+          await addDoc(collection(db, "notifications"), likeNotification);
+        }
       }
 
       await updatePost(post.id, {
