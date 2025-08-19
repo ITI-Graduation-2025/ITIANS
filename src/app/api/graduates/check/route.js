@@ -1,5 +1,6 @@
+export const runtime = "nodejs";
 import { NextResponse } from "next/server";
-import { admin } from "@/lib/firebase-admin";
+import { getAdmin } from "@/lib/firebase-admin";
 
 // POST /api/graduates/check
 // Body: { uid: string, nationalId: string, idToken: string }
@@ -16,6 +17,7 @@ export async function POST(request) {
     }
 
     // Verify the Firebase ID token to ensure the caller is the same user
+    const admin = getAdmin();
     const decoded = await admin.auth().verifyIdToken(idToken);
     if (!decoded || decoded.uid !== uid) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

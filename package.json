@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed:graduates": "node scripts/seedGraduates.mjs"
+    "seed:graduates": "node scripts/seedGraduates.mjs",
+    "env:verify": "node -r dotenv/config scripts/verify-env.mjs"
   },
   "dependencies": {
     "@cloudinary/react": "^1.14.3",
@@ -41,7 +42,7 @@
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.2",
-    "react": "^19.0.0",
+    "react": "^18.3.1",
     "react-countup": "^6.5.3",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.60.0",

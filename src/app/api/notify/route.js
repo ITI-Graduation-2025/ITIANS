@@ -1,4 +1,5 @@
-import { admin } from "@/lib/firebase-admin";
+export const runtime = "nodejs";
+import { getAdmin } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
@@ -22,6 +23,7 @@ export async function POST(request) {
       },
     };
 
+    const admin = getAdmin();
     const response = await admin.messaging().send(message);
     console.log("Push notification sent successfully:", response);
     return NextResponse.json({ success: true }, { status: 200 });
