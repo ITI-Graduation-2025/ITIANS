@@ -49,17 +49,19 @@ export default function UserDetailsModal({
   const { update: updateSession } = useSession();
 
   const handleAction = async (action) => {
-    if (!comment.trim()) {
-      toast.error("Please add a comment before taking action");
+    if (!comment.trim() && action === "reject") {
+      toast.error("Please add a comment before rejecting");
       return;
     }
 
     setIsLoading(true);
     try {
       let updateData = {
-        adminComment: comment,
         adminActionDate: new Date().toISOString(),
       };
+      if (comment.trim()) {
+        updateData.adminComment = comment.trim();
+      }
 
       // Handle different types of actions
       if (profileData.type === "registration") {
@@ -456,12 +458,16 @@ export default function UserDetailsModal({
                         <div className="flex flex-wrap gap-2">
                           {profileData.data.skills.map((skill, index) => {
                             // Normalize skill display value
-                            const skillValue = typeof skill === 'string' 
-                              ? skill 
-                              : (skill && typeof skill === 'object' 
-                                  ? skill.value || skill.name || skill.title || 'Unknown Skill'
-                                  : 'Unknown Skill');
-                            
+                            const skillValue =
+                              typeof skill === "string"
+                                ? skill
+                                : skill && typeof skill === "object"
+                                  ? skill.value ||
+                                    skill.name ||
+                                    skill.title ||
+                                    "Unknown Skill"
+                                  : "Unknown Skill";
+
                             return (
                               <Badge key={index} variant="secondary">
                                 {skillValue}
@@ -528,13 +534,11 @@ export default function UserDetailsModal({
             </div>
           )}
 
-          {/* Admin Comment */}
+          {/* Admin Comment (optional for approve, required for reject) */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Admin Comment (Required)
-            </Label>
+            <Label className="text-sm font-medium">Admin Comment</Label>
             <Textarea
-              placeholder="Add your comment here..."
+              placeholder="Optional for approval. Required for rejection."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               className="min-h-[100px]"
@@ -563,7 +567,7 @@ export default function UserDetailsModal({
           </Button>
           <Button
             onClick={() => handleAction("approve")}
-            disabled={isLoading || !comment.trim()}
+            disabled={isLoading}
             className="flex items-center gap-2"
           >
             <Check className="h-4 w-4" />

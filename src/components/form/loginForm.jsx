@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,26 @@ export default function LoginForm({ onAuthenticationStart }) {
     formState: { errors },
   } = useForm();
   const [isLoading, setIsLoading] = useState(false);
+  const [infoMessage, setInfoMessage] = useState("");
   const router = useRouter();
+  // Show contextual message after registration
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const registered = params.get("registered");
+    const status = params.get("status");
+    if (registered === "1") {
+      if (status === "approved") {
+        setInfoMessage("Account created and auto-approved. Please login.");
+      } else if (status === "pending") {
+        setInfoMessage(
+          "Account created. If you are an ITI graduate, admin will review and approve soon. Please login.",
+        );
+      } else {
+        setInfoMessage("Account created. Please login.");
+      }
+    }
+  }, []);
 
   const registerOptions = {
     email: {
@@ -140,6 +159,11 @@ export default function LoginForm({ onAuthenticationStart }) {
       className="space-y-4"
     >
       <div className="space-y-2 mb-8">
+        {infoMessage && (
+          <div className="mb-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+            {infoMessage}
+          </div>
+        )}
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"

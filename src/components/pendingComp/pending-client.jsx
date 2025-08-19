@@ -313,6 +313,26 @@ export function PendingClient({ user }) {
                   {statusInfo.badge}
                 </Badge>
               </div>
+              {user.verificationStatus === "Pending" && (
+                <p className="mt-4 text-sm text-gray-700">
+                  If you are sure you are an ITI graduate, the admin will
+                  manually review your request.
+                </p>
+              )}
+              {user?.profileUnderReview && (
+                <div className="mt-4 flex items-center gap-3">
+                  <Button
+                    variant="default"
+                    className="bg-primary hover:bg-primary/90"
+                    onClick={() => router.push("/")}
+                  >
+                    Go to Home
+                  </Button>
+                  <Button variant="outline" onClick={handleLogout}>
+                    Log out
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

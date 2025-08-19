@@ -13,7 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signOut,
+} from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db, initializeFCM } from "@/config/firebase";
 import { toast } from "sonner";
@@ -25,7 +29,7 @@ import {
   generateUsernameSuggestions,
   validateUsername,
 } from "@/utils/usernameUtils";
-import { signIn, getSession } from "next-auth/react";
+// import { signIn, getSession } from "next-auth/react";
 
 export default function RegisterForm() {
   const {
@@ -116,31 +120,37 @@ export default function RegisterForm() {
         data.username,
       );
 
-      // const signInResponse = await signIn("credentials", {
-      //   redirect: false,
-      //   email: data.email,
-      //   password: data.password,
-      // });
+      // Server-side graduates verification (secure)
+      const idToken = await user.getIdToken();
+      const verifyRes = await fetch("/api/graduates/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: user.uid,
+          nationalId: data.nationalId,
+          idToken,
+        }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        throw new Error(
+          verifyData?.error || "Failed to verify graduate status",
+        );
+      }
 
-      // if (signInResponse?.error) {
-      //   throw new Error("Failed to sign in after registration");
-      // }
+      // Show outcome and redirect to Login with context params
+      toast.success(
+        verifyData.isGraduate
+          ? "Account created and auto-approved. Please login."
+          : "Account created. Please login to continue.",
+      );
 
-      // Wait for session to be updated
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      try {
+        await signOut(auth);
+      } catch {}
 
-      // Get updated session
-      const session = await getSession();
-
-      // if (!session?.user?.id) {
-      //   throw new Error("Session not updated properly");
-      // }
-
-      toast.success("Account created successfully! Please login to continue.");
-
-      // Redirect to pending page
-      router.push("/login");
-      // await initializeFCM(user.uid); // استدعاء initializeFCM بـ userId
+      const status = verifyData.isGraduate ? "approved" : "pending";
+      router.push(`/login?registered=1&status=${status}`);
     } catch (error) {
       let errorMessage = "Something went wrong. Please try again.";
       if (error.code === "USERNAME_TAKEN") {
