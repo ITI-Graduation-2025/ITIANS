@@ -44,3 +44,5 @@ next-env.d.ts
 src/config/serviceAccount.json
 
 code.txt
+
+scripts/seedGraduates.mjs
