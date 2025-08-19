@@ -54,7 +54,7 @@
     "react-mentions": "^4.4.10",
     "react-paginate": "^8.3.0",
     "react-toastify": "^11.0.5",
-    "react-virtual": "^2.10.4",
+    "@tanstack/react-virtual": "^3.13.12",
     "recharts": "^3.0.2",
     "rehype-highlight": "^7.0.2",
     "sonner": "^2.0.6",

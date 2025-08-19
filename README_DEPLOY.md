@@ -34,3 +34,4 @@ Notes:
 
 - `serviceAccount.json` should not be uploaded. Prefer env vars for Admin SDK.
 - For the Firebase SW, make sure all NEXT*PUBLIC_FIREBASE*\* vars exist; the file is generated during build by `next.config.mjs`.
+
