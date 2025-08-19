@@ -138,11 +138,12 @@ export default function Navbar() {
                           {notification.message}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {notification.createdAt &&
-                            new Date(
-                              notification.createdAt.toDate()
-                            ).toLocaleString()}
-                        </p>
+  {notification.createdAt &&
+    (typeof notification.createdAt.toDate === "function"
+      ? new Date(notification.createdAt.toDate()).toLocaleString()
+      : new Date(notification.createdAt).toLocaleString())}
+</p>
+
                       </div>
                     ))
                   )}

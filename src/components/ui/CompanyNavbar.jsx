@@ -5,13 +5,15 @@ import { useState, useEffect, useRef } from "react";
 import { FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
 import { MdWork, MdSchool, MdPeople, MdChat } from "react-icons/md";
 import { signOut } from "next-auth/react";
-import { ChevronDown, User, Settings, LogOut, Bell,Briefcase } from "lucide-react";
+import {
+  ChevronDown,
+  User,
+  Settings,
+  LogOut,
+  Bell,
+} from "lucide-react";
 import { useUserContext } from "@/context/userContext";
 import UserInfo from "../pages/userInfo";
-
-
-
-import { LayoutDashboard, FileText, Users2, Building2 } from "lucide-react";
 
 import {
   listenToNotifications,
@@ -34,14 +36,12 @@ const categories = [
   { name: "Messages", href: "/chat", icon: <MdChat className="w-6 h-6" /> },
 ];
 
-
 const companyTabs = [
-  { name: "Overview", href: "/dashboardCompany"},
+  { name: "Overview", href: "/dashboardCompany" },
   { name: "My Jobs", href: "/companyjobs" },
-  { name: "Applications", href: "/AllCompanyApplicants"},
+  { name: "Applications", href: "/AllCompanyApplicants" },
   { name: "Company Profile", href: "/companyprofile" },
 ];
-
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,13 +55,12 @@ export default function Navbar() {
   useEffect(() => {
     if (!user?.id) return;
 
+    // حذف النوتيفيكشن القديمة
     deleteOldNotifications(user.id);
 
+    // الاستماع للنوتيفيكشن من service
     const unsubscribe = listenToNotifications(user.id, (newNotifications) => {
-      const sorted = [...newNotifications].sort(
-        (a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis()
-      );
-      setNotifications(sorted);
+      setNotifications(newNotifications); // جاهزة ومعمولها convert
     });
 
     return () => unsubscribe();
@@ -82,8 +81,6 @@ export default function Navbar() {
   };
 
   const name = user?.name || user?.fullName || "User";
-
-  // currentPath لتحديد التبويب النشط
   const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
 
   return (
@@ -96,7 +93,7 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex flex-1 items-center justify-between">
-          {/* اليسار: Explore + Company Tabs */}
+          {/* Left side */}
           <div className="flex items-center gap-6 ml-12">
             {/* Explore Dropdown */}
             <DropdownMenu>
@@ -130,11 +127,7 @@ export default function Navbar() {
                     key={idx}
                     href={href}
                     className={`px-4 py-2 flex items-center gap-1 font-medium transition
-                      ${
-                        isActive
-                          ? " text-[#b30000]"
-                          : "text-[#203947] hover:text-[#b30000]"
-                      }`}
+                      ${isActive ? " text-[#b30000]" : "text-[#203947] hover:text-[#b30000]"}`}
                   >
                     {icon} {name}
                   </Link>
@@ -143,9 +136,8 @@ export default function Navbar() {
             </div>
           </div>
 
-          
           <div className="flex items-center gap-6">
-            {/* Notification Icon */}
+            {/* Notification */}
             <div className="relative" ref={notificationRef}>
               <Bell
                 className="w-6 h-6 text-gray-600 cursor-pointer hover:text-[#B71C1C] transition-colors"
@@ -172,8 +164,9 @@ export default function Navbar() {
                       >
                         <p className="text-sm text-gray-800">{notification.message}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {notification.createdAt &&
-                            new Date(notification.createdAt.toDate()).toLocaleString()}
+                          {notification.createdAt
+                            ? new Date(notification.createdAt).toLocaleString()
+                            : ""}
                         </p>
                       </div>
                     ))

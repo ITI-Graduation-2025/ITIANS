@@ -9,9 +9,9 @@ import {
   getDoc,
   query,
   where,
-  getDocs,
-  setDoc,
-  serverTimestamp,
+   getDocs,
+   setDoc,
+   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import CompanyNavbar from "./CompanyNavbar";
@@ -31,7 +31,7 @@ import {
   Zap,
   Clock,
   Users2,
-  Trophy,
+  Trophy ,
 } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -43,7 +43,7 @@ export default function DashboardPage() {
   const [companyStats, setCompanyStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [graduates, setGraduates] = useState([]);
-  const [freelancersCount, setFreelancersCount] = useState(null);
+  const [freelancersCount, setFreelancersCount] = useState(null); 
   const [totalPending, setTotalPending] = useState(0);
   const [successRate, setSuccessRate] = useState(null);
   const [applicationStats, setApplicationStats] = useState({
@@ -72,146 +72,148 @@ export default function DashboardPage() {
   }, [companyId]);
 
   // Fetch freelancers count (Static fetch once)
-  useEffect(() => {
-    const fetchFreelancers = async () => {
-      if (!companyId) return;
+useEffect(() => {
+  const fetchFreelancers = async () => {
+    if (!companyId) return;
 
-      try {
-        const jobsRef = collection(db, "jobs");
-        const q = query(jobsRef, where("companyId", "==", companyId));
-        const querySnapshot = await getDocs(q);
+    try {
+      const jobsRef = collection(db, "jobs");
+      const q = query(jobsRef, where("companyId", "==", companyId));
+      const querySnapshot = await getDocs(q);
 
-        let totalApproved = 0;
+      let totalApproved = 0;
 
-        querySnapshot.forEach((docSnap) => {
-          const job = docSnap.data();
-          console.log("Job:", job.title, job.applicants);
+      querySnapshot.forEach((docSnap) => {
+        const job = docSnap.data();
+        console.log("Job:", job.title, job.applicants); 
 
-          const applicants = Array.isArray(job.applicants)
-            ? job.applicants
-            : [];
+        const applicants = Array.isArray(job.applicants) ? job.applicants : [];
 
-          applicants.forEach((applicant) => {
-            console.log("Applicant:", applicant);
+        applicants.forEach((applicant) => {
+          console.log("Applicant:", applicant); 
 
-            if (
-              applicant &&
-              typeof applicant === "object" &&
-              applicant.status &&
-              applicant.userId
-            ) {
-              if (applicant.status.toLowerCase() === "approved") {
-                totalApproved++;
-              }
-            }
-          });
-        });
-
-        console.log("Total Approved Freelancers:", totalApproved);
-        setFreelancersCount(totalApproved);
-      } catch (err) {
-        console.error("Error fetching freelancers:", err);
-      }
-    };
-
-    fetchFreelancers();
-  }, [companyId]);
-
-  // Fetch pending freelancers  (Static fetch once)
-  useEffect(() => {
-    const fetchPendingApplications = async () => {
-      if (!companyId) return;
-
-      try {
-        const jobsRef = collection(db, "jobs");
-        const q = query(jobsRef, where("companyId", "==", companyId));
-        const querySnapshot = await getDocs(q);
-
-        let totalPending = 0;
-
-        querySnapshot.forEach((docSnap) => {
-          const job = docSnap.data();
-          const applicants = Array.isArray(job.applicants)
-            ? job.applicants
-            : [];
-
-          applicants.forEach((applicant) => {
-            if (
-              applicant &&
-              typeof applicant === "object" &&
-              applicant.status &&
-              applicant.userId
-            ) {
-              if (applicant.status.toLowerCase() === "pending") {
-                totalPending++;
-              }
-            }
-          });
-        });
-
-        setTotalPending(totalPending);
-      } catch (err) {
-        console.error("Error fetching pending applications:", err);
-      }
-    };
-
-    fetchPendingApplications();
-  }, [companyId]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const jobsRef = collection(db, "jobs");
-        const jobsQuery = query(jobsRef, where("companyId", "==", companyId));
-        const jobsSnap = await getDocs(jobsQuery);
-        const totalJobs = jobsSnap.size;
-
-        let jobsWithApproved = 0;
-
-        jobsSnap.forEach((jobDoc) => {
-          const jobData = jobDoc.data();
-          if (jobData.applicants && jobData.applicants.length > 0) {
-            const approved = jobData.applicants.some(
-              (app) => app.status === "approved",
-            );
-            if (approved) {
-              jobsWithApproved++;
+          if (
+            applicant &&
+            typeof applicant === "object" &&
+            applicant.status &&
+            applicant.userId
+          ) {
+            if (applicant.status.toLowerCase() === "approved") {
+              totalApproved++;
             }
           }
         });
+      });
 
-        const rate = totalJobs > 0 ? (jobsWithApproved / totalJobs) * 100 : 0;
-        setSuccessRate(rate.toFixed(1));
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-      }
-    };
-
-    fetchData();
-  }, [companyId]);
-
-  const handleStartChat = async (gradId) => {
-    if (!session?.user?.id) return;
-
-    try {
-      const chatId = [session.user.id, gradId].sort().join("_"); // simple generateChatId
-      const chatRef = doc(db, "chats", chatId);
-      const chatSnap = await getDoc(chatRef);
-
-      if (!chatSnap.exists()) {
-        await setDoc(chatRef, {
-          participants: [session.user.id, gradId],
-          createdAt: serverTimestamp(),
-          lastMessage: "",
-        });
-      }
-
-      window.location.href = `/chat/${chatId}`;
+      console.log("Total Approved Freelancers:", totalApproved);
+      setFreelancersCount(totalApproved);
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to start chat");
+      console.error("Error fetching freelancers:", err);
     }
   };
+
+  fetchFreelancers();
+}, [companyId]);
+
+// Fetch pending freelancers  (Static fetch once)
+useEffect(() => {
+  const fetchPendingApplications = async () => {
+    if (!companyId) return;
+
+    try {
+      const jobsRef = collection(db, "jobs");
+      const q = query(jobsRef, where("companyId", "==", companyId));
+      const querySnapshot = await getDocs(q);
+
+      let totalPending = 0;
+
+      querySnapshot.forEach((docSnap) => {
+        const job = docSnap.data();
+        const applicants = Array.isArray(job.applicants) ? job.applicants : [];
+
+        applicants.forEach((applicant) => {
+          if (
+            applicant &&
+            typeof applicant === "object" &&
+            applicant.status &&
+            applicant.userId
+          ) {
+            if (applicant.status.toLowerCase() === "pending") {
+              totalPending++;
+            }
+          }
+        });
+      });
+
+      setTotalPending(totalPending);
+    } catch (err) {
+      console.error("Error fetching pending applications:", err);
+    }
+  };
+
+  fetchPendingApplications();
+}, [companyId]);
+
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const jobsRef = collection(db, "jobs");
+      const jobsQuery = query(jobsRef, where("companyId", "==", companyId));
+      const jobsSnap = await getDocs(jobsQuery);
+      const totalJobs = jobsSnap.size;
+
+      let jobsWithApproved = 0;
+
+      jobsSnap.forEach((jobDoc) => {
+        const jobData = jobDoc.data();
+        if (jobData.applicants && jobData.applicants.length > 0) {
+          
+          const approved = jobData.applicants.some(
+            (app) => app.status === "approved"
+          );
+          if (approved) {
+            jobsWithApproved++;
+          }
+        }
+      });
+
+      const rate = totalJobs > 0 ? (jobsWithApproved / totalJobs) * 100 : 0;
+      setSuccessRate(rate.toFixed(1));
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
+
+  fetchData();
+}, [companyId]);
+
+const handleStartChat = async (gradId) => {
+  if (!session?.user?.id) return;
+
+  try {
+    const chatId = [session.user.id, gradId].sort().join("_"); // simple generateChatId
+    const chatRef = doc(db, "chats", chatId);
+    const chatSnap = await getDoc(chatRef);
+
+    if (!chatSnap.exists()) {
+      await setDoc(chatRef, {
+        participants: [session.user.id, gradId],
+        createdAt: serverTimestamp(),
+        lastMessage: "",
+      });
+    }
+
+    window.location.href = `/chat/${chatId}`;
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to start chat");
+  }
+};
+
+
+
+
 
   // Fetch applications stats and jobs (Live)
   useEffect(() => {
@@ -236,11 +238,7 @@ export default function DashboardPage() {
       const twoWeeksAgo = new Date(now);
       twoWeeksAgo.setDate(now.getDate() - 14);
       const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const startOfLastMonth = new Date(
-        now.getFullYear(),
-        now.getMonth() - 1,
-        1,
-      );
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
       querySnapshot.forEach((doc) => {
@@ -259,8 +257,8 @@ export default function DashboardPage() {
             const appliedDate = applicant.appliedAt
               ? new Date(applicant.appliedAt)
               : job.createdAt?.toDate
-                ? job.createdAt.toDate()
-                : null;
+              ? job.createdAt.toDate()
+              : null;
 
             if (appliedDate) {
               if (appliedDate >= oneWeekAgo) {
@@ -303,10 +301,7 @@ export default function DashboardPage() {
         hires,
         newThisWeek: newApplicationsThisWeek,
         hiresThisMonth,
-        applicationTrend: getTrend(
-          newApplicationsThisWeek,
-          lastWeekApplications,
-        ),
+        applicationTrend: getTrend(newApplicationsThisWeek, lastWeekApplications),
         hireTrend: getTrend(hiresThisMonth, hiresLastMonth),
       });
 
@@ -319,96 +314,129 @@ export default function DashboardPage() {
   }, [companyId]);
 
   // Fetch approved freelancers (graduates)
-  useEffect(() => {
-    if (!companyId) return;
+useEffect(() => {
+  if (!companyId) return;
 
-    const q = query(
-      collection(db, "jobs"),
-      where("companyId", "==", companyId),
-    );
+  const q = query(collection(db, "jobs"), where("companyId", "==", companyId));
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      try {
-        const applicantsMap = new Map();
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    try {
+      const applicantsMap = new Map();
 
-        snapshot.forEach((docSnap) => {
-          const job = docSnap.data() || {};
-          const applicants = Array.isArray(job.applicants)
-            ? job.applicants
-            : [];
+      snapshot.forEach((docSnap) => {
+        const job = docSnap.data() || {};
+        const applicants = Array.isArray(job.applicants) ? job.applicants : [];
 
-          applicants.forEach((a) => {
-            const userId = typeof a === "string" ? a : a?.userId;
-            if (!userId) return;
+        applicants.forEach((a) => {
+          const userId = typeof a === "string" ? a : a?.userId;
+          if (!userId) return;
 
-            const applicantStatus =
-              typeof a === "object"
-                ? (a.status || a.state || "").toLowerCase()
-                : "";
+          const applicantStatus =
+            typeof a === "object"
+              ? (a.status || a.state || "").toLowerCase()
+              : "";
 
-            if (applicantStatus === "approved") {
-              if (!applicantsMap.has(userId)) {
-                applicantsMap.set(userId, {
-                  userId,
-                  jobs: [],
-                  completedJobs: [],
-                  applicantInfo: a,
-                });
-              }
-              applicantsMap.get(userId).jobs.push(job.title || "N/A");
+          
+          if (applicantStatus === "approved") {
+            if (!applicantsMap.has(userId)) {
+              applicantsMap.set(userId, {
+                userId,
+                jobs: [],
+                completedJobs: [],
+                applicantInfo: a,
+              });
             }
+            applicantsMap.get(userId).jobs.push(job.title || "N/A");
+          }
 
-            if (applicantStatus === "completed") {
-              if (!applicantsMap.has(userId)) {
-                applicantsMap.set(userId, {
-                  userId,
-                  jobs: [],
-                  completedJobs: [job.title || "N/A"],
-                  applicantInfo: a,
-                });
-              } else {
-                applicantsMap
-                  .get(userId)
-                  .completedJobs.push(job.title || "N/A");
-              }
-            }
-          });
+          
+          // if (applicantStatus === "completed") {
+          //   if (!applicantsMap.has(userId)) {
+              
+          //     applicantsMap.set(userId, {
+          //       userId,
+          //       jobs: [],
+          //       completedJobs: [job.title || "N/A"],
+          //       applicantInfo: a,
+          //     });
+          //   } else {
+          //     applicantsMap.get(userId).completedJobs.push(job.title || "N/A");
+          //   }
+          // }
         });
+      });
 
-        //
-        const approvedOnly = Array.from(applicantsMap.values()).filter(
-          (p) => p.jobs.length > 0,
-        );
+      // 
+      const approvedOnly = Array.from(applicantsMap.values()).filter(
+        (p) => p.jobs.length > 0
+      );
 
-        const rows = await Promise.all(
-          approvedOnly.map(async (p) => {
-            const userSnap = await getDoc(doc(db, "users", p.userId));
-            const u = userSnap.exists() ? userSnap.data() : {};
+      const rows = await Promise.all(
+        approvedOnly.map(async (p) => {
+          const userSnap = await getDoc(doc(db, "users", p.userId));
+          const u = userSnap.exists() ? userSnap.data() : {};
 
-            return {
-              id: p.userId,
-              name: u.name || "Unknown",
-              role: u.jobTitle || u.role || "N/A",
-              specialization: u.mainTrack || u.specialization || "",
-              currentProjects: p.jobs,
-              completedCount: p.completedJobs.length,
-              status: "Active",
-              photo: u.profileImage || u.photoURL || "/default-avatar.png",
-              profileLink: `/profile/${p.userId}`,
-              chatLink: `/chat/${p.userId}`,
-            };
-          }),
-        );
+          return {
+            id: p.userId,
+            name: u.name || "Unknown",
+            role: u.jobTitle || u.role || "N/A",
+            specialization: u.mainTrack || u.specialization || "",
+            currentProjects: p.jobs,
+            // completedCount: p.completedJobs.length,
+            status: "Active",
+            photo: u.profileImage || u.photoURL || "/default-avatar.png",
+            profileLink: `/profile/${p.userId}`,
+             chatLink: `/chat/${p.userId}`,
+          };
+        })
+      );
 
-        setGraduates(rows);
-      } catch (err) {
-        console.error("Failed to load approved graduates:", err);
-        setGraduates([]);
-      }
-    });
+      setGraduates(rows);
+    } catch (err) {
+      console.error("Failed to load approved graduates:", err);
+      setGraduates([]);
+    }
+  });
 
-    return () => unsubscribe();
-  }, [companyId]);
+  return () => unsubscribe();
+}, [companyId]);
+
+// Fetch Active Jobs count (Static fetch once or make it live)
+useEffect(() => {
+  if (!companyId) return;
+
+  const fetchActiveJobs = async () => {
+    try {
+      const jobsRef = collection(db, "jobs");
+      const q = query(jobsRef, where("companyId", "==", companyId));
+      const querySnapshot = await getDocs(q);
+
+      let activeJobsCount = 0;
+
+      querySnapshot.forEach((docSnap) => {
+        const job = docSnap.data();
+        const status = (job.status || "").toLowerCase();
+
+        if (status !== "paused" && status !== "closed") {
+          activeJobsCount++;
+        }
+      });
+
+      // نحدث الـ companyStats بحيث تبقى فيها activeJobs
+      setCompanyStats((prev) => ({
+        ...prev,
+        stats: {
+          ...(prev?.stats || {}),
+          activeJobs: activeJobsCount,
+        },
+      }));
+    } catch (err) {
+      console.error("Error fetching active jobs:", err);
+    }
+  };
+
+  fetchActiveJobs();
+}, [companyId]);
 
   // const recentActivities =
   //   companyStats?.recentActivities
@@ -419,27 +447,25 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#f9f9f9]">
       <CompanyNavbar />
       <main className="p-6 max-w-7xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-semibold ">
-          Welcome, <span className="text-[#203947]">{companyStats?.name}</span>
-        </h1>
+       <h1 className="text-2xl md:text-3xl font-semibold ">
+  Welcome, <span className="text-[#203947]">{companyStats?.name}</span>
+</h1>
 
-        <p className="text-gray-600 mb-6">
-          Here’s your company dashboard — review insights, manage jobs, and
-          connect with itiains.
-        </p>
+<p className="text-gray-600 mb-6">
+  Here’s your company dashboard — review insights, manage jobs, and connect with itiains.
+</p>
+
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
           <StatCard
-            title="Total Freelancers"
-            value={
-              freelancersCount !== null
-                ? freelancersCount.toLocaleString()
-                : "—"
-            }
-            icon={Users2}
-            iconColor="bg-orange-500"
-          />
+  title="Total Freelancers"
+  value={freelancersCount !== null ? freelancersCount.toLocaleString() : "—"}
+  
+  icon={Users2}
+  iconColor="bg-orange-500"
+/>
 
           <StatCard
             title="Active Jobs"
@@ -454,12 +480,12 @@ export default function DashboardPage() {
             tooltip="Total number of applications received"
           />
           <StatCard
-            title="Pending Applications"
-            value={totalPending}
-            icon={FileText}
-            color="bg-yellow-400"
-          />
-
+      title="Pending Applications"
+      value={totalPending}
+      icon={FileText}
+      color="bg-yellow-400"
+    />
+          
           <StatCard
             title="Successful Hires"
             value={applicationStats.hires}
@@ -468,135 +494,128 @@ export default function DashboardPage() {
           />
 
           <StatCard
-            title="Success Rate"
-            value={successRate + "%"}
-            icon={Trophy}
-          />
+        title="Success Rate"
+        value={successRate + "%"}
+        icon={Trophy}
+        
+      />
         </div>
 
         {/* Recent Activity + Graduates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 items-start">
-          {/* Applications by Job */}
-          <section className="bg-white shadow p-4 rounded">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Applications by Job
-            </h2>
-            {Object.keys(applicationsByJob).length > 0 ? (
-              <div className="space-y-4">
-                {Object.entries(applicationsByJob).map(([title, count]) => {
-                  const percentage = Math.min(
-                    (count / applicationStats.total) * 100,
-                    100,
-                  );
-                  return (
-                    <div key={title} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium text-gray-700">
-                          {title}
-                        </span>
-                        <span className="text-gray-500">
-                          {count} applications
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-red-600 h-2 rounded-full"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 items-start">
+  {/* Applications by Job */}
+  <section className="bg-white shadow p-4 rounded">
+    <h2 className="text-lg font-semibold text-gray-800 mb-4">
+      Applications by Job
+    </h2>
+    {Object.keys(applicationsByJob).length > 0 ? (
+      <div className="space-y-4">
+        {Object.entries(applicationsByJob).map(([title, count]) => {
+          const percentage = Math.min(
+            (count / applicationStats.total) * 100,
+            100
+          );
+          return (
+            <div key={title} className="space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium text-gray-700">{title}</span>
+                <span className="text-gray-500">{count} applications</span>
               </div>
-            ) : (
-              <p className="text-gray-500 text-sm">No applications yet.</p>
-            )}
-          </section>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-red-600 h-2 rounded-full"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    ) : (
+      <p className="text-gray-500 text-sm">No applications yet.</p>
+    )}
+  </section>
 
-          {/* ITI Graduates Section */}
-          <section className="bg-white shadow rounded-lg p-6 w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">
-                ITI Graduates Hired
-              </h2>
-              <span className="text-sm text-gray-500">
-                {graduates.length} total hired
+  {/* ITI Graduates Section */}
+  <section className="bg-white shadow rounded-lg p-6 w-full">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-lg font-semibold text-gray-800">
+        ITI Graduates Hired
+      </h2>
+      <span className="text-sm text-gray-500">
+        {graduates.length} total hired
+      </span>
+    </div>
+
+    <div className="space-y-4 max-h-[500px] overflow-y-auto">
+      {graduates.map((grad) => (
+        <div
+          key={grad.id}
+          className="flex items-start gap-3 border-b pb-4"
+        >
+          <Image
+            src={grad.photo}
+            alt={grad.name}
+            width={50}
+            height={50}
+            className="rounded-full object-cover"
+          />
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-gray-900">{grad.name}</h3>
+              <span
+                className={`text-xs font-medium px-2 py-1 rounded ${
+                  grad.status === "Active"
+                    ? "bg-green-100 text-green-600"
+                    : "bg-blue-100 text-blue-600"
+                }`}
+              >
+                {grad.status}
               </span>
             </div>
+            <p className="text-sm text-gray-500">{grad.role}</p>
+            <p className="text-xs text-gray-400">{grad.specialization}</p>
+            <p className="text-sm mt-1">
+              Current:{" "}
+              <span className="text-gray-700">
+                {grad.currentProjects?.length
+                  ? grad.currentProjects.join(", ")
+                  : "No current projects"}
+              </span>
+            </p>
+            {/* <div className="flex items-center gap-4 mt-1">
+              <span className="text-xs text-gray-500">
+                {grad.completedProjects?.length || 0} completed
+              </span>
+            </div> */}
+            <div className="mt-2 flex gap-4">
+              <Link
+                href={grad.profileLink || `/profile/${grad.id || grad.uid}`}
+                className="text-indigo-600 hover:underline text-sm"
+              >
+                View Profile
+              </Link>
 
-            <div className="space-y-4 max-h-[500px] overflow-y-auto">
-              {graduates.map((grad) => (
-                <div
-                  key={grad.id}
-                  className="flex items-start gap-3 border-b pb-4"
-                >
-                  <Image
-                    src={grad.photo}
-                    alt={grad.name}
-                    width={50}
-                    height={50}
-                    className="rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">
-                        {grad.name}
-                      </h3>
-                      <span
-                        className={`text-xs font-medium px-2 py-1 rounded ${
-                          grad.status === "Active"
-                            ? "bg-green-100 text-green-600"
-                            : "bg-blue-100 text-blue-600"
-                        }`}
-                      >
-                        {grad.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500">{grad.role}</p>
-                    <p className="text-xs text-gray-400">
-                      {grad.specialization}
-                    </p>
-                    <p className="text-sm mt-1">
-                      Current:{" "}
-                      <span className="text-gray-700">
-                        {grad.currentProjects?.length
-                          ? grad.currentProjects.join(", ")
-                          : "No current projects"}
-                      </span>
-                    </p>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-xs text-gray-500">
-                        {grad.completedProjects?.length || 0} completed
-                      </span>
-                    </div>
-                    <div className="mt-2 flex gap-4">
-                      <Link
-                        href={
-                          grad.profileLink || `/profile/${grad.id || grad.uid}`
-                        }
-                        className="text-indigo-600 hover:underline text-sm"
-                      >
-                        View Profile
-                      </Link>
+             <button
+  onClick={() => handleStartChat(grad.id)}
+  className="text-green-600 hover:underline text-sm"
+>
+  Send Message
+</button>
 
-                      <button
-                        onClick={() => handleStartChat(grad.id)}
-                        className="text-green-600 hover:underline text-sm"
-                      >
-                        Send Message
-                      </button>
-                    </div>
-                  </div>
-                  <span className="text-xs text-gray-500 whitespace-nowrap">
-                    {grad.date}
-                  </span>
-                </div>
-              ))}
+
             </div>
-          </section>
+          </div>
+          <span className="text-xs text-gray-500 whitespace-nowrap">
+            {grad.date}
+          </span>
         </div>
+      ))}
+    </div>
+  </section>
+</div>
 
-        {/* Recent Activity Section
+{/* Recent Activity Section
 <section className="bg-white shadow p-4 rounded mb-6 max-w-xl mr-auto">
   <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
     <Clock className="text-red-600 w-5 h-5" />
@@ -617,6 +636,8 @@ export default function DashboardPage() {
     <p className="text-gray-500">No activity yet.</p>
   )}
 </section> */}
+
+
       </main>
     </div>
   );
@@ -639,7 +660,9 @@ function StatCard({ title, value, detail, trend, tooltip }) {
             <ArrowRight className="w-4 h-4 text-gray-400 mr-1" />
           )}
           <span
-            className={`${trend === "up" ? "text-green-600" : "text-gray-500"}`}
+            className={`${
+              trend === "up" ? "text-green-600" : "text-gray-500"
+            }`}
           >
             {detail}
           </span>
