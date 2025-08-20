@@ -94,7 +94,6 @@ export default function LoginForm({ onAuthenticationStart }) {
       } else {
         console.log("Login successful, initializing FCM...");
         const session = await getSession();
-        console.log("error");
 
         const userId = session?.user?.id; // تأكد إن الـ ID موجود في session
         if (userId && typeof window !== "undefined" && navigator.onLine) {

@@ -111,16 +111,24 @@ export default function UsersList() {
   const handleViewProfile = (user) => {
     const role = user.role?.toLowerCase();
     if (role === "mentor") {
-      window.location.href = `/mentor/${user.id}`;
+      <Link href={`/mentor/${user.id}`}>
+        <MentorProfile mentorId={user.id} />
+      </Link>;
     } else if (role === "freelancer") {
-      window.location.href = `/profile/${user.id}`;
+      <Link href={`/freelancer/${user.id}`}>
+        <FreelancerProfile freelancerId={user.id} />
+      </Link>;
     } else if (role === "company") {
-      window.location.href = `/companies/${user.id}`;
+      <Link href={`/companies/${user.id}`}>
+        <CompanyProfile companyId={user.id} />
+      </Link>;
     } else {
-      window.location.href = `/profile/${user.id}`;
+      <Link href={`/profile/${user.id}`}>
+        <UserProfile userId={user.id} />
+      </Link>;
     }
   };
-//EDIT HERE 
+  //EDIT HERE
   const getRoleTitle = (role) => {
     switch (role?.toLowerCase()) {
       case "mentor":

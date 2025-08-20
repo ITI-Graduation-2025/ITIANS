@@ -1,4 +1,3 @@
-
 "use client";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -26,7 +25,11 @@ import {
 import { db } from "@/config/firebase";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { Toaster, toast } from "sonner";
-import { initializeFCM, sendPushNotification, sendJobApplicationNotification } from "@/services/notificationService";
+import {
+  initializeFCM,
+  sendPushNotification,
+  sendJobApplicationNotification,
+} from "@/services/notificationService";
 
 // Default styles for Toaster
 const defaultToastStyles = {
@@ -589,7 +592,9 @@ export default function JobDetailsPage() {
       const endIndex = startIndex + mention.length;
 
       const mentionText = mention.slice(1).split(" ")[0];
-      const mentionedUser = users.find((u) => u.display.split(" ")[0] === mentionText);
+      const mentionedUser = users.find(
+        (u) => u.display.split(" ")[0] === mentionText,
+      );
 
       if (startIndex > lastIndex) {
         parts.push(
@@ -653,7 +658,9 @@ export default function JobDetailsPage() {
 
           <div>
             <Link
-              href={job.companyId ? `/company/${job.companyId}` : "/company"}
+              href={
+                job.companyId ? `/companies/${job.companyId}` : "/companies"
+              }
               className="flex items-center gap-2 text-2xl md:text-2xl font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200"
             >
               <FaLink className="w-5 h-5" />
@@ -787,7 +794,9 @@ export default function JobDetailsPage() {
                 <div className="space-y-4 max-h-80 overflow-y-auto">
                   {job.applicants && job.applicants.length > 0 ? (
                     job.applicants.map((applicant) => {
-                      const applicantUser = users.find((u) => u.id === applicant.userId);
+                      const applicantUser = users.find(
+                        (u) => u.id === applicant.userId,
+                      );
                       const profileImage = applicantUser?.profileImage;
                       const userName = applicantUser?.display || "Unknown User";
                       const initial = userName.charAt(0).toUpperCase();
@@ -957,92 +966,94 @@ export default function JobDetailsPage() {
             </motion.div>
           )}
 
-          {userRole !== "company" && job.comments && job.comments.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-3xl font-semibold text-[#901b20] mb-4">
-                Comments
-                <span
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--primary)] text-[#FCEEEF] text-base font-semibold ms-4"
-                  title="Number of Comments"
+          {userRole !== "company" &&
+            job.comments &&
+            job.comments.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-3xl font-semibold text-[#901b20] mb-4">
+                  Comments
+                  <span
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--primary)] text-[#FCEEEF] text-base font-semibold ms-4"
+                    title="Number of Comments"
+                  >
+                    {job.comments.length}
+                  </span>
+                </h3>
+                <div
+                  className={`space-y-4 px-4 ${
+                    job.comments.length > 3 ? "max-h-96 overflow-y-auto" : ""
+                  }`}
                 >
-                  {job.comments.length}
-                </span>
-              </h3>
-              <div
-                className={`space-y-4 px-4 ${
-                  job.comments.length > 3 ? "max-h-96 overflow-y-auto" : ""
-                }`}
-              >
-                {job.comments.map((comment, index) => {
-                  const commenter = users.find(
-                    (user) => user.id === comment.userId,
-                  );
-                  const profileImage = commenter?.profileImage;
-                  const userName = comment.userName || "Unknown User";
-                  const initial = userName.charAt(0).toUpperCase();
-                  const initialColor = getInitialColor(userName);
+                  {job.comments.map((comment, index) => {
+                    const commenter = users.find(
+                      (user) => user.id === comment.userId,
+                    );
+                    const profileImage = commenter?.profileImage;
+                    const userName = comment.userName || "Unknown User";
+                    const initial = userName.charAt(0).toUpperCase();
+                    const initialColor = getInitialColor(userName);
 
-                  return (
-                    <div
-                      key={index}
-                      className="p-4 bg-white border border-gray-200 rounded-xl flex gap-4 relative shadow-sm hover:shadow-md transition-shadow duration-200"
-                    >
-                      {profileImage ? (
-                        <img
-                          src={profileImage}
-                          alt={userName}
-                          className="w-14 h-14 rounded-full object-cover shadow-sm"
-                        />
-                      ) : (
-                        <div
-                          className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-semibold ${initialColor} shadow-sm`}
-                        >
-                          {initial}
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center">
-                          <Link
-                            href={`/profile/${comment.userId}`}
-                            className="text-gray-900 font-bold hover:underline"
+                    return (
+                      <div
+                        key={index}
+                        className="p-4 bg-white border border-gray-200 rounded-xl flex gap-4 relative shadow-sm hover:shadow-md transition-shadow duration-200"
+                      >
+                        {profileImage ? (
+                          <img
+                            src={profileImage}
+                            alt={userName}
+                            className="w-14 h-14 rounded-full object-cover shadow-sm"
+                          />
+                        ) : (
+                          <div
+                            className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-semibold ${initialColor} shadow-sm`}
                           >
-                            {userName}
-                          </Link>
-                          {comment.userId === currentUser?.uid && (
-                            <div className="flex gap-3">
-                              <button
-                                onClick={() => handleEditComment(index)}
-                                className="text-gray-600 hover:text-[#901b20] transition-colors duration-200"
-                                title="Edit"
-                              >
-                                <FaPen />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setIsDeletePopupOpen(true);
-                                  setDeleteCommentIndex(index);
-                                }}
-                                className="text-[#901b20] hover:text-[#6B1519] transition-colors duration-200"
-                                title="Delete"
-                              >
-                                <FaTrash />
-                              </button>
-                            </div>
-                          )}
+                            {initial}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center">
+                            <Link
+                              href={`/profile/${comment.userId}`}
+                              className="text-gray-900 font-bold hover:underline"
+                            >
+                              {userName}
+                            </Link>
+                            {comment.userId === currentUser?.uid && (
+                              <div className="flex gap-3">
+                                <button
+                                  onClick={() => handleEditComment(index)}
+                                  className="text-gray-600 hover:text-[#901b20] transition-colors duration-200"
+                                  title="Edit"
+                                >
+                                  <FaPen />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setIsDeletePopupOpen(true);
+                                    setDeleteCommentIndex(index);
+                                  }}
+                                  className="text-[#901b20] hover:text-[#6B1519] transition-colors duration-200"
+                                  title="Delete"
+                                >
+                                  <FaTrash />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-gray-800 leading-7 font-medium">
+                            {renderCommentText(comment.text)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatDate(comment.timestamp)}
+                          </p>
                         </div>
-                        <p className="text-gray-800 leading-7 font-medium">
-                          {renderCommentText(comment.text)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {formatDate(comment.timestamp)}
-                        </p>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </motion.div>
       </div>
 
