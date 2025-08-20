@@ -88,6 +88,7 @@ export default function LoginForm({ onAuthenticationStart }) {
         }
       } else {
         const session = await getSession();
+        console.log("error");
 
         const userId = session?.user?.id; // تأكد إن الـ ID موجود في session
         if (userId) {
