@@ -317,11 +317,8 @@ const downloadFile = async (url, filename) => {
             link.click();
             document.body.removeChild(link);
             
-            console.log("Document download started for:", filename, "using URL:", downloadUrl);
             return;
           } catch (directError) {
-            console.log("Direct download failed, trying blob method...");
-            
             // Second attempt: blob download
             const response = await fetch(downloadUrl, {
               mode: 'cors',
@@ -329,7 +326,6 @@ const downloadFile = async (url, filename) => {
             });
             
             if (!response.ok) {
-              console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
               continue; // Try next URL
             }
             
@@ -346,7 +342,6 @@ const downloadFile = async (url, filename) => {
             // Clean up the URL
             window.URL.revokeObjectURL(blobUrl);
             
-            console.log("Document blob download started for:", filename, "using URL:", downloadUrl);
             return;
           }
         } else {
@@ -361,11 +356,8 @@ const downloadFile = async (url, filename) => {
             link.click();
             document.body.removeChild(link);
             
-            console.log("Image download started for:", filename, "using URL:", downloadUrl);
             return;
           } catch (directError) {
-            console.log("Direct download failed, trying blob method...");
-            
             // Second attempt: blob download
             const response = await fetch(downloadUrl, {
               mode: 'cors',
@@ -373,7 +365,6 @@ const downloadFile = async (url, filename) => {
             });
             
             if (!response.ok) {
-              console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
               continue; // Try next URL
             }
             
@@ -390,12 +381,10 @@ const downloadFile = async (url, filename) => {
             // Clean up the URL
             window.URL.revokeObjectURL(blobUrl);
             
-            console.log("Image blob download started for:", filename, "using URL:", downloadUrl);
             return;
           }
         }
       } catch (urlError) {
-        console.log(`Failed to download from ${downloadUrl}:`, urlError);
         continue; // Try next URL
       }
     }

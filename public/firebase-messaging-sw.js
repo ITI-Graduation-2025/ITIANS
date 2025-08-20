@@ -27,8 +27,6 @@ const messaging = firebase.messaging();
 
 // استقبال الإشعارات في الخلفية (بدون استخدام ?.)
 messaging.onBackgroundMessage((payload) => {
-  console.log('📥 Background Message:', payload);
-
   // تجنب استخدام Optional Chaining (?.) في الـ Service Worker
   const notification = payload.notification;
   const title = notification ? notification.title || 'Notification' : 'Notification';

@@ -16,7 +16,6 @@ export const metadata = {
 
 export default async function DashboardLayout({ children }) {
   const users = await getAllUsers();
-  console.log(users);
 
   return (
     <div className={inter.className}>

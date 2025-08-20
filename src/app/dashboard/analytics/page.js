@@ -102,7 +102,6 @@ export default function AnalyticsPage() {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      console.log("Fetching analytics data...");
 
       // Fetch all data
       const [
@@ -124,17 +123,6 @@ export default function AnalyticsPage() {
         getAllChats(),
         getAllNotifications(),
       ]);
-
-      console.log("Raw data counts:", {
-        users: users?.length || 0,
-        jobs: jobs?.length || 0,
-        sessions: sessions?.length || 0,
-        bookedSessions: bookedSessions?.length || 0,
-        sessionRequests: sessionRequests?.length || 0,
-        posts: posts?.length || 0,
-        chats: chats?.length || 0,
-        notifications: notifications?.length || 0,
-      });
 
       // Simple analytics calculation
       const analyticsData = {
@@ -170,8 +158,6 @@ export default function AnalyticsPage() {
         unreadNotifications:
           notifications?.filter((n) => n.read === false)?.length || 0,
       };
-
-      console.log("Calculated analytics:", analyticsData);
 
       // Add advanced analytics
       const advancedAnalytics = {

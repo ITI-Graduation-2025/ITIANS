@@ -77,8 +77,6 @@ const messaging = firebase.messaging();
 
 // استقبال الإشعارات في الخلفية (بدون استخدام ?.)
 messaging.onBackgroundMessage((payload) => {
-  console.log('📥 Background Message:', payload);
-
   // تجنب استخدام Optional Chaining (?.) في الـ Service Worker
   const notification = payload.notification;
   const title = notification ? notification.title || 'Notification' : 'Notification';
@@ -100,7 +98,6 @@ messaging.onBackgroundMessage((payload) => {
   const filePath = join(process.cwd(), "public", "firebase-messaging-sw.js");
   try {
     await writeFile(filePath, workerContent, "utf8");
-    console.log("✅  public/firebase-messaging-sw.js");
   } catch (error) {
     console.error("❌ Service Worker:", error);
   }

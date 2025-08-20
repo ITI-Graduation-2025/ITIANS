@@ -83,7 +83,7 @@ export default function ForgotPassword() {
         handleCodeInApp: true, // مهم: true لاستخدام صفحتنا مباشرة
       })
         .then(() => {
-          console.log("Password reset email sent to:", data.email);
+          // Password reset email sent to
         })
         .catch((error) => {
           toast.error("Failed to send reset email. Please try again.");
@@ -92,14 +92,7 @@ export default function ForgotPassword() {
 
       // In development, log the reset link to console
       if (process.env.NODE_ENV === "development") {
-        console.log("=== PASSWORD RESET DEBUG ===");
-        console.log("Email:", data.email);
-        console.log("Redirect URL:", redirectUrl);
-        console.log("Environment:", process.env.NODE_ENV);
-        console.log("NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL);
-        console.log("Note: In development, emails are not actually sent");
-        console.log("In production, check your email inbox and spam folder");
-        console.log("================================");
+        // Password reset debug info
       }
 
       toast.success("Password reset email sent! Check your inbox.");

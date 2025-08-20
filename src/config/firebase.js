@@ -79,7 +79,7 @@ export async function initializeFCM(userId) {
         registration = await navigator.serviceWorker.register(
           "/firebase-messaging-sw.js",
         );
-        console.log("Service Worker registered:", registration);
+        // Service Worker registered successfully
       }
     }
 
@@ -99,7 +99,7 @@ export async function initializeFCM(userId) {
         fcmToken: currentToken,
         fcmTokenUpdatedAt: new Date().toISOString(),
       });
-      console.log("FCM token stored successfully:", currentToken);
+      // FCM token stored successfully
       return currentToken;
     } else {
       console.warn("No FCM token available.");
@@ -120,7 +120,7 @@ export async function refreshFcmToken(userId) {
   try {
     // Delete old token
     await deleteToken(messaging);
-    console.log("Old FCM token deleted.");
+    // Old FCM token deleted
 
     // Get new token
     const newToken = await getToken(messaging, {
@@ -136,7 +136,7 @@ export async function refreshFcmToken(userId) {
         fcmToken: newToken,
         fcmTokenUpdatedAt: new Date().toISOString(),
       });
-      console.log("FCM token refreshed:", newToken);
+      // FCM token refreshed
       return newToken;
     } else {
       console.warn("No new FCM token available.");
@@ -156,8 +156,7 @@ export function setupForegroundNotifications(callback) {
   }
 
   const unsubscribe = onMessage(messaging, (payload) => {
-    console.log("Foreground notification received:", payload);
-    // Pass notification to callback for in-app handling
+    // Foreground notification received
     callback(payload);
   });
 

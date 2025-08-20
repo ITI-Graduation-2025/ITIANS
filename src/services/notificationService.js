@@ -322,7 +322,7 @@ export async function sendPushNotification({ token, title, body, data }) {
 
     const result = await response.json();
     if (result.success) {
-      console.log("✅ Push notification sent successfully");
+      // console.log("✅ Push notification sent successfully");
     } else {
       console.error("❌ FCM Error:", result.error);
     }
@@ -497,9 +497,9 @@ export async function markAllNotificationsAsRead(userId) {
       }),
     );
     await Promise.all(updatePromises);
-    console.log(
-      `Marked ${updatePromises.length} notifications as read for user ${userId}`,
-    );
+    // console.log(
+    //   `Marked ${updatePromises.length} notifications as read for user ${userId}`,
+    // );
   } catch (error) {
     console.error("Error marking all notifications as read:", error);
   }

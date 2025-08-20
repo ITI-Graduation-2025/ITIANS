@@ -29,15 +29,7 @@ const FreelancerProfile = ({ user, refetchUser }) => {
   useEffect(() => {
     async function fetchPosts() {
       if (user && user.id) {
-        console.log("Fetching posts for user:", {
-          userId: user.id,
-          userUid: user.uid,
-          userName: user.name || user.fullName,
-          userData: user
-        });
-        
         const allPosts = await getAllPosts();
-        console.log("All posts:", allPosts.map(p => ({ id: p.id, authorId: p.authorId, author: p.author })));
         
         // Filter posts by both user.id and user.uid to handle potential ID format mismatches
         // Also check if there's a uid field in the user document data
@@ -47,36 +39,8 @@ const FreelancerProfile = ({ user, refetchUser }) => {
           const matchesDocumentUid = post.authorId === user.uid; // Check if user document has uid field
           const isMatch = matchesId || matchesUid || matchesDocumentUid;
           
-          if (isMatch) {
-            console.log("Post matches user:", { 
-              postId: post.id, 
-              authorId: post.authorId, 
-              author: post.author,
-              matchType: matchesId ? 'id' : matchesUid ? 'uid' : 'documentUid'
-            });
-          }
-          
           return isMatch;
         });
-        
-        console.log("Filtered posts count:", filteredPosts.length);
-        console.log("User ID comparison:", {
-          userId: user.id,
-          userUid: user.uid,
-          postAuthorIds: allPosts.map(p => p.authorId),
-          hasMatchingPosts: filteredPosts.length > 0
-        });
-        
-        // If no posts found, log additional debugging info
-        if (filteredPosts.length === 0 && allPosts.length > 0) {
-          console.warn("No posts found for user. Debugging info:", {
-            userId: user.id,
-            userUid: user.uid,
-            totalPosts: allPosts.length,
-            samplePostAuthorIds: allPosts.slice(0, 5).map(p => p.authorId),
-            userObject: user
-          });
-        }
         
         setUserPosts(filteredPosts);
       }

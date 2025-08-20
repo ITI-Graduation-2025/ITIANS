@@ -41,7 +41,7 @@ export function getAdmin() {
           projectId = serviceAccount.project_id;
           clientEmail = serviceAccount.client_email;
           privateKey = serviceAccount.private_key;
-          console.log("✅ Service account loaded from:", serviceAccountPath);
+          // Service account loaded from
           break;
         }
       }
@@ -86,7 +86,7 @@ export function getAdmin() {
     });
 
     adminInstance = admin;
-    console.log("✅ Firebase Admin initialized successfully");
+    // Firebase Admin initialized successfully
     return adminInstance;
   } catch (error) {
     console.error("❌ Failed to initialize Firebase Admin:", error.message);

@@ -114,7 +114,7 @@ export default function Dashboard() {
         setMentors(mentorsData);
         setCompanies(companiesData);
       } catch (error) {
-        console.log("Error fetching data:", error);
+        // Error fetching data
       } finally {
         setLoading(false);
       }

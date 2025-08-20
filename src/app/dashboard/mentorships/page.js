@@ -294,9 +294,6 @@ export default function MentorshipsPage() {
     },
   ].filter((item) => item.value > 0); // Only show non-zero values
 
-  console.log("Stats for chart:", stats);
-  console.log("Session status data:", sessionStatusData);
-
   // Load data
   useEffect(() => {
     const loadData = async () => {
@@ -307,9 +304,6 @@ export default function MentorshipsPage() {
           getAllMentorshipRequests(),
           getMentorshipStatistics(),
         ]);
-
-        console.log("Sessions loaded:", sessionsData);
-        console.log("Stats loaded:", statsData);
 
         setSessions(sessionsData);
         setRequests(requestsData);

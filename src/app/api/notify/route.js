@@ -39,14 +39,7 @@ export async function POST(request) {
       },
     };
 
-    console.log("📤 Sending notification:", {
-      title,
-      body,
-      token: token.substring(0, 20) + "...",
-    });
-
     const response = await admin.messaging().send(message);
-    console.log("✅ Push notification sent successfully:", response);
 
     return NextResponse.json(
       {

@@ -196,8 +196,6 @@ export default function SessionDetails() {
       return;
     }
     try {
-      console.log(session.id, currentUser.uid, session.freelancerId);
-
       await cancelSession(session.id, currentUser.uid, session.freelancerId);
       toast.success("Session cancelled successfully!");
       router.push("/mentor");

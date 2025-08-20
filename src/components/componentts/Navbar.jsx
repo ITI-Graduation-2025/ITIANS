@@ -105,7 +105,6 @@ export default function Navbar({ onSearch }) {
                 jobType: doc.data().type, // Original job type (Full Time, Part Time)
                 ...doc.data(),
               };
-              console.log("Job doc:", doc.id, jobData); // للتأكد من البيانات
               return jobData;
             })
             .filter((job) => {
@@ -119,8 +118,6 @@ export default function Navbar({ onSearch }) {
               return titleMatch || companyMatch || descriptionMatch;
             })
             .slice(0, scope === "jobs" ? 20 : 5); // تحديد عدد النتائج
-
-          console.log("Jobs results:", jobsResults); // للتأكد من النتائج
 
           if (scope === "all") {
             results.push(...jobsResults);
@@ -211,7 +208,6 @@ export default function Navbar({ onSearch }) {
           return aName.localeCompare(bName);
         });
 
-        console.log("Final results:", results); // للتأكد من النتائج النهائية
         setSearchResults(results);
       } catch (error) {
         console.error("Search error:", error);
@@ -252,9 +248,6 @@ export default function Navbar({ onSearch }) {
         console.error("Invalid result or missing ID:", result);
         return;
       }
-
-      // Log the result for debugging
-      console.log("Clicked result:", result);
 
       if (result.searchType === "messages" || result.type === "messages") {
         if (currentUser) {
@@ -298,7 +291,6 @@ export default function Navbar({ onSearch }) {
             break;
         }
 
-        console.log("Navigating to:", targetPath);
         router.push(targetPath);
       }
     } catch (error) {

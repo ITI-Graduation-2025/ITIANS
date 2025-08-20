@@ -77,5 +77,3 @@ export const safeTimestampToDate = (timestamp) => {
     return null;
   }
 };
-
-

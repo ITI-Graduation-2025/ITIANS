@@ -651,33 +651,6 @@ export const getMentorshipStatistics = async () => {
       })(),
     };
 
-    // Debug: Log data to see what statuses exist
-    console.log(
-      "Sessions data:",
-      sessions.map((s) => ({ id: s.id, status: s.status, title: s.title })),
-    );
-    console.log(
-      "Booked sessions data:",
-      bookedSessions.map((s) => ({
-        id: s.id,
-        status: s.status,
-        title: s.title,
-      })),
-    );
-    console.log(
-      "Session requests data:",
-      sessionRequests.map((r) => ({
-        id: r.id,
-        status: r.status,
-        menteeId: r.menteeId,
-      })),
-    );
-    console.log(
-      "All sessions data:",
-      allSessions.map((s) => ({ id: s.id, status: s.status, title: s.title })),
-    );
-    console.log("Calculated stats:", stats);
-
     return stats;
   } catch (error) {
     console.error("Error fetching mentorship statistics:", error);

@@ -118,7 +118,7 @@ export const ResumeSection = ({
             toast.success("Resume downloaded successfully!");
             return;
           } catch (directError) {
-            console.log("Direct download failed, trying blob method...");
+            // Direct download failed, trying blob method
             
             // Second attempt: blob download
             const response = await fetch(downloadUrl, {
@@ -127,7 +127,7 @@ export const ResumeSection = ({
             });
             
             if (!response.ok) {
-              console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
+              // Blob fetch failed
               continue; // Try next URL
             }
             
@@ -148,7 +148,7 @@ export const ResumeSection = ({
             return;
           }
         } catch (urlError) {
-          console.log(`Failed to download from ${downloadUrl}:`, urlError);
+          // Failed to download
           continue; // Try next URL
         }
       }

@@ -27,8 +27,7 @@ export default function MentorProfileForm({
   const router = useRouter();
   const { data: session, update: updateSession } = useSession();
   const { user, refetchUser } = useUserContext();
-  // console.log(session?.user, "session");
-  // console.log(refetchUser, "refetchUser");
+  // Session and refetchUser data
   // const mentor = getUser(user?.id);
   // if (!mentor || mentor === "User not found") {
   //   notFound(); // Show 404 page
@@ -36,8 +35,11 @@ export default function MentorProfileForm({
   // if (!mentor?.profileUnderReview) {
   //   redirect("/pending-review");
   // }
+  // User data
   // console.log(user, "user");
-  console.log(session, "data");
+  // console.log(session, "data");
+  // Data
+  // console.log(data);
 
   const form = useForm({
     mode: "onChange",
@@ -134,7 +136,7 @@ export default function MentorProfileForm({
   };
 
   const onSubmit = async (data) => {
-    console.log(data);
+    // console.log(data);
 
     if (currentStep !== TOTAL_STEPS) {
       toast.error("Please complete all steps before submitting.");

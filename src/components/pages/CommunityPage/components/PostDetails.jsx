@@ -234,7 +234,6 @@ export default function PostDetails({ post, currentUser }) {
         });
         
         if (!response.ok) {
-          console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
           return;
         }
         
@@ -251,7 +250,6 @@ export default function PostDetails({ post, currentUser }) {
         // Clean up the URL
         window.URL.revokeObjectURL(blobUrl);
         
-        console.log("Document blob download started for:", filename, "using URL:", downloadUrl);
         return;
       } else {
         // For images, try direct download first, then fallback to blob
@@ -265,10 +263,9 @@ export default function PostDetails({ post, currentUser }) {
           link.click();
           document.body.removeChild(link);
           
-          console.log("Image download started for:", filename, "using URL:", downloadUrl);
           return;
         } catch (directError) {
-          console.log("Direct download failed, trying blob method:", directError);
+          return;
           
           // Fallback to blob method
           const response = await fetch(downloadUrl, {
@@ -277,7 +274,6 @@ export default function PostDetails({ post, currentUser }) {
           });
           
           if (!response.ok) {
-            console.log(`Blob fetch failed for ${downloadUrl}: ${response.status}`);
             return;
           }
           
@@ -294,7 +290,7 @@ export default function PostDetails({ post, currentUser }) {
           // Clean up the URL
           window.URL.revokeObjectURL(blobUrl);
           
-          console.log("Image blob download started for:", filename, "using URL:", downloadUrl);
+          return;
         }
       }
     } catch (error) {

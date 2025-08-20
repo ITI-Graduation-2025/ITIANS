@@ -38,11 +38,9 @@ export default function RejectedPage() {
   // Notification system
   useEffect(() => {
     if (user?.id) {
-      console.log("🔧 Setting up notification listener for user:", user.id);
       deleteOldNotifications(user.id);
 
       const unsubscribe = listenToNotifications(user.id, (notifications) => {
-        console.log("📥 Received notifications:", notifications.length);
         setNotifications(notifications);
 
         // Check for admin action notifications
@@ -53,10 +51,7 @@ export default function RejectedPage() {
         );
 
         if (adminNotifications.length > 0) {
-          console.log("🎉 Admin action detected, showing notification");
           const notification = adminNotifications[0];
-          console.log("🔍 Notification type:", notification?.type);
-          console.log("🔍 Notification message:", notification?.message);
 
           if (notification.type === "account_suspended") {
             toast.error(

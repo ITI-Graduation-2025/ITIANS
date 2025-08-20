@@ -61,7 +61,7 @@ export default function CompanyProfile() {
             ...companyData
           });
         } else {
-          console.log('No company profile found for:', companyId);
+          // No company profile found for
         }
       } catch (error) {
         console.error('Error fetching company data:', error);

@@ -1,16 +1,16 @@
 //src/services/chatbotService.js
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  limit,
   getDocs,
   doc,
   getDoc,
   updateDoc,
-  serverTimestamp 
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 
@@ -19,7 +19,7 @@ export const sendChatbotMessage = async (prompt, userId = null) => {
   try {
     // Enhance the prompt with context for better responses
     const enhancedPrompt = enhancePromptWithContext(prompt);
-    
+
     // Create a new document in the "generate" collection
     const generateRef = await addDoc(collection(db, "generate"), {
       prompt: enhancedPrompt,
@@ -27,15 +27,13 @@ export const sendChatbotMessage = async (prompt, userId = null) => {
       createTime: serverTimestamp(),
       startTime: serverTimestamp(),
       status: {
-        state: "PENDING"
-      }
+        state: "PENDING",
+      },
     });
-
-    console.log("Chatbot message sent, document ID:", generateRef.id);
 
     // Poll for the response
     const response = await pollForResponse(generateRef.id);
-    
+
     // If we have a userId, we can optionally store the conversation
     if (userId) {
       await storeConversation(userId, prompt, response);
@@ -44,13 +42,13 @@ export const sendChatbotMessage = async (prompt, userId = null) => {
     return {
       success: true,
       response: response,
-      messageId: generateRef.id
+      messageId: generateRef.id,
     };
   } catch (error) {
     console.error("Error sending chatbot message:", error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -105,7 +103,7 @@ const pollForResponse = async (messageId, maxAttempts = 30) => {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        
+
         if (data.status?.state === "COMPLETED" && data.response) {
           return data.response;
         } else if (data.status?.state === "FAILED") {
@@ -114,15 +112,15 @@ const pollForResponse = async (messageId, maxAttempts = 30) => {
       }
 
       // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
       attempts++;
     } catch (error) {
       console.error("Error polling for response:", error);
       attempts++;
-      
+
       // If it's a network error, wait longer before retrying
-      if (error.code === 'unavailable' || error.code === 'deadline-exceeded') {
-        await new Promise(resolve => setTimeout(resolve, pollInterval * 2));
+      if (error.code === "unavailable" || error.code === "deadline-exceeded") {
+        await new Promise((resolve) => setTimeout(resolve, pollInterval * 2));
       }
     }
   }
@@ -138,7 +136,7 @@ const storeConversation = async (userId, prompt, response) => {
       prompt: prompt,
       response: response,
       timestamp: serverTimestamp(),
-      type: "chatbot"
+      type: "chatbot",
     });
   } catch (error) {
     console.error("Error storing conversation:", error);
@@ -153,7 +151,7 @@ export const getChatbotHistory = async (userId, limitCount = 20) => {
       where("userId", "==", userId),
       where("type", "==", "chatbot"),
       orderBy("timestamp", "desc"),
-      limit(limitCount)
+      limit(limitCount),
     );
 
     const querySnapshot = await getDocs(q);
@@ -162,7 +160,7 @@ export const getChatbotHistory = async (userId, limitCount = 20) => {
     querySnapshot.forEach((doc) => {
       conversations.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       });
     });
 
@@ -187,6 +185,6 @@ export const getSuggestedPrompts = () => {
     "إيه الخدمات المتاحة للمستقلين؟",
     "What are the platform features?",
     "كيف أصبح منتور على المنصة؟",
-    "How do companies post jobs?"
+    "How do companies post jobs?",
   ];
 };

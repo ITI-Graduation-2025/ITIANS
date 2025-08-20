@@ -85,12 +85,10 @@ useEffect(() => {
 
       querySnapshot.forEach((docSnap) => {
         const job = docSnap.data();
-        console.log("Job:", job.title, job.applicants); 
 
         const applicants = Array.isArray(job.applicants) ? job.applicants : [];
 
         applicants.forEach((applicant) => {
-          console.log("Applicant:", applicant); 
 
           if (
             applicant &&
@@ -105,7 +103,6 @@ useEffect(() => {
         });
       });
 
-      console.log("Total Approved Freelancers:", totalApproved);
       setFreelancersCount(totalApproved);
     } catch (err) {
       console.error("Error fetching freelancers:", err);

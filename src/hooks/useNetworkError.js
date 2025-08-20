@@ -85,8 +85,7 @@ export const useNetworkError = () => {
           setIsRetrying(false);
           return result;
         } catch (error) {
-          console.log(`Retry attempt ${attempt} failed:`, error);
-
+          // Retry attempt failed
           if (attempt === maxRetries) {
             handleError(error, "retry");
             setIsRetrying(false);

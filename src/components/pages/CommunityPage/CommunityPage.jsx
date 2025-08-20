@@ -49,7 +49,8 @@ export default function CommunityPage() {
   }, []);
 
   useEffect(() => {
-    console.log("Current user for posting:", currentUser);
+    // Current user for posting
+    // console.log("Current user for posting:", currentUser);
   }, [currentUser]);
 
   const filteredPosts = useMemo(() => {

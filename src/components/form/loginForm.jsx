@@ -59,7 +59,6 @@ export default function LoginForm({ onAuthenticationStart }) {
   };
 
   const handleLogin = async (data) => {
-    // console.log(data);
     setIsLoading(true);
 
     // Call onAuthenticationStart to show loading screen
@@ -81,7 +80,6 @@ export default function LoginForm({ onAuthenticationStart }) {
               ? "Incorrect password. Please try again."
               : result.error || "Invalid email or password";
         toast.error(errorMessage);
-        console.log("SignIn error:", result.error);
         setIsLoading(false);
         if (onAuthenticationStart) {
           onAuthenticationStart(false);
@@ -93,7 +91,6 @@ export default function LoginForm({ onAuthenticationStart }) {
         if (userId) {
           await initializeFCM(userId); // استدعاء initializeFCM بـ userId
         }
-        // console.log(session.user.role)
         const userRole = session?.user?.role;
         const verificationStatus = session?.user?.verificationStatus;
         const profileCompleted = session?.user?.profileCompleted;
@@ -138,7 +135,6 @@ export default function LoginForm({ onAuthenticationStart }) {
       }
     } catch (error) {
       toast.error(error.message || "Authentication failed");
-      console.log(error);
       setIsLoading(false);
       if (onAuthenticationStart) {
         onAuthenticationStart(false);
@@ -149,7 +145,7 @@ export default function LoginForm({ onAuthenticationStart }) {
   const handleErrors = (errors) => {
     // Only log validation errors, not form submission errors
     if (Object.keys(errors).length > 0) {
-      console.log("Form validation errors:", errors);
+      // Form validation errors
     }
   };
 

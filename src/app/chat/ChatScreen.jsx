@@ -15,17 +15,14 @@ export default function ChatScreen({ chatId, currentUser }) {
   const [isUserDataFetched, setIsUserDataFetched] = useState(false);
 
   useEffect(() => {
-    console.log("Fetching initial data for chatId:", chatId);
-    console.log("Current user:", currentUser);
-
-    // Initial fetch for other user's data
+    // Fetching initial data for chatId
     const fetchInitialData = async () => {
       try {
         const chatRef = doc(db, "chats", chatId);
         const chatSnap = await getDoc(chatRef);
 
         if (!chatSnap.exists()) {
-          console.log("Chat document does not exist for chatId:", chatId);
+          // Chat document does not exist for chatId
           setOtherUser({
             name: "Chat Not Found",
             profileImage: "/default--avatar.avif",
@@ -35,20 +32,20 @@ export default function ChatScreen({ chatId, currentUser }) {
         }
 
         const data = chatSnap.data();
-        console.log("Initial chat data:", data);
+        // Initial chat data
 
         if (data?.participants) {
           const otherUserId = data.participants.find(
             (uid) => uid !== currentUser.uid,
           );
-          console.log("Other user ID:", otherUserId);
+          // Other user ID
 
           if (otherUserId) {
             const userRef = doc(db, "users", otherUserId);
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
               const userData = userSnap.data();
-              console.log("Initial user data:", userData);
+              // Initial user data
               setOtherUser({
                 name:
                   userData.name && userData.name.trim()
@@ -57,24 +54,21 @@ export default function ChatScreen({ chatId, currentUser }) {
                 profileImage: userData.profileImage || "/default--avatar.avif",
               });
             } else {
-              console.log(
-                "No user document found for otherUserId:",
-                otherUserId,
-              );
+              // No user document found for otherUserId
               setOtherUser({
                 name: "Unknown",
                 profileImage: "/default--avatar.avif",
               });
             }
           } else {
-            console.log("No other user ID found in participants");
+            // No other user ID found in participants
             setOtherUser({
               name: "Unknown",
               profileImage: "/default--avatar.avif",
             });
           }
         } else {
-          console.log("No participants found in initial data");
+          // No participants found in initial data
           setOtherUser({
             name: "Unknown",
             profileImage: "/default--avatar.avif",
@@ -99,12 +93,12 @@ export default function ChatScreen({ chatId, currentUser }) {
       chatRef,
       (doc) => {
         if (!doc.exists()) {
-          console.log("Chat document no longer exists for chatId:", chatId);
+          // Chat document no longer exists for chatId
           return;
         }
 
         const data = doc.data();
-        console.log("Realtime chat data:", data);
+        // Realtime chat data
 
         // Handle typing
         if (data?.typing && data.typing !== currentUser.uid) {
