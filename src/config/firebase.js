@@ -96,12 +96,12 @@ export async function initializeFCM(userId) {
     });
 
     if (currentToken) {
-      // Store token in Firestore
+      // Store token in Firestore using the existing connection
       await updateDoc(doc(db, "users", userId), {
         fcmToken: currentToken,
         fcmTokenUpdatedAt: new Date().toISOString(),
       });
-      // FCM token stored successfully
+      console.log("FCM token stored successfully");
       return currentToken;
     } else {
       console.warn("No FCM token available.");
@@ -208,25 +208,9 @@ export async function cleanupFirestore() {
     // تنظيف جميع المستمعين النشطة
     cleanupAllListeners();
 
-    // محاولة تنظيف Firestore connections
-    if (db && db._delegate && db._delegate._firestoreClient) {
-      const client = db._delegate._firestoreClient;
-      if (client._listeners) {
-        console.log("Cleaning up Firestore internal listeners...");
-        Object.keys(client._listeners).forEach((key) => {
-          try {
-            client._listeners[key].forEach((listener) => {
-              if (listener && typeof listener.close === "function") {
-                listener.close();
-              }
-            });
-          } catch (e) {
-            console.log("Error closing listener:", e);
-          }
-        });
-      }
-    }
-    console.log("Firestore connections cleaned up successfully");
+    // لا نقوم بإغلاق اتصال Firestore الأساسي لأن NextAuth يحتاجه
+    // فقط نقوم بتنظيف المستمعين الداخلية
+    console.log("Firestore listeners cleaned up successfully");
   } catch (error) {
     console.log("Firestore cleanup error:", error);
   }

@@ -49,24 +49,24 @@ export default function LoginForm({ onAuthenticationStart }) {
 
   // Cleanup function for Firestore connections
   useEffect(() => {
-    // تنظيف عند unmount
+    // تنظيف عند unmount - فقط المستمعين وليس الاتصال الأساسي
     return () => {
-      console.log("Component unmounting, cleaning up...");
-      cleanupFirestore();
+      console.log("Component unmounting, cleaning up listeners only...");
+      cleanupAllListeners();
     };
   }, []);
 
   // تنظيف عند إغلاق الصفحة
   useEffect(() => {
     const handleBeforeUnload = () => {
-      console.log("Page unloading, cleaning up...");
-      cleanupFirestore();
+      console.log("Page unloading, cleaning up listeners only...");
+      cleanupAllListeners();
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        console.log("Page hidden, cleaning up...");
-        cleanupFirestore();
+        console.log("Page hidden, cleaning up listeners only...");
+        cleanupAllListeners();
       }
     };
 
@@ -105,9 +105,8 @@ export default function LoginForm({ onAuthenticationStart }) {
     }
 
     try {
-      // تنظيف جميع المستمعين والاتصالات القديمة قبل تسجيل الدخول
-      console.log("Cleaning up before login...");
-      await cleanupFirestore();
+      // لا نقوم بتنظيف Firestore قبل تسجيل الدخول لأن NextAuth يحتاجه
+      console.log("Starting login process...");
 
       const result = await signIn("credentials", {
         email: data.email,
@@ -190,8 +189,8 @@ export default function LoginForm({ onAuthenticationStart }) {
   const handleLogout = async () => {
     try {
       console.log("Logging out, cleaning up listeners...");
-      // تنظيف جميع المستمعين والاتصالات
-      await cleanupFirestore();
+      // تنظيف جميع المستمعين النشطة فقط
+      cleanupAllListeners();
 
       // تسجيل الخروج من NextAuth
       await signOut({ redirect: false });
