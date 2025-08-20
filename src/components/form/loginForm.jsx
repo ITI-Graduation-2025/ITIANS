@@ -8,13 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn, getSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import {
-  auth,
-  initializeFCM,
-  cleanupFirestore,
-  cleanupAllListeners,
-} from "@/config/firebase";
+// Removed direct Firebase sign-in usage to avoid conflict with NextAuth
+import { auth, initializeFCM, cleanupAllListeners } from "@/config/firebase";
 import { toast } from "sonner";
 import ForgotPassword from "@/components/ForgotPassword";
 
@@ -47,37 +42,7 @@ export default function LoginForm({ onAuthenticationStart }) {
     }
   }, []);
 
-  // Cleanup function for Firestore connections
-  useEffect(() => {
-    // تنظيف عند unmount - فقط المستمعين وليس الاتصال الأساسي
-    return () => {
-      console.log("Component unmounting, cleaning up listeners only...");
-      cleanupAllListeners();
-    };
-  }, []);
-
-  // تنظيف عند إغلاق الصفحة
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      console.log("Page unloading, cleaning up listeners only...");
-      cleanupAllListeners();
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        console.log("Page hidden, cleaning up listeners only...");
-        cleanupAllListeners();
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
+  // تم إزالة عمليات تنظيف المستمعين العامة من صفحة تسجيل الدخول لتجنب قطع الاتصالات وإعادة الاشتراك المتكرر
 
   const registerOptions = {
     email: {
@@ -132,7 +97,7 @@ export default function LoginForm({ onAuthenticationStart }) {
         console.log("error");
 
         const userId = session?.user?.id; // تأكد إن الـ ID موجود في session
-        if (userId) {
+        if (userId && typeof window !== "undefined" && navigator.onLine) {
           await initializeFCM(userId); // استدعاء initializeFCM بـ userId
         }
         const userRole = session?.user?.role;

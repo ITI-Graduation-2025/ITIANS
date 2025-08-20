@@ -5,6 +5,8 @@ import {
   doc,
   updateDoc,
   connectFirestoreEmulator,
+  enableNetwork,
+  disableNetwork,
 } from "firebase/firestore";
 import {
   getMessaging,
@@ -33,30 +35,20 @@ export const auth = getAuth(app);
 // Initialize Cloud Firestore with improved settings
 export const db = getFirestore(app);
 
-// Configure Firestore settings for better network handling
+// Pause Firestore network when offline to avoid repeated terminate/connect spam
 if (typeof window !== "undefined") {
-  // Only run in browser environment
-  const firestoreSettings = {
-    // تقليل عدد الاتصالات المتزامنة
-    maxConcurrentConnections: 1,
-    // إيقاف الاتصال المستمر
-    experimentalForceLongPolling: false,
-    // تقليل حجم الكاش
-    cacheSizeBytes: 10 * 1024 * 1024, // 10MB فقط
-    // إيقاف التحديث التلقائي
-    ignoreUndefinedProperties: true,
-    // تقليل timeout
-    timeoutSeconds: 15,
+  const handleOffline = () => {
+    try {
+      disableNetwork(db);
+    } catch {}
   };
-
-  // Apply settings if possible
-  try {
-    if (db.settings) {
-      db.settings(firestoreSettings);
-    }
-  } catch (error) {
-    console.warn("Could not apply all Firestore settings:", error);
-  }
+  const handleOnline = () => {
+    try {
+      enableNetwork(db);
+    } catch {}
+  };
+  window.addEventListener("offline", handleOffline);
+  window.addEventListener("online", handleOnline);
 }
 
 // Initialize Firebase Cloud Messaging (only in browser environment)
