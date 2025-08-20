@@ -73,16 +73,6 @@ export async function initializeFCM(userId) {
   }
 
   try {
-    // إغلاق الاتصالات القديمة أولاً
-    if (db) {
-      try {
-        await db.terminate();
-        console.log("Old Firestore connections terminated");
-      } catch (error) {
-        console.log("Terminating old connections:", error);
-      }
-    }
-
     let registration;
     if ("serviceWorker" in navigator) {
       registration = await navigator.serviceWorker.getRegistration();
@@ -106,10 +96,8 @@ export async function initializeFCM(userId) {
     });
 
     if (currentToken) {
-      // إعادة إنشاء الاتصال مع Firestore
-      const newDb = getFirestore(app);
-
-      await updateDoc(doc(newDb, "users", userId), {
+      // Store token in Firestore
+      await updateDoc(doc(db, "users", userId), {
         fcmToken: currentToken,
         fcmTokenUpdatedAt: new Date().toISOString(),
       });
@@ -178,15 +166,69 @@ export function setupForegroundNotifications(callback) {
   return unsubscribe;
 }
 
+// Global listener management
+let activeListeners = new Set();
+
+// Function to add a listener to tracking
+export function addListener(listener) {
+  if (listener && typeof listener === "function") {
+    activeListeners.add(listener);
+    console.log("Listener added, total active:", activeListeners.size);
+  }
+}
+
+// Function to remove a listener from tracking
+export function removeListener(listener) {
+  if (activeListeners.has(listener)) {
+    activeListeners.delete(listener);
+    console.log("Listener removed, total active:", activeListeners.size);
+  }
+}
+
+// Function to cleanup all active listeners
+export function cleanupAllListeners() {
+  console.log("Cleaning up", activeListeners.size, "active listeners");
+  activeListeners.forEach((listener) => {
+    try {
+      if (typeof listener === "function") {
+        listener();
+      }
+    } catch (error) {
+      console.log("Error cleaning up listener:", error);
+    }
+  });
+  activeListeners.clear();
+  console.log("All listeners cleaned up");
+}
+
 // Cleanup function for Firestore
 export async function cleanupFirestore() {
-  if (db) {
-    try {
-      await db.terminate();
-      console.log("Firestore connections cleaned up successfully");
-    } catch (error) {
-      console.log("Firestore cleanup error:", error);
+  try {
+    console.log("Starting Firestore cleanup...");
+    // تنظيف جميع المستمعين النشطة
+    cleanupAllListeners();
+
+    // محاولة تنظيف Firestore connections
+    if (db && db._delegate && db._delegate._firestoreClient) {
+      const client = db._delegate._firestoreClient;
+      if (client._listeners) {
+        console.log("Cleaning up Firestore internal listeners...");
+        Object.keys(client._listeners).forEach((key) => {
+          try {
+            client._listeners[key].forEach((listener) => {
+              if (listener && typeof listener.close === "function") {
+                listener.close();
+              }
+            });
+          } catch (e) {
+            console.log("Error closing listener:", e);
+          }
+        });
+      }
     }
+    console.log("Firestore connections cleaned up successfully");
+  } catch (error) {
+    console.log("Firestore cleanup error:", error);
   }
 }
 

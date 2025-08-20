@@ -16,8 +16,19 @@ export default withAuth(
       // التأكد من أن التوكن صالح
       const tokenExpiry = isAuth.exp * 1000; // تحويل إلى milliseconds
       if (Date.now() > tokenExpiry) {
+        console.log("Token expired, redirecting to login");
         return NextResponse.redirect(new URL("/login", request.url));
       }
+
+      // تسجيل معلومات التوكن للتشخيص
+      console.log("Token valid:", {
+        userId: isAuth.sub,
+        role: isAuth.role,
+        verificationStatus: isAuth.verificationStatus,
+        exp: new Date(tokenExpiry).toISOString(),
+      });
+    } else {
+      console.log("No valid token found");
     }
 
     const role = isAuth?.role;
@@ -53,6 +64,7 @@ export default withAuth(
 
     // دي بترجه ترو لو انا ف البروفابل او اي باث بيبدا ب بروفايل
     if (!isAuth && isProtectedRoute) {
+      console.log("Unauthorized access to protected route:", pathname);
       return NextResponse.redirect(new URL("/login", baseUrl));
     }
 
@@ -61,6 +73,7 @@ export default withAuth(
     const userRole = token?.role;
 
     if (userStatus === "Pending" && pathname !== "/pending") {
+      console.log("User pending, redirecting to pending page");
       return NextResponse.redirect(new URL("/pending", request.url));
     }
 
@@ -68,15 +81,23 @@ export default withAuth(
       (userStatus === "Rejected" || userStatus === "Suspended") &&
       pathname !== "/rejected"
     ) {
+      console.log("User rejected/suspended, redirecting to rejected page");
       return NextResponse.redirect(new URL("/rejected", request.url));
     }
 
     if (isAuthRoute && isAuth) {
+      console.log(
+        "Authenticated user accessing auth route, redirecting to home",
+      );
       return NextResponse.redirect(new URL("/", baseUrl));
     }
     if (pathname.startsWith("/dashboard") && role !== "admin") {
+      console.log("Non-admin user accessing dashboard, redirecting to home");
       return NextResponse.redirect(new URL("/", request.url));
     }
+
+    console.log("Middleware passed for:", pathname);
+    return NextResponse.next();
   },
   {
     callbacks: {

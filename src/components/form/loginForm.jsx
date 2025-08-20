@@ -9,7 +9,12 @@ import { Label } from "@/components/ui/label";
 import { signIn, getSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, initializeFCM, cleanupFirestore } from "@/config/firebase";
+import {
+  auth,
+  initializeFCM,
+  cleanupFirestore,
+  cleanupAllListeners,
+} from "@/config/firebase";
 import { toast } from "sonner";
 import ForgotPassword from "@/components/ForgotPassword";
 
@@ -44,9 +49,33 @@ export default function LoginForm({ onAuthenticationStart }) {
 
   // Cleanup function for Firestore connections
   useEffect(() => {
+    // تنظيف عند unmount
     return () => {
-      // إغلاق جميع الاتصالات عند unmount
+      console.log("Component unmounting, cleaning up...");
       cleanupFirestore();
+    };
+  }, []);
+
+  // تنظيف عند إغلاق الصفحة
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log("Page unloading, cleaning up...");
+      cleanupFirestore();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        console.log("Page hidden, cleaning up...");
+        cleanupFirestore();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
@@ -76,7 +105,8 @@ export default function LoginForm({ onAuthenticationStart }) {
     }
 
     try {
-      // Cleanup old connections before login
+      // تنظيف جميع المستمعين والاتصالات القديمة قبل تسجيل الدخول
+      console.log("Cleaning up before login...");
       await cleanupFirestore();
 
       const result = await signIn("credentials", {
@@ -98,6 +128,7 @@ export default function LoginForm({ onAuthenticationStart }) {
           onAuthenticationStart(false);
         }
       } else {
+        console.log("Login successful, initializing FCM...");
         const session = await getSession();
 
         const userId = session?.user?.id; // تأكد إن الـ ID موجود في session
@@ -147,6 +178,7 @@ export default function LoginForm({ onAuthenticationStart }) {
         toast.success("Login successful");
       }
     } catch (error) {
+      console.error("Login error:", error);
       toast.error(error.message || "Authentication failed");
       setIsLoading(false);
       if (onAuthenticationStart) {
@@ -157,11 +189,13 @@ export default function LoginForm({ onAuthenticationStart }) {
 
   const handleLogout = async () => {
     try {
-      // إغلاق Firestore connections
+      console.log("Logging out, cleaning up listeners...");
+      // تنظيف جميع المستمعين والاتصالات
       await cleanupFirestore();
 
       // تسجيل الخروج من NextAuth
       await signOut({ redirect: false });
+      console.log("Logged out successfully");
 
       // إعادة توجيه للصفحة الرئيسية
       router.push("/login");
