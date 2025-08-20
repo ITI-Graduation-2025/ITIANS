@@ -18,6 +18,22 @@ export async function POST(request) {
 
     // Verify the Firebase ID token to ensure the caller is the same user
     const admin = getAdmin();
+
+    // Check if admin is properly initialized
+    if (!admin) {
+      console.error(
+        "Firebase Admin not initialized - check environment variables",
+      );
+      return NextResponse.json(
+        {
+          error: "Server configuration error - Firebase Admin not available",
+          details:
+            "Please check Firebase Admin environment variables in production",
+        },
+        { status: 500 },
+      );
+    }
+
     const decoded = await admin.auth().verifyIdToken(idToken);
     if (!decoded || decoded.uid !== uid) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

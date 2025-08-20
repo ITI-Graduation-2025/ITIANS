@@ -41,7 +41,7 @@ export function getAdmin() {
           projectId = serviceAccount.project_id;
           clientEmail = serviceAccount.client_email;
           privateKey = serviceAccount.private_key;
-          // Service account loaded from
+          console.log("✅ Service account loaded from:", serviceAccountPath);
           break;
         }
       }
@@ -62,6 +62,10 @@ export function getAdmin() {
     console.error("- FIREBASE_CLIENT_EMAIL");
     console.error("- FIREBASE_PRIVATE_KEY");
     console.error("Or add serviceAccount.json at project root");
+    console.error("Current values:");
+    console.error("- projectId:", projectId ? "✅ Set" : "❌ Missing");
+    console.error("- clientEmail:", clientEmail ? "✅ Set" : "❌ Missing");
+    console.error("- privateKey:", privateKey ? "✅ Set" : "❌ Missing");
 
     // In development, throw error. In production, try to continue
     if (process.env.NODE_ENV === "development") {
@@ -86,7 +90,7 @@ export function getAdmin() {
     });
 
     adminInstance = admin;
-    // Firebase Admin initialized successfully
+    console.log("✅ Firebase Admin initialized successfully");
     return adminInstance;
   } catch (error) {
     console.error("❌ Failed to initialize Firebase Admin:", error.message);
@@ -95,6 +99,7 @@ export function getAdmin() {
       throw error;
     }
 
+    console.error("❌ Firebase Admin initialization failed in production");
     return null;
   }
 }
