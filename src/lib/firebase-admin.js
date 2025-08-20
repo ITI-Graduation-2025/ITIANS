@@ -167,5 +167,16 @@ export function getAuth() {
   return admin.auth();
 }
 
+/**
+ * Get Firestore FieldValue for serverTimestamp and other field operations
+ */
+export function getFieldValue() {
+  const admin = getAdmin();
+  if (!admin) {
+    throw new Error("Firebase Admin not initialized");
+  }
+  return admin.firestore.FieldValue;
+}
+
 // Export the admin instance for direct access (use with caution)
 export { admin };

@@ -5,6 +5,7 @@ import {
   getAdmin,
   getFirestore,
   getAuth,
+  getFieldValue,
 } from "@/lib/firebase-admin";
 
 export async function GET() {
@@ -78,6 +79,15 @@ export async function GET() {
       console.error("Auth test failed:", error);
     }
 
+    // Test FieldValue access
+    let fieldValueTest = false;
+    try {
+      const FieldValue = getFieldValue();
+      fieldValueTest = true;
+    } catch (error) {
+      console.error("FieldValue test failed:", error);
+    }
+
     // Test basic Firestore operation (read-only)
     let firestoreReadTest = false;
     let firestoreError = null;
@@ -110,6 +120,7 @@ export async function GET() {
         adminInstance: !!admin,
         firestoreAccess: firestoreTest,
         authAccess: authTest,
+        fieldValueAccess: fieldValueTest,
         firestoreReadTest: firestoreReadTest,
       },
       environment: {

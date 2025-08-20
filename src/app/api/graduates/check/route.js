@@ -4,6 +4,7 @@ import {
   getAdmin,
   getAuth,
   getFirestore,
+  getFieldValue,
   isAdminInitialized,
 } from "@/lib/firebase-admin";
 
@@ -56,8 +57,9 @@ export async function POST(request) {
         );
       }
 
-      // Get Firestore instance
+      // Get Firestore instance and FieldValue
       const firestore = getFirestore();
+      const FieldValue = getFieldValue();
 
       // Find graduate by nationalId
       const gradsSnap = await firestore
@@ -73,7 +75,7 @@ export async function POST(request) {
       await userRef.set(
         {
           verificationStatus: isGraduate ? "Approved" : "Pending",
-          adminActionDate: firestore.FieldValue.serverTimestamp(),
+          adminActionDate: FieldValue.serverTimestamp(),
         },
         { merge: true },
       );
