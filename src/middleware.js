@@ -10,6 +10,16 @@ export default withAuth(
   async function middleware(request) {
     const pathname = request.nextUrl.pathname;
     const isAuth = await getToken({ req: request });
+
+    // فحص إضافي للتوكن
+    if (isAuth) {
+      // التأكد من أن التوكن صالح
+      const tokenExpiry = isAuth.exp * 1000; // تحويل إلى milliseconds
+      if (Date.now() > tokenExpiry) {
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+    }
+
     const role = isAuth?.role;
     if (role === "admin") {
       if (pathname.startsWith("/login") || pathname.startsWith("/register")) {

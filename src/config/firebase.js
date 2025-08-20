@@ -37,19 +37,20 @@ export const db = getFirestore(app);
 if (typeof window !== "undefined") {
   // Only run in browser environment
   const firestoreSettings = {
-    // Increase timeout for slow connections
-    timeoutSeconds: 30,
-    // Enable offline persistence
-    cacheSizeBytes: 50 * 1024 * 1024, // 50MB cache
-    // Enable network retry
-    experimentalForceLongPolling: true,
-    // Reduce connection attempts for better performance
-    maxConcurrentConnections: 10,
+    // تقليل عدد الاتصالات المتزامنة
+    maxConcurrentConnections: 1,
+    // إيقاف الاتصال المستمر
+    experimentalForceLongPolling: false,
+    // تقليل حجم الكاش
+    cacheSizeBytes: 10 * 1024 * 1024, // 10MB فقط
+    // إيقاف التحديث التلقائي
+    ignoreUndefinedProperties: true,
+    // تقليل timeout
+    timeoutSeconds: 15,
   };
 
   // Apply settings if possible
   try {
-    // Note: Some settings might not be available in all Firebase versions
     if (db.settings) {
       db.settings(firestoreSettings);
     }
@@ -72,6 +73,16 @@ export async function initializeFCM(userId) {
   }
 
   try {
+    // إغلاق الاتصالات القديمة أولاً
+    if (db) {
+      try {
+        await db.terminate();
+        console.log("Old Firestore connections terminated");
+      } catch (error) {
+        console.log("Terminating old connections:", error);
+      }
+    }
+
     let registration;
     if ("serviceWorker" in navigator) {
       registration = await navigator.serviceWorker.getRegistration();
@@ -95,7 +106,10 @@ export async function initializeFCM(userId) {
     });
 
     if (currentToken) {
-      await updateDoc(doc(db, "users", userId), {
+      // إعادة إنشاء الاتصال مع Firestore
+      const newDb = getFirestore(app);
+
+      await updateDoc(doc(newDb, "users", userId), {
         fcmToken: currentToken,
         fcmTokenUpdatedAt: new Date().toISOString(),
       });
@@ -110,6 +124,7 @@ export async function initializeFCM(userId) {
     return null;
   }
 }
+
 // Function to refresh FCM token
 export async function refreshFcmToken(userId) {
   if (!messaging) {
@@ -161,6 +176,18 @@ export function setupForegroundNotifications(callback) {
   });
 
   return unsubscribe;
+}
+
+// Cleanup function for Firestore
+export async function cleanupFirestore() {
+  if (db) {
+    try {
+      await db.terminate();
+      console.log("Firestore connections cleaned up successfully");
+    } catch (error) {
+      console.log("Firestore cleanup error:", error);
+    }
+  }
 }
 
 export default app;

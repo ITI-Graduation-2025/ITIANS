@@ -6,10 +6,10 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn, getSession } from "next-auth/react";
+import { signIn, getSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, initializeFCM } from "@/config/firebase";
+import { auth, initializeFCM, cleanupFirestore } from "@/config/firebase";
 import { toast } from "sonner";
 import ForgotPassword from "@/components/ForgotPassword";
 
@@ -22,6 +22,7 @@ export default function LoginForm({ onAuthenticationStart }) {
   const [isLoading, setIsLoading] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
   const router = useRouter();
+
   // Show contextual message after registration
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -39,6 +40,14 @@ export default function LoginForm({ onAuthenticationStart }) {
         setInfoMessage("Account created. Please login.");
       }
     }
+  }, []);
+
+  // Cleanup function for Firestore connections
+  useEffect(() => {
+    return () => {
+      // إغلاق جميع الاتصالات عند unmount
+      cleanupFirestore();
+    };
   }, []);
 
   const registerOptions = {
@@ -67,11 +76,15 @@ export default function LoginForm({ onAuthenticationStart }) {
     }
 
     try {
+      // Cleanup old connections before login
+      await cleanupFirestore();
+
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
         redirect: false,
       });
+
       if (result?.error) {
         const errorMessage =
           result.error === "User not found"
@@ -139,6 +152,21 @@ export default function LoginForm({ onAuthenticationStart }) {
       if (onAuthenticationStart) {
         onAuthenticationStart(false);
       }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      // إغلاق Firestore connections
+      await cleanupFirestore();
+
+      // تسجيل الخروج من NextAuth
+      await signOut({ redirect: false });
+
+      // إعادة توجيه للصفحة الرئيسية
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 

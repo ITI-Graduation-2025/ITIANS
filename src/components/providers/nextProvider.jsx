@@ -6,8 +6,8 @@ import React from "react";
 export default function NextProvider({ children }) {
   return (
     <SessionProvider
-      refetchInterval={5 * 60} // تحديث كل 5 دقائق
-      refetchOnWindowFocus={true} // تحديث عند التركيز
+      refetchInterval={0} // إيقاف التحديث التلقائي
+      refetchOnWindowFocus={false} // إيقاف التحديث عند التركيز
       refetchWhenOffline={false} // لا تحديث عند عدم وجود إنترنت
     >
       {children}
