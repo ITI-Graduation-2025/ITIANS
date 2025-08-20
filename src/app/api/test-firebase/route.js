@@ -9,16 +9,39 @@ import {
 
 export async function GET() {
   try {
+    // Log environment information for debugging
+    console.log("🔍 /api/test-firebase - Environment check:");
+    console.log("- NODE_ENV:", process.env.NODE_ENV);
+    console.log(
+      "- NEXT_PUBLIC_FIREBASE_PROJECT_ID:",
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    );
+    console.log(
+      "- FIREBASE_CLIENT_EMAIL:",
+      process.env.FIREBASE_CLIENT_EMAIL ? "✅ Set" : "❌ Missing",
+    );
+    console.log(
+      "- FIREBASE_PRIVATE_KEY:",
+      process.env.FIREBASE_PRIVATE_KEY ? "✅ Set" : "❌ Missing",
+    );
+
     // Test Firebase Admin initialization
     const isInitialized = isAdminInitialized();
 
     if (!isInitialized) {
+      console.error("❌ Firebase Admin not initialized in /api/test-firebase");
       return NextResponse.json(
         {
           success: false,
           error: "Firebase Admin not initialized",
           details: "Check environment variables and Vercel configuration",
           code: "FIREBASE_ADMIN_UNAVAILABLE",
+          environment: {
+            NODE_ENV: process.env.NODE_ENV,
+            hasProjectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+            hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+          },
         },
         { status: 503 },
       );
@@ -57,6 +80,7 @@ export async function GET() {
 
     // Test basic Firestore operation (read-only)
     let firestoreReadTest = false;
+    let firestoreError = null;
     try {
       const firestore = getFirestore();
       // Try to read a document (this will fail if not authenticated, but won't crash)
@@ -69,6 +93,12 @@ export async function GET() {
         error.code === "unauthenticated"
       ) {
         firestoreReadTest = true; // Firestore is working, just not authenticated
+      } else {
+        firestoreError = {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        };
       }
     }
 
@@ -82,7 +112,13 @@ export async function GET() {
         authAccess: authTest,
         firestoreReadTest: firestoreReadTest,
       },
-      environment: process.env.NODE_ENV || "unknown",
+      environment: {
+        NODE_ENV: process.env.NODE_ENV || "unknown",
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+      },
+      firestoreError,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -94,6 +130,12 @@ export async function GET() {
         error: "Test failed",
         details: error.message,
         code: "TEST_FAILED",
+        environment: {
+          NODE_ENV: process.env.NODE_ENV,
+          hasProjectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+          hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+        },
       },
       { status: 500 },
     );

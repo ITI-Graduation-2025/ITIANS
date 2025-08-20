@@ -26,6 +26,25 @@ export function getAdmin() {
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+
+    console.log("🔍 Environment variables check:");
+    console.log(
+      "- NEXT_PUBLIC_FIREBASE_PROJECT_ID:",
+      projectId ? "✅ Set" : "❌ Missing",
+    );
+    console.log(
+      "- FIREBASE_CLIENT_EMAIL:",
+      clientEmail ? "✅ Set" : "❌ Missing",
+    );
+    console.log(
+      "- FIREBASE_PRIVATE_KEY:",
+      privateKey ? "✅ Set" : "❌ Missing",
+    );
+    console.log(
+      "- NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:",
+      storageBucket ? "✅ Set" : "❌ Missing",
+    );
 
     // Clean up private key - replace \\n with actual newlines
     if (privateKey) {
@@ -35,6 +54,7 @@ export function getAdmin() {
     // If all required env vars are present, use them
     if (projectId && clientEmail && privateKey) {
       console.log("✅ Initializing Firebase Admin with environment variables");
+      console.log("📋 Project ID:", projectId);
 
       const app = admin.initializeApp({
         credential: admin.credential.cert({
@@ -42,6 +62,9 @@ export function getAdmin() {
           clientEmail,
           privateKey,
         }),
+        projectId,
+        storageBucket,
+        databaseURL: `https://${projectId}.firebaseio.com`,
       });
 
       adminInstance = admin;
@@ -62,9 +85,15 @@ export function getAdmin() {
       );
 
       console.log("✅ Loading service account from:", serviceAccountPath);
+      console.log("📋 Service Account Project ID:", serviceAccount.project_id);
 
       const app = admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
+        projectId: serviceAccount.project_id,
+        storageBucket:
+          serviceAccount.storage_bucket ||
+          `${serviceAccount.project_id}.appspot.com`,
+        databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`,
       });
 
       adminInstance = admin;
