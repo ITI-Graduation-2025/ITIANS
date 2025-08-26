@@ -48,7 +48,10 @@ code.txt
 scripts/seedGraduates.mjs
 
 # service worker generated at build time
+
 public/firebase-messaging-sw.js
+
+
 
 # service account
 serviceAccount.json 
