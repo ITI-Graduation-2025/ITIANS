@@ -41,7 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 # service account
-src/config/serviceAccount.json
+
 
 code.txt
 
@@ -51,6 +51,5 @@ scripts/seedGraduates.mjs
 public/firebase-messaging-sw.js
 
 # service account
-serviceAccount.json 
 vercel.json
 verify-env.mjs
