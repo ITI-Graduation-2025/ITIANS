@@ -18,9 +18,9 @@ export function getAdmin() {
   try {
     // Try to initialize with environment variables first
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+    const clientEmail = process.env.CLIENT_EMAIL;
+    let privateKey = process.env.PRIVATE_KEY;
+    const storageBucket = process.env.NEXT_PUBLIC_STORAGE_BUCKET;
 
     console.log("🔍 Environment variables check:");
     console.log(
