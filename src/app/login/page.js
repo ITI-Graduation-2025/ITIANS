@@ -6,6 +6,9 @@ import LoginForm from "@/components/form/loginForm";
 import { useState } from "react";
 import AuthLoading from "../(islam)/authLoading";
 import dynamic from "next/dynamic";
+import { useSession } from "next-auth/react";
+import { Redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
 const AdminPinLoginPopup = dynamic(
   () => import("@/components/AdminPinLoginPopup"),
@@ -15,6 +18,12 @@ const AdminPinLoginPopup = dynamic(
 export default function LoginPage() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
+  const { data: session } = useSession();
+
+  if (session) {
+    redirect("/");
+    return null;
+  }
   // If authenticating, show loading screen
   if (isAuthenticating) {
     return (

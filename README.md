@@ -16,7 +16,7 @@ ITIANS is a full‑stack Next.js platform that connects graduates, mentors, and 
 ### Tech Stack
 
 - **Frontend**: Next.js (App Router), React, Tailwind CSS
-- **Backend**: Next.js API Routes (`src/app/api/*`)
+- **Backend**: firebase , Next.js API Routes (`src/app/api/*`)
 - **Data/Services**: Firebase Auth, Firestore, Firebase Admin SDK, FCM
 - **Media**: Cloudinary
 - **State/Utilities**: Context API, custom hooks, service layer

@@ -1,8 +1,14 @@
 import RegisterForm from "@/components/form/register";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 export default function RegisterPage() {
+  const { data: session } = useSession();
+  if (session) {
+    redirect("/");
+    return null;
+  }
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl shadow-lg">
