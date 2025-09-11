@@ -2,6 +2,14 @@
 
 ITIANS is a full‑stack Next.js platform that connects graduates, mentors, and companies. It provides role‑based dashboards, real‑time chat, job postings and applications, profile management with file uploads, analytics, and push notifications.
 
+Account For test website as mentor 
+islam.mohamed.alrfa3i@gmail.com 
+pass:12345678
+
+as freelancer :
+wafaasamir1999@gmail.com
+pass:12345678
+
 ### Key Features
 
 - **Authentication & Roles**: Email/password auth, protected routes, role‑based dashboards (students, mentors, companies, admins).
