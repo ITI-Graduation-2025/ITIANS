@@ -13,6 +13,9 @@ pass:12345678
 as admin :
 Click on the button at the bottom right, the pass: 2070 
 
+![preview](./mentor-profile.png)
+
+
 ### Key Features
 
 - **Authentication & Roles**: Email/password auth, protected routes, role‑based dashboards (students, mentors, companies, admins).
